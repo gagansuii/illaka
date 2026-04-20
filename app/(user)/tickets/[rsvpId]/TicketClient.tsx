@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import QRCode from 'qrcode';
 import { Button } from '@/components/ui/button';
 import { Printer, Download, ArrowLeft, MapPin, Calendar, User, CreditCard } from 'lucide-react';
 import Link from 'next/link';
@@ -62,13 +61,13 @@ export function TicketClient({ ticket }: { ticket: TicketData }) {
       rsvpId: ticket.rsvpId,
       eventId: ticket.eventId
     });
-    QRCode.toDataURL(qrPayload, {
-      width: 200,
-      margin: 1,
-      color: { dark: '#0f766e', light: '#ffffff' }
-    })
-      .then(setQrDataUrl)
-      .catch(console.error);
+    import('qrcode').then((QRCode) => {
+      QRCode.toDataURL(qrPayload, {
+        width: 200,
+        margin: 1,
+        color: { dark: '#0f766e', light: '#ffffff' }
+      }).then(setQrDataUrl).catch(console.error);
+    }).catch(console.error);
   }, [ticket]);
 
   const amountDisplay = ticket.payment

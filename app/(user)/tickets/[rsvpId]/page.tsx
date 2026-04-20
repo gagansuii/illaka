@@ -9,26 +9,59 @@ export default async function TicketPage({ params }: { params: Promise<{ rsvpId:
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect('/login');
 
-  const rsvp = await prisma.rSVP.findUnique({
-    where: { id: rsvpId },
-    include: {
-      user: { select: { name: true, email: true } },
-      event: {
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          startTime: true,
-          endTime: true,
-          latitude: true,
-          longitude: true,
-          isPaid: true,
-          paymentQrUrl: true,
-          organizer: { select: { name: true } }
+  let rsvp: any = null;
+
+  try {
+    rsvp = await prisma.rSVP.findUnique({
+      where: { id: rsvpId },
+      include: {
+        user: { select: { name: true, email: true } },
+        event: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            startTime: true,
+            endTime: true,
+            latitude: true,
+            longitude: true,
+            isPaid: true,
+            paymentQrUrl: true,
+            organizer: { select: { name: true } }
+          }
         }
       }
+    });
+  } catch {
+    // Fallback: query without columns that may not exist in older DBs
+    try {
+      const rsvpBase = await prisma.rSVP.findUnique({
+        where: { id: rsvpId },
+        include: {
+          user: { select: { name: true, email: true } },
+          event: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              startTime: true,
+              endTime: true,
+              latitude: true,
+              longitude: true,
+              isPaid: true,
+              organizer: { select: { name: true } }
+            }
+          }
+        }
+      });
+      if (rsvpBase) {
+        rsvp = { ...rsvpBase, ticketId: rsvpBase.id };
+        (rsvp.event as any).paymentQrUrl = null;
+      }
+    } catch (fallbackErr) {
+      console.error('Ticket query failed:', fallbackErr);
     }
-  });
+  }
 
   if (!rsvp) {
     return <div className="p-8 text-center text-muted">Ticket not found.</div>;
@@ -40,14 +73,20 @@ export default async function TicketPage({ params }: { params: Promise<{ rsvpId:
     return <div className="p-8 text-center text-muted">Access denied.</div>;
   }
 
-  // Fetch payment for this user+event if any (e.g. Razorpay payment, reason='event')
-  const payment = await prisma.payment.findFirst({
-    where: { userId: rsvp.userId, eventId: rsvp.eventId, status: 'PAID' },
-    select: { amount: true, currency: true, status: true }
-  });
+  // Fetch payment record if any
+  let payment: { amount: number; currency: string; status: string } | null = null;
+  try {
+    const p = await prisma.payment.findFirst({
+      where: { userId: rsvp.userId, eventId: rsvp.eventId, status: 'PAID' },
+      select: { amount: true, currency: true, status: true }
+    });
+    payment = p;
+  } catch {
+    // Payment table might not have data — non-critical
+  }
 
   const ticketData = {
-    ticketId: rsvp.ticketId,
+    ticketId: rsvp.ticketId ?? rsvp.id,
     rsvpId: rsvp.id,
     eventId: rsvp.eventId,
     createdAt: rsvp.createdAt.toISOString(),
@@ -59,13 +98,11 @@ export default async function TicketPage({ params }: { params: Promise<{ rsvpId:
       endTime: rsvp.event.endTime.toISOString(),
       latitude: rsvp.event.latitude,
       longitude: rsvp.event.longitude,
-      isPaid: rsvp.event.isPaid,
-      paymentQrUrl: rsvp.event.paymentQrUrl,
+      isPaid: rsvp.event.isPaid ?? false,
+      paymentQrUrl: rsvp.event.paymentQrUrl ?? null,
       organizer: rsvp.event.organizer
     },
-    payment: payment
-      ? { amount: payment.amount, currency: payment.currency, status: payment.status }
-      : null
+    payment
   };
 
   return <TicketClient ticket={ticketData} />;

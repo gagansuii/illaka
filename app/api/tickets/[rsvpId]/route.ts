@@ -14,24 +14,57 @@ export async function GET(
 
   const { rsvpId } = await params;
 
-  const rsvp = await prisma.rSVP.findUnique({
-    where: { id: rsvpId },
-    include: {
-      user: { select: { name: true, email: true } },
-      event: {
-        select: {
-          title: true,
-          description: true,
-          startTime: true,
-          endTime: true,
-          latitude: true,
-          longitude: true,
-          paymentQrUrl: true,
-          organizer: { select: { name: true, email: true } }
+  // Try full query first; fall back to base columns if ticketId/paymentQrUrl
+  // haven't been migrated to the production database yet.
+  let rsvp: any = null;
+
+  try {
+    rsvp = await prisma.rSVP.findUnique({
+      where: { id: rsvpId },
+      include: {
+        user: { select: { name: true, email: true } },
+        event: {
+          select: {
+            title: true,
+            description: true,
+            startTime: true,
+            endTime: true,
+            latitude: true,
+            longitude: true,
+            paymentQrUrl: true,
+            organizer: { select: { name: true, email: true } }
+          }
         }
       }
+    });
+  } catch {
+    try {
+      const base = await prisma.rSVP.findUnique({
+        where: { id: rsvpId },
+        include: {
+          user: { select: { name: true, email: true } },
+          event: {
+            select: {
+              title: true,
+              description: true,
+              startTime: true,
+              endTime: true,
+              latitude: true,
+              longitude: true,
+              organizer: { select: { name: true, email: true } }
+            }
+          }
+        }
+      });
+      if (base) {
+        rsvp = { ...base, ticketId: base.id };
+        (rsvp.event as any).paymentQrUrl = null;
+      }
+    } catch (fallbackErr) {
+      console.error('Ticket fetch failed:', fallbackErr);
+      return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
-  });
+  }
 
   if (!rsvp) {
     return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
@@ -44,7 +77,7 @@ export async function GET(
   }
 
   return NextResponse.json({
-    ticketId: rsvp.ticketId,
+    ticketId: rsvp.ticketId ?? rsvp.id,
     rsvpId: rsvp.id,
     eventId: rsvp.eventId,
     createdAt: rsvp.createdAt,

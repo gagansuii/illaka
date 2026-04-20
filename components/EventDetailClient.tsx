@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import QRCode from 'qrcode';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, CalendarClock, Compass, Download, Lock, MapPin, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { PaymentButton } from '@/components/PaymentButton';
@@ -43,9 +42,12 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
 
   useEffect(() => {
     if (!rsvpId) return;
-    QRCode.toDataURL(JSON.stringify({ rsvpId, eventId: event.id }), {
-      width: 160, margin: 1, color: { dark: '#0f766e', light: '#ffffff' }
-    }).then(setTicketQrDataUrl).catch(() => {});
+    // Dynamic import avoids pulling the canvas/qrcode bundle into the SSR layer
+    import('qrcode').then((QRCode) => {
+      QRCode.toDataURL(JSON.stringify({ rsvpId, eventId: event.id }), {
+        width: 160, margin: 1, color: { dark: '#0f766e', light: '#ffffff' }
+      }).then(setTicketQrDataUrl).catch(() => {});
+    }).catch(() => {});
   }, [rsvpId, event.id]);
   const hostingThreshold = Number(process.env.NEXT_PUBLIC_HOSTING_FEE_THRESHOLD ?? 50);
   const hostingFee = Number(process.env.NEXT_PUBLIC_HOSTING_FEE_AMOUNT ?? 25000);

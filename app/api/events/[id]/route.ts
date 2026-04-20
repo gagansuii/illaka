@@ -13,13 +13,46 @@ const updateSchema = z.object({
   visibility: z.enum(['PUBLIC', 'PRIVATE']).optional()
 });
 
+// Safe select that works even when paymentQrUrl hasn't been migrated yet
+const SAFE_EVENT_SELECT = {
+  id: true,
+  title: true,
+  description: true,
+  bannerUrl: true,
+  badgeIcon: true,
+  latitude: true,
+  longitude: true,
+  startTime: true,
+  endTime: true,
+  visibility: true,
+  capacity: true,
+  organizerId: true,
+  isPaid: true,
+  engagementScore: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 type RouteContext = { params: Promise<{ id: string }> };
+
+async function fetchEvent(id: string) {
+  // Try with paymentQrUrl first; fall back to base columns if column doesn't exist
+  try {
+    return await prisma.event.findUnique({
+      where: { id },
+      select: { ...SAFE_EVENT_SELECT, paymentQrUrl: true }
+    });
+  } catch {
+    const event = await prisma.event.findUnique({ where: { id }, select: SAFE_EVENT_SELECT });
+    return event ? { ...event, paymentQrUrl: null } : null;
+  }
+}
 
 export async function GET(_: Request, { params }: RouteContext) {
   const { id } = await params;
   let event;
   try {
-    event = await prisma.event.findUnique({ where: { id } });
+    event = await fetchEvent(id);
   } catch (err) {
     console.error('Event fetch failed:', err);
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
@@ -44,7 +77,7 @@ export async function PUT(req: Request, { params }: RouteContext) {
 
   let event;
   try {
-    event = await prisma.event.findUnique({ where: { id } });
+    event = await prisma.event.findUnique({ where: { id }, select: { id: true, organizerId: true } });
   } catch (err) {
     console.error('Event fetch failed:', err);
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
@@ -55,9 +88,7 @@ export async function PUT(req: Request, { params }: RouteContext) {
   }
 
   let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
+  try { body = await req.json(); } catch {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
   }
   const parsed = updateSchema.safeParse(body);
@@ -84,7 +115,7 @@ export async function DELETE(_: Request, { params }: RouteContext) {
 
   let event;
   try {
-    event = await prisma.event.findUnique({ where: { id } });
+    event = await prisma.event.findUnique({ where: { id }, select: { id: true, organizerId: true } });
   } catch (err) {
     console.error('Event fetch failed:', err);
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
