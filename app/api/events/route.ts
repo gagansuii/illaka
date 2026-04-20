@@ -176,6 +176,8 @@ export async function POST(req: Request) {
 
   let inserted: any;
   try {
+    // Keep the raw SQL for the PostGIS geography column; paymentQrUrl is
+    // updated separately below to avoid null-handling issues in raw queries.
     inserted = await prisma.$queryRaw<any>`
       INSERT INTO "Event" (
         "id",
@@ -193,7 +195,6 @@ export async function POST(req: Request) {
         "organizerId",
         "isPaid",
         "engagementScore",
-        "paymentQrUrl",
         "createdAt",
         "updatedAt"
       ) VALUES (
@@ -212,11 +213,10 @@ export async function POST(req: Request) {
         ${session.user.id},
         ${data.isPaid},
         0,
-        ${data.paymentQrUrl ?? null},
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
       )
-      RETURNING "id", "title", "description", "bannerUrl", "badgeIcon", "latitude", "longitude", "startTime", "endTime", "visibility", "capacity", "organizerId", "isPaid", "engagementScore", "paymentQrUrl", "createdAt", "updatedAt"
+      RETURNING "id", "title", "description", "bannerUrl", "badgeIcon", "latitude", "longitude", "startTime", "endTime", "visibility", "capacity", "organizerId", "isPaid", "engagementScore", "createdAt", "updatedAt"
     `;
   } catch (err) {
     console.error('Event creation failed:', err);
@@ -226,6 +226,19 @@ export async function POST(req: Request) {
   const event = inserted[0];
   if (!event) {
     return NextResponse.json({ error: 'Failed to create event' }, { status: 500 });
+  }
+
+  // Set optional payment QR URL via Prisma (handles null safely)
+  if (data.paymentQrUrl) {
+    try {
+      await prisma.event.update({
+        where: { id: event.id },
+        data: { paymentQrUrl: data.paymentQrUrl }
+      });
+      event.paymentQrUrl = data.paymentQrUrl;
+    } catch (err) {
+      console.error('Failed to set paymentQrUrl:', err);
+    }
   }
 
   // Best-effort: index in Pinecone for AI search. Failure here does not roll back the event.
