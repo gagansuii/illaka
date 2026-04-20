@@ -847,17 +847,18 @@ input {
   white-space: nowrap;
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.5);
-  background: rgba(255, 252, 247, 0.76);
-  padding: 0.48rem 0.75rem;
-  font-size: 0.66rem;
+  background: rgba(255, 252, 247, 0.92);
+  padding: 0.38rem 0.65rem;
+  font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--marker-strong);
   backdrop-filter: blur(12px);
-  opacity: 0;
-  transform: translateX(-0.35rem);
+  opacity: 1;
+  transform: translateX(0);
   transition: opacity 180ms ease, transform 180ms ease;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.14);
 }
 
 .map-marker:hover .map-marker-core,

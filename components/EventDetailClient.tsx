@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import QRCode from 'qrcode';
 import { ArrowUpRight, CalendarClock, Compass, Download, Lock, MapPin, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { PaymentButton } from '@/components/PaymentButton';
@@ -23,6 +24,8 @@ type EventDetail = {
   organizerId: string;
   latitude: number;
   longitude: number;
+  isPaid?: boolean;
+  paymentQrUrl?: string | null;
   organizer?: {
     name?: string | null;
   } | null;
@@ -36,6 +39,14 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
   const [rsvpError, setRsvpError] = useState('');
   const [joined, setJoined] = useState(false);
   const [rsvpId, setRsvpId] = useState<string | null>(null);
+  const [ticketQrDataUrl, setTicketQrDataUrl] = useState<string>('');
+
+  useEffect(() => {
+    if (!rsvpId) return;
+    QRCode.toDataURL(JSON.stringify({ rsvpId, eventId: event.id }), {
+      width: 160, margin: 1, color: { dark: '#0f766e', light: '#ffffff' }
+    }).then(setTicketQrDataUrl).catch(() => {});
+  }, [rsvpId, event.id]);
   const hostingThreshold = Number(process.env.NEXT_PUBLIC_HOSTING_FEE_THRESHOLD ?? 50);
   const hostingFee = Number(process.env.NEXT_PUBLIC_HOSTING_FEE_AMOUNT ?? 25000);
   const promotionPrice = Number(process.env.NEXT_PUBLIC_PROMOTION_PRICE ?? 15000);
@@ -347,14 +358,38 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
                 {loading ? 'Reserving...' : joined ? 'Joined ✓' : 'RSVP now'}
               </Button>
               {rsvpError ? <p className="text-sm text-red-500">{rsvpError}</p> : null}
+
               {joined && rsvpId ? (
-                <Button asChild variant="outline" size="lg" className="w-full border-[var(--secondary)] text-[var(--secondary)]">
-                  <Link href={`/tickets/${rsvpId}`}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download Ticket
-                  </Link>
-                </Button>
+                <>
+                  {/* Ticket QR */}
+                  {ticketQrDataUrl && (
+                    <div className="rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.5)] p-4 text-center dark:bg-[rgba(15,23,42,0.22)]">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted mb-2">Your entry QR code</p>
+                      <img src={ticketQrDataUrl} alt="Ticket QR" width={128} height={128} className="mx-auto rounded-xl" />
+                      <p className="mt-2 text-xs text-muted">Show this at the event entrance</p>
+                    </div>
+                  )}
+
+                  {/* Payment QR (for paid events) */}
+                  {event.isPaid && event.paymentQrUrl && (
+                    <div className="rounded-[1.4rem] border-2 border-amber-300 bg-amber-50 dark:bg-amber-900/20 p-4 text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-2">
+                        Payment required — scan to pay
+                      </p>
+                      <img src={event.paymentQrUrl} alt="Payment QR" width={140} height={140} className="mx-auto rounded-xl" />
+                      <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">Scan the organizer's QR to complete payment</p>
+                    </div>
+                  )}
+
+                  <Button asChild variant="outline" size="lg" className="w-full border-[var(--secondary)] text-[var(--secondary)]">
+                    <Link href={`/tickets/${rsvpId}`}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Full Ticket (PDF)
+                    </Link>
+                  </Button>
+                </>
               ) : null}
+
               <Button asChild variant="outline" size="lg" className="w-full">
                 <Link href="/">
                   Keep exploring

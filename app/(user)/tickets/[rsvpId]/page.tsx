@@ -15,12 +15,14 @@ export default async function TicketPage({ params }: { params: Promise<{ rsvpId:
       user: { select: { name: true, email: true } },
       event: {
         select: {
+          id: true,
           title: true,
           description: true,
           startTime: true,
           endTime: true,
           latitude: true,
           longitude: true,
+          isPaid: true,
           paymentQrUrl: true,
           organizer: { select: { name: true } }
         }
@@ -38,6 +40,12 @@ export default async function TicketPage({ params }: { params: Promise<{ rsvpId:
     return <div className="p-8 text-center text-muted">Access denied.</div>;
   }
 
+  // Fetch payment for this user+event if any (e.g. Razorpay payment, reason='event')
+  const payment = await prisma.payment.findFirst({
+    where: { userId: rsvp.userId, eventId: rsvp.eventId, status: 'PAID' },
+    select: { amount: true, currency: true, status: true }
+  });
+
   const ticketData = {
     ticketId: rsvp.ticketId,
     rsvpId: rsvp.id,
@@ -51,9 +59,13 @@ export default async function TicketPage({ params }: { params: Promise<{ rsvpId:
       endTime: rsvp.event.endTime.toISOString(),
       latitude: rsvp.event.latitude,
       longitude: rsvp.event.longitude,
+      isPaid: rsvp.event.isPaid,
       paymentQrUrl: rsvp.event.paymentQrUrl,
       organizer: rsvp.event.organizer
-    }
+    },
+    payment: payment
+      ? { amount: payment.amount, currency: payment.currency, status: payment.status }
+      : null
   };
 
   return <TicketClient ticket={ticketData} />;

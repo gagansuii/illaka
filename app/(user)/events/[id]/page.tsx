@@ -26,6 +26,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       capacity: true,
       organizerId: true,
       isPaid: true,
+      paymentQrUrl: true,
       engagementScore: true,
       organizer: { select: { name: true } },
       rsvps: { select: { id: true } },

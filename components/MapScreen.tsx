@@ -85,7 +85,20 @@ export function MapScreen() {
     return `lat=${center[0]}&lng=${center[1]}&radius=${radius}`;
   }, [center, radius]);
 
-  const featuredEvents = events.slice(0, 12);
+  // Merge user's own events into the feed (deduplicated) so private/all events always show
+  const mergedEvents = useMemo(() => {
+    const seen = new Set<string>();
+    const combined = [...events];
+    for (const e of myEvents) {
+      if (!seen.has(e.id) && !combined.find((x) => x.id === e.id)) {
+        combined.unshift(e as EventSummary);
+      }
+      seen.add(e.id);
+    }
+    return combined;
+  }, [events, myEvents]);
+
+  const featuredEvents = mergedEvents.slice(0, 20);
   const radiusLabel = `${(radius / 1000).toFixed(1)} km`;
 
   const updateLocation = useCallback(
