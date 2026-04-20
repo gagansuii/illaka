@@ -408,7 +408,6 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
               </div>
               <div>
                 <p className="text-sm font-semibold">At-a-glance details</p>
-                <p className="mt-1 text-sm leading-6 text-muted">Key information stays close to the action so the page remains easy to scan.</p>
               </div>
             </div>
             <div className="space-y-3">
@@ -424,12 +423,28 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
                 </span>
               </div>
               <div className="flex items-center justify-between rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] px-4 py-3 text-sm dark:bg-[rgba(15,23,42,0.22)]">
-                <span className="text-muted">Coordinate</span>
-                <span className="font-medium">
-                  {event.latitude.toFixed(3)}, {event.longitude.toFixed(3)}
-                </span>
+                <span className="text-muted">Entry</span>
+                <span className="font-medium">{event.isPaid ? 'Paid event' : 'Free entry'}</span>
               </div>
             </div>
+
+            {/* Payment QR — shown before and after RSVP for paid events */}
+            {event.isPaid && event.paymentQrUrl && (
+              <div className="rounded-[1.4rem] border-2 border-amber-300 bg-amber-50 dark:bg-amber-900/20 p-4 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-2">
+                  Scan to pay organizer
+                </p>
+                <img
+                  src={event.paymentQrUrl}
+                  alt="Payment QR"
+                  className="mx-auto rounded-xl"
+                  style={{ width: 160, height: 160, objectFit: 'contain' }}
+                />
+                <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+                  Complete payment after registering
+                </p>
+              </div>
+            )}
           </Card>
 
           {isOrganizer ? (

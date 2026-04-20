@@ -184,7 +184,7 @@ export function InteractiveMapSection() {
 
         {/* ── Map + overlapping detail panel ── */}
         <div className="relative overflow-hidden rounded-[1.5rem] border border-outline-variant/20 bg-surface-container-lowest shadow-[0_28px_80px_rgba(0,0,0,0.35)]"
-          style={{ height: '580px' }}>
+          style={{ height: 'clamp(300px, 40vh, 400px)' }}>
 
           {/* Full-width map */}
           <MapView
