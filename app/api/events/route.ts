@@ -116,7 +116,8 @@ export async function GET(req: Request) {
   const lat = Number(searchParams.get('lat'));
   const lng = Number(searchParams.get('lng'));
   const rawRadius = Number(searchParams.get('radius') ?? 5000);
-  const radius = Number.isFinite(rawRadius) && rawRadius > 0 ? rawRadius : 5000;
+  // Use at least 10 km so newly created events are discoverable
+  const radius = Number.isFinite(rawRadius) && rawRadius > 0 ? Math.max(rawRadius, 10_000) : 10_000;
 
   if (!(await rateLimit(`events:${normalizeCoord(lat)}:${normalizeCoord(lng)}`))) {
     return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });

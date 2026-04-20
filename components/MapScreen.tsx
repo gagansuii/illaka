@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import {
   CalendarClock,
+  Edit2,
   LocateFixed,
   Map,
   MapPin,
@@ -28,6 +29,8 @@ import {
   formatEventRange,
   getEventTheme,
 } from '@/lib/event-style';
+
+type MyEvent = EventSummary & { rsvpCount: number };
 
 const MapView = dynamic(
   () => import('@/components/MapView').then((m) => m.MapView),
@@ -57,6 +60,8 @@ export function MapScreen() {
   const [center, setCenter] = useState<[number, number] | null>(null);
   const [radius, setRadius] = useState(5000);
   const [events, setEvents] = useState<EventSummary[]>([]);
+  const [myEvents, setMyEvents] = useState<MyEvent[]>([]);
+  const [myEventsLoading, setMyEventsLoading] = useState(false);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [promptIndex, setPromptIndex] = useState(0);
@@ -169,7 +174,21 @@ export function MapScreen() {
       locationSyncSuppressedRef.current = false;
       lastLocationSyncRef.current = null;
       lastLocationSyncAtRef.current = 0;
+      setMyEvents([]);
     }
+  }, [status]);
+
+  // Fetch user's own events (all visibility, all locations)
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    let active = true;
+    setMyEventsLoading(true);
+    fetch('/api/events/mine', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((data) => { if (active) setMyEvents(Array.isArray(data.events) ? data.events : []); })
+      .catch(() => {})
+      .finally(() => { if (active) setMyEventsLoading(false); });
+    return () => { active = false; };
   }, [status]);
 
   useEffect(() => {
@@ -501,6 +520,97 @@ export function MapScreen() {
           </div>
         )}
       </div>
+
+      {/* My Events — visible to logged-in users, shows all their events regardless of location */}
+      {status === 'authenticated' && (myEventsLoading || myEvents.length > 0) && (
+        <div className="mx-auto max-w-5xl px-4 pb-6 sm:px-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Your events</p>
+              <h2 className="mt-1 text-lg font-semibold">Events you've published</h2>
+            </div>
+            <Button asChild size="sm" variant="outline" className="rounded-xl border-[var(--line)] text-xs">
+              <Link href="/events/new">
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                New event
+              </Link>
+            </Button>
+          </div>
+
+          {myEventsLoading ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-24 animate-pulse rounded-2xl border border-[var(--line)] bg-[var(--surface)]" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {myEvents.map((event) => {
+                const theme = getEventTheme(event);
+                return (
+                  <div
+                    key={event.id}
+                    className="flex items-center gap-3 overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3 transition-all hover:-translate-y-0.5 hover:shadow-md"
+                  >
+                    {/* Thumbnail */}
+                    <div
+                      className="h-14 w-14 shrink-0 overflow-hidden rounded-xl"
+                      style={{ background: `linear-gradient(135deg, ${theme.accentStrong} 0%, ${theme.accent} 100%)` }}
+                    >
+                      {event.bannerUrl && (
+                        <ResilientImage
+                          src={event.bannerUrl}
+                          alt={event.title}
+                          className="h-full w-full object-cover"
+                          fallback={null}
+                        />
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{event.title}</p>
+                      <p className="text-xs text-[var(--muted)]">
+                        {formatEventDay(event.startTime)} · {formatEventRange(event.startTime, event.endTime)}
+                      </p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span
+                          className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+                          style={{ background: theme.accentSoft, color: theme.accentStrong }}
+                        >
+                          {theme.label}
+                        </span>
+                        <span className="flex items-center gap-1 text-[10px] text-[var(--muted)]">
+                          <Users className="h-3 w-3" />
+                          {event.rsvpCount} RSVPs
+                        </span>
+                        {event.visibility === 'PRIVATE' && (
+                          <span className="rounded-full bg-[rgba(148,163,184,0.15)] px-2 py-0.5 text-[10px] font-medium text-[var(--muted)]">
+                            Private
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex shrink-0 flex-col gap-1.5">
+                      <Button asChild size="sm" className="h-7 rounded-lg bg-[var(--accent)] px-3 text-xs text-white border-0 hover:bg-[var(--accent-strong)]">
+                        <Link href={`/events/${event.id}`}>View</Link>
+                      </Button>
+                      <Button asChild size="sm" variant="outline" className="h-7 rounded-lg border-[var(--line)] px-3 text-xs">
+                        <Link href={`/events/${event.id}/edit`}>
+                          <Edit2 className="h-3 w-3 mr-1" />
+                          Edit
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* FAB for hosting */}
       <Button
