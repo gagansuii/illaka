@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const NAV_LINKS: { href: string; label: string; highlight?: boolean }[] = [
   { href: '/discover',   label: 'Feed' },
   { href: '/map',        label: 'Map' },
+  { href: '/my-events',  label: 'My Events' },
   { href: '/events/new', label: 'Create Event', highlight: true },
 ];
 

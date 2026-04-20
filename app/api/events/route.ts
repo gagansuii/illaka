@@ -172,8 +172,17 @@ export async function POST(req: Request) {
 
   const data = parsed.data;
   const eventId = randomUUID();
-  const startTime = new Date(data.startTime);
-  const endTime = new Date(data.endTime);
+
+  // datetime-local inputs omit seconds ("2026-04-20T10:30"); normalize to full ISO
+  const normalizeDateTime = (dt: string) =>
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dt) ? dt + ':00' : dt;
+
+  const startTime = new Date(normalizeDateTime(data.startTime));
+  const endTime = new Date(normalizeDateTime(data.endTime));
+
+  if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+    return NextResponse.json({ error: 'Invalid date/time format. Please re-select start and end times.' }, { status: 400 });
+  }
 
   let inserted: any;
   try {
@@ -219,9 +228,10 @@ export async function POST(req: Request) {
       )
       RETURNING "id", "title", "description", "bannerUrl", "badgeIcon", "latitude", "longitude", "startTime", "endTime", "visibility", "capacity", "organizerId", "isPaid", "engagementScore", "createdAt", "updatedAt"
     `;
-  } catch (err) {
-    console.error('Event creation failed:', err);
-    return NextResponse.json({ error: 'Failed to create event' }, { status: 500 });
+  } catch (err: any) {
+    const msg = err?.message ?? String(err);
+    console.error('Event creation failed:', msg, err);
+    return NextResponse.json({ error: `Event creation failed: ${msg}` }, { status: 500 });
   }
 
   const event = inserted[0];
