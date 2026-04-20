@@ -102,8 +102,9 @@ export function MapView({
     <MapContainer
       center={mapCenter}
       zoom={13}
-      zoomControl={false}
+      zoomControl={true}
       scrollWheelZoom
+      doubleClickZoom
       className="h-full w-full"
     >
       <RecenterMap center={mapCenter} />

@@ -93,10 +93,12 @@ export default function CreateEventPage() {
   const [bannerUrl, setBannerUrl] = useState('');
   const [badgeIcon, setBadgeIcon] = useState('');
   const [categoryKey, setCategoryKey] = useState<EventCategoryKey>('community');
+  const [paymentQrUrl, setPaymentQrUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [uploadingBadge, setUploadingBadge] = useState(false);
+  const [uploadingQr, setUploadingQr] = useState(false);
 
   const selectedTheme = EVENT_CATEGORY_OPTIONS.find((option) => option.key === categoryKey) ?? EVENT_CATEGORY_OPTIONS[0];
   const mapCenter = latitude !== null && longitude !== null ? [latitude, longitude] as [number, number] : [28.6139, 77.209] as [number, number];
@@ -172,6 +174,19 @@ export default function CreateEventPage() {
     }
   }
 
+  async function handleQrUpload(file: File) {
+    setError('');
+    setUploadingQr(true);
+    try {
+      const url = await upload(file, 'illaka/qr-codes');
+      setPaymentQrUrl(url);
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : 'QR code upload failed');
+    } finally {
+      setUploadingQr(false);
+    }
+  }
+
   async function useMyLocation() {
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser.');
@@ -225,7 +240,8 @@ export default function CreateEventPage() {
         latitude,
         longitude,
         bannerUrl,
-        badgeIcon
+        badgeIcon,
+        paymentQrUrl: paymentQrUrl || undefined
       })
     });
     setLoading(false);
@@ -257,7 +273,7 @@ export default function CreateEventPage() {
             Shape a neighborhood invite that feels worth showing up for.
           </h1>
           <p className="max-w-2xl text-sm leading-7 text-muted sm:text-base">
-            The creation flow keeps the same publishing logic, but now gives you a live banner, a map-led location step, and visual cues for how the event will feel in Ilaaka.
+            The creation flow keeps the same publishing logic, but now gives you a live banner, a map-led location step, and visual cues for how the event will feel in Illaka.
           </p>
         </div>
       </section>
@@ -513,6 +529,16 @@ export default function CreateEventPage() {
                   loading={uploadingBadge}
                   onFileSelect={handleBadgeUpload}
                 />
+                {isPaid && (
+                  <UploadDropzone
+                    id="qr-upload"
+                    title="Upload payment QR code"
+                    description="Your UPI or bank QR code so attendees can pay at the door. Stored securely."
+                    ready={Boolean(paymentQrUrl)}
+                    loading={uploadingQr}
+                    onFileSelect={handleQrUpload}
+                  />
+                )}
               </div>
             </Card>
 
@@ -531,7 +557,7 @@ export default function CreateEventPage() {
 
               {error ? <p className="rounded-[1.2rem] bg-[rgba(220,38,38,0.08)] px-4 py-3 text-sm text-red-600">{error}</p> : null}
 
-              <Button type="submit" size="lg" disabled={loading || uploadingBanner || uploadingBadge} className="w-full">
+              <Button type="submit" size="lg" disabled={loading || uploadingBanner || uploadingBadge || uploadingQr} className="w-full">
                 {loading ? 'Creating event...' : 'Publish event'}
               </Button>
             </Card>

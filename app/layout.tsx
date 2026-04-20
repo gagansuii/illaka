@@ -25,7 +25,7 @@ const space    = Space_Grotesk({ subsets: ['latin'], variable: '--font-space', d
 const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-fraunces', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'ILAKA | Rediscover your neighbourhood',
+  title: 'ILLAKA | Rediscover your neighbourhood',
   description: 'Cinematic, map-first community discovery for activities, meetups, workshops, and local energy around you.',
 };
 

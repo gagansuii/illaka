@@ -152,7 +152,7 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
               <div className="route-loader-panel__content">
                 <p className="route-loader-panel__eyebrow">Brewing the next stop</p>
                 <CoffeeRouteLoader />
-                <p className="route-loader-panel__title">Preparing your Ilaaka view</p>
+                <p className="route-loader-panel__title">Preparing your Illaka view</p>
                 <p className="route-loader-panel__body">
                   Pouring in the next page with a smoother neighborhood transition.
                 </p>

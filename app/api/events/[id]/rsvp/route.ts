@@ -27,16 +27,17 @@ export async function POST(_: Request, { params }: RouteContext) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
+  let rsvp;
   try {
     // All three operations run inside a single transaction so the FOR UPDATE
     // row lock is held until the RSVP insert (or rollback) completes.
-    await prisma.$transaction(async (tx) => {
+    rsvp = await prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT 1 FROM "Event" WHERE "id" = ${event.id} FOR UPDATE`;
       const count = await tx.rSVP.count({ where: { eventId: event.id } });
       if (count >= event.capacity) {
         throw new EventFullError('Event full');
       }
-      await tx.rSVP.create({ data: { eventId: event.id, userId: session.user.id } });
+      return tx.rSVP.create({ data: { eventId: event.id, userId: session.user.id } });
     });
   } catch (error) {
     if (error instanceof EventFullError) {
@@ -54,5 +55,5 @@ export async function POST(_: Request, { params }: RouteContext) {
     clearEventsCache();
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, rsvpId: rsvp.id });
 }

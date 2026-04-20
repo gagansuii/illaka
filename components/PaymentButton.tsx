@@ -57,7 +57,7 @@ export function PaymentButton({
       amount: data.amount,
       currency: 'INR',
       order_id: data.orderId,
-      name: 'ILAKA',
+      name: 'ILLAKA',
       description: label,
       handler: () => {
         window.location.reload();

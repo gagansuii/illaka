@@ -196,7 +196,7 @@ export default function RegisterPage() {
           <div className="absolute right-14 top-16 h-32 w-32 rounded-full border border-white/16" />
           <div className="relative">
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/72">
-              Join ILAKA
+              Join ILLAKA
             </p>
             <h1 className="mt-5 font-[family:var(--font-fraunces)] text-5xl leading-[0.94]">
               Build your own neighborhood signal.
@@ -233,7 +233,7 @@ export default function RegisterPage() {
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="eyebrow">Registration complete</p>
-                      <h1 className="mt-4 text-3xl font-semibold">You are now part of the ILAKA circle.</h1>
+                      <h1 className="mt-4 text-3xl font-semibold">You are now part of the ILLAKA circle.</h1>
                       <p className="mt-2 text-sm leading-6 text-muted">
                         Your account is active, the member roster is live, and you can move straight into your profile or the home experience.
                       </p>
@@ -358,7 +358,7 @@ export default function RegisterPage() {
                       <Link href="/profile">Open your profile</Link>
                     </Button>
                     <Button asChild variant="outline">
-                      <Link href="/">Continue to Ilaaka</Link>
+                      <Link href="/">Continue to Illaka</Link>
                     </Button>
                   </div>
                 </Card>
@@ -375,7 +375,7 @@ export default function RegisterPage() {
                 <Card className="space-y-6">
                   <div>
                     <p className="eyebrow">Create account</p>
-                    <h1 className="mt-4 text-3xl font-semibold">Create your ILAKA</h1>
+                    <h1 className="mt-4 text-3xl font-semibold">Create your ILLAKA</h1>
                     <p className="mt-2 text-sm leading-6 text-muted">
                       Start with a profile, then tune the map to your neighborhood and the kinds of moments you want more of.
                     </p>

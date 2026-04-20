@@ -27,7 +27,7 @@ export function TopNav() {
             href="/"
             className="text-2xl sm:text-3xl font-bold font-headline text-primary tracking-widest hover:text-tertiary transition-colors duration-300"
           >
-            ILAKA
+            ILLAKA
           </Link>
 
           {/* Desktop nav links */}

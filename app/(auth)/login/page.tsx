@@ -11,24 +11,29 @@ import { useRouteTransition } from '@/components/RouteTransitionProvider';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { navigate } = useRouteTransition();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setLoading(true);
     const res = await signIn('credentials', {
       email,
       password,
+      rememberMe: rememberMe ? 'true' : 'false',
       redirect: false,
       callbackUrl: '/'
     });
+    setLoading(false);
     if (!res) {
-      setError('Unable to sign in');
+      setError('Unable to sign in. Please try again.');
       return;
     }
     if (res.error) {
-      setError('Invalid credentials');
+      setError('Invalid email or password.');
       return;
     }
     if (res.url) {
@@ -73,19 +78,51 @@ export default function LoginPage() {
               <p className="eyebrow">Sign in</p>
               <h1 className="mt-4 text-3xl font-semibold">Welcome back</h1>
               <p className="mt-2 text-sm leading-6 text-muted">
-                Sign in to keep discovering local events, RSVPs, and the map around your ilaaka.
+                Sign in to keep discovering local events, RSVPs, and the map around your Illaka.
               </p>
             </div>
 
             <form className="space-y-3" onSubmit={handleSubmit}>
-              <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-              {error ? <p className="text-sm text-red-500">{error}</p> : null}
-              <Button type="submit" className="w-full">Sign in</Button>
+              <Input
+                type="email"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
+
+              {/* Remember Me */}
+              <label className="flex cursor-pointer items-center gap-2.5 pt-1">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-[var(--line)] accent-[var(--accent)]"
+                />
+                <span className="text-sm text-muted">Remember me for 30 days</span>
+              </label>
+
+              {error ? <p className="rounded-xl bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-950/30">{error}</p> : null}
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Signing in…' : 'Sign in'}
+              </Button>
             </form>
 
             <p className="text-sm text-muted">
-              New here? <Link className="font-semibold text-[var(--accent)]" href="/register">Create an account</Link>
+              New here?{' '}
+              <Link className="font-semibold text-[var(--accent)]" href="/register">
+                Create an account
+              </Link>
             </p>
           </Card>
         </div>

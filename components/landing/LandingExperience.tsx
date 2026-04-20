@@ -12,7 +12,7 @@ export function LandingExperience() {
       {/* Heritage footer */}
       <footer className="w-full pt-20 pb-12 border-t border-on-surface/10 bg-background">
         <div className="flex flex-col items-center gap-8 px-8 w-full max-w-screen-2xl mx-auto">
-          <div className="font-headline italic text-2xl text-on-surface">ILAKA</div>
+          <div className="font-headline italic text-2xl text-on-surface">ILLAKA</div>
           <div className="flex gap-8 flex-wrap justify-center">
             {['Archives', 'Privacy', 'Terms', 'Heritage Manual'].map(link => (
               <a
@@ -25,7 +25,7 @@ export function LandingExperience() {
             ))}
           </div>
           <p className="font-label font-light text-[11px] uppercase tracking-[0.22em] text-tertiary/80 mt-2">
-            © 2024 ILAKA. A Digital Heirloom of Local Connection.
+            © 2024 ILLAKA. A Digital Heirloom of Local Connection.
           </p>
         </div>
       </footer>

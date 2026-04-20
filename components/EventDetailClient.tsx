@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { ArrowUpRight, CalendarClock, Compass, Lock, MapPin, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { ArrowUpRight, CalendarClock, Compass, Download, Lock, MapPin, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { PaymentButton } from '@/components/PaymentButton';
 import { ResilientImage } from '@/components/ResilientImage';
@@ -35,6 +35,7 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
   const [loading, setLoading] = useState(false);
   const [rsvpError, setRsvpError] = useState('');
   const [joined, setJoined] = useState(false);
+  const [rsvpId, setRsvpId] = useState<string | null>(null);
   const hostingThreshold = Number(process.env.NEXT_PUBLIC_HOSTING_FEE_THRESHOLD ?? 50);
   const hostingFee = Number(process.env.NEXT_PUBLIC_HOSTING_FEE_AMOUNT ?? 25000);
   const promotionPrice = Number(process.env.NEXT_PUBLIC_PROMOTION_PRICE ?? 15000);
@@ -63,6 +64,8 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
     try {
       const res = await fetch(`/api/events/${event.id}/rsvp`, { method: 'POST' });
       if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.rsvpId) setRsvpId(data.rsvpId);
         return;
       }
 
@@ -233,7 +236,7 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
                 </div>
               </div>
               <div className="rounded-[1.6rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] p-4 text-sm leading-6 text-muted dark:bg-[rgba(15,23,42,0.22)]">
-                Regitration flow, payments, and visibility settings stay intact. This page simply gives them a calmer and more persuasive frame.
+                Registration flow, payments, and visibility settings stay intact. This page simply gives them a calmer and more persuasive frame.
               </div>
             </Card>
           </div>
@@ -341,9 +344,17 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
 
             <div className="space-y-3">
               <Button onClick={rsvp} disabled={loading || joined} size="lg" className="w-full">
-                {loading ? 'Reserving...' : joined ? 'Joined' : 'RSVP now'}
+                {loading ? 'Reserving...' : joined ? 'Joined ✓' : 'RSVP now'}
               </Button>
               {rsvpError ? <p className="text-sm text-red-500">{rsvpError}</p> : null}
+              {joined && rsvpId ? (
+                <Button asChild variant="outline" size="lg" className="w-full border-[var(--secondary)] text-[var(--secondary)]">
+                  <Link href={`/tickets/${rsvpId}`}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Ticket
+                  </Link>
+                </Button>
+              ) : null}
               <Button asChild variant="outline" size="lg" className="w-full">
                 <Link href="/">
                   Keep exploring

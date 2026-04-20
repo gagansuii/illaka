@@ -59,6 +59,7 @@ model Event {
   organizerId String
   isPaid      Boolean     @default(false)
   engagementScore Int     @default(0)
+  paymentQrUrl String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -76,6 +77,7 @@ model Event {
 
 model RSVP {
   id        String   @id @default(uuid())
+  ticketId  String   @default(uuid()) @unique
   userId    String
   eventId   String
   createdAt DateTime @default(now())

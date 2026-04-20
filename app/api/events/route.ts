@@ -30,7 +30,8 @@ const createSchema = z.object({
   endTime: z.string().min(1),
   visibility: z.enum(['PUBLIC', 'PRIVATE']),
   capacity: z.number().int().min(1),
-  isPaid: z.boolean()
+  isPaid: z.boolean(),
+  paymentQrUrl: z.string().optional()
 }).refine((d) => new Date(d.endTime) > new Date(d.startTime), {
   message: 'endTime must be after startTime',
   path: ['endTime']
@@ -192,6 +193,7 @@ export async function POST(req: Request) {
         "organizerId",
         "isPaid",
         "engagementScore",
+        "paymentQrUrl",
         "createdAt",
         "updatedAt"
       ) VALUES (
@@ -210,10 +212,11 @@ export async function POST(req: Request) {
         ${session.user.id},
         ${data.isPaid},
         0,
+        ${data.paymentQrUrl ?? null},
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
       )
-      RETURNING "id", "title", "description", "bannerUrl", "badgeIcon", "latitude", "longitude", "startTime", "endTime", "visibility", "capacity", "organizerId", "isPaid", "engagementScore", "createdAt", "updatedAt"
+      RETURNING "id", "title", "description", "bannerUrl", "badgeIcon", "latitude", "longitude", "startTime", "endTime", "visibility", "capacity", "organizerId", "isPaid", "engagementScore", "paymentQrUrl", "createdAt", "updatedAt"
     `;
   } catch (err) {
     console.error('Event creation failed:', err);

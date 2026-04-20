@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
 
-const ALLOWED_FOLDERS = new Set(['ilaka/banners', 'ilaka/badges']);
+const ALLOWED_FOLDERS = new Set(['ilaka/banners', 'ilaka/badges', 'illaka/qr-codes']);
 
 function isCloudinaryConfigured() {
   return !!(
