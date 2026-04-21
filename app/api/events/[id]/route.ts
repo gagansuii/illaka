@@ -36,20 +36,29 @@ const SAFE_EVENT_SELECT = {
 type RouteContext = { params: Promise<{ id: string }> };
 
 async function fetchEvent(id: string) {
-  // Try with paymentQrUrl first; fall back to base columns if column doesn't exist
+  // Try with paymentQrUrl and shareToken first; fall back to base columns if columns don't exist
   try {
     return await prisma.event.findUnique({
       where: { id },
-      select: { ...SAFE_EVENT_SELECT, paymentQrUrl: true }
+      select: { ...SAFE_EVENT_SELECT, paymentQrUrl: true, shareToken: true, eventType: true, onlineLink: true, linkShareMode: true }
     });
   } catch {
-    const event = await prisma.event.findUnique({ where: { id }, select: SAFE_EVENT_SELECT });
-    return event ? { ...event, paymentQrUrl: null } : null;
+    try {
+      return await prisma.event.findUnique({
+        where: { id },
+        select: { ...SAFE_EVENT_SELECT, paymentQrUrl: true }
+      });
+    } catch {
+      const event = await prisma.event.findUnique({ where: { id }, select: SAFE_EVENT_SELECT });
+      return event ? { ...event, paymentQrUrl: null, shareToken: null, eventType: null, onlineLink: null, linkShareMode: null } : null;
+    }
   }
 }
 
-export async function GET(_: Request, { params }: RouteContext) {
+export async function GET(req: Request, { params }: RouteContext) {
   const { id } = await params;
+  const token = new URL(req.url).searchParams.get('token');
+
   let event;
   try {
     event = await fetchEvent(id);
@@ -60,10 +69,13 @@ export async function GET(_: Request, { params }: RouteContext) {
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   if (event.visibility === 'PRIVATE') {
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id;
-    if (!userId || (event.organizerId !== userId && session?.user?.role !== 'ADMIN')) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const tokenValid = token && (event as any).shareToken && token === (event as any).shareToken;
+    if (!tokenValid) {
+      const session = await getServerSession(authOptions);
+      const userId = session?.user?.id;
+      if (!userId || (event.organizerId !== userId && session?.user?.role !== 'ADMIN')) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
     }
   }
 

@@ -4,31 +4,21 @@
 
 /* ── Heritage Design System ── */
 :root {
-  color-scheme: dark;
-
-  /* MD3 surface tokens */
-  --bg:              #161311;
-  --bg-deep:         #100e0c;
-  --surface:         rgba(34, 31, 29, 0.82);
-  --surface-strong:  rgba(30, 27, 25, 0.96);
-  --line:            rgba(161, 140, 133, 0.18);
-
-  /* Text */
-  --text:            #e9e1dd;
-  --muted:           rgba(233, 225, 221, 0.52);
-
-  /* Accent = primary */
-  --accent:          #ffb598;
-  --accent-strong:   #964520;
-  --accent-soft:     rgba(255, 181, 152, 0.12);
-
-  /* Gold = tertiary */
-  --gold:            #f7bb7e;
-  --gold-soft:       rgba(247, 187, 126, 0.12);
-
-  /* Secondary = teal kept for backwards-compat */
-  --secondary:       #d8c2b8;
-  --secondary-soft:  rgba(216, 194, 184, 0.12);
+  color-scheme: light;
+  --bg: #f5ede2;
+  --bg-deep: #eadfce;
+  --surface: rgba(255, 249, 241, 0.72);
+  --surface-strong: rgba(255, 252, 247, 0.88);
+  --line: rgba(83, 56, 39, 0.12);
+  --text: #17120e;
+  --muted: rgba(23, 18, 14, 0.80);
+  --accent: #c8663f;
+  --accent-strong: #8d3422;
+  --accent-soft: rgba(200, 102, 63, 0.14);
+  --gold: #d4881a;
+  --gold-soft: rgba(212, 136, 26, 0.12);
+  --secondary: #0f766e;
+  --secondary-soft: rgba(15, 118, 110, 0.13);
 }
 
 /* Light mode kept for components that use old vars */
@@ -53,20 +43,20 @@
 /* Dark alias keeps existing dark-mode classes working */
 .dark {
   color-scheme: dark;
-  --bg:              #161311;
-  --bg-deep:         #100e0c;
-  --surface:         rgba(34, 31, 29, 0.82);
-  --surface-strong:  rgba(30, 27, 25, 0.96);
-  --line:            rgba(161, 140, 133, 0.18);
-  --text:            #e9e1dd;
-  --muted:           rgba(233, 225, 221, 0.52);
-  --accent:          #ffb598;
-  --accent-strong:   #964520;
-  --accent-soft:     rgba(255, 181, 152, 0.12);
-  --gold:            #f7bb7e;
-  --gold-soft:       rgba(247, 187, 126, 0.12);
-  --secondary:       #d8c2b8;
-  --secondary-soft:  rgba(216, 194, 184, 0.12);
+  --bg: #0e141b;
+  --bg-deep: #090d13;
+  --surface: rgba(18, 24, 33, 0.72);
+  --surface-strong: rgba(22, 29, 39, 0.9);
+  --line: rgba(226, 232, 240, 0.12);
+  --text: #f7efe4;
+  --muted: rgba(247, 239, 228, 0.82);
+  --accent: #f29b72;
+  --accent-strong: #db6e4e;
+  --accent-soft: rgba(242, 155, 114, 0.14);
+  --gold: #f7bb7e;
+  --gold-soft: rgba(247, 187, 126, 0.12);
+  --secondary: #58d1c5;
+  --secondary-soft: rgba(88, 209, 197, 0.14);
 }
 
 html,

@@ -5,11 +5,17 @@ import { authOptions } from '@/lib/auth';
 import { sanitizeEventMedia } from '@/lib/media';
 import { notFound } from 'next/navigation';
 
-export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+type PageProps = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ token?: string }>;
+};
 
-  // Try full query first (includes paymentQrUrl added in the ticket migration).
-  // If that column doesn't exist yet in the production DB, fall back to the
+export default async function EventDetailPage({ params, searchParams }: PageProps) {
+  const { id } = await params;
+  const { token } = await searchParams;
+
+  // Try full query first (includes paymentQrUrl, shareToken, eventType, onlineLink added in migrations).
+  // If those columns don't exist yet in the production DB, fall back to the
   // base query so the page stays functional while the migration is pending.
   let event: any = null;
 
@@ -32,6 +38,10 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         isPaid: true,
         ticketPrice: true,
         paymentQrUrl: true,
+        shareToken: true,
+        eventType: true,
+        onlineLink: true,
+        linkShareMode: true,
         engagementScore: true,
         organizer: { select: { name: true } },
         rsvps: { select: { id: true } },
@@ -56,15 +66,55 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           capacity: true,
           organizerId: true,
           isPaid: true,
+          ticketPrice: true,
+          paymentQrUrl: true,
           engagementScore: true,
           organizer: { select: { name: true } },
           rsvps: { select: { id: true } },
         },
       });
-      if (event) event.paymentQrUrl = null;
-    } catch (fallbackErr) {
-      console.error('Event query failed:', fallbackErr);
-      throw fallbackErr;
+      if (event) {
+        event.shareToken = null;
+        event.eventType = null;
+        event.onlineLink = null;
+        event.linkShareMode = null;
+      }
+    } catch {
+      // Final fallback: base columns only
+      try {
+        event = await prisma.event.findUnique({
+          where: { id },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            bannerUrl: true,
+            badgeIcon: true,
+            latitude: true,
+            longitude: true,
+            startTime: true,
+            endTime: true,
+            visibility: true,
+            capacity: true,
+            organizerId: true,
+            isPaid: true,
+            engagementScore: true,
+            organizer: { select: { name: true } },
+            rsvps: { select: { id: true } },
+          },
+        });
+        if (event) {
+          event.paymentQrUrl = null;
+          event.ticketPrice = null;
+          event.shareToken = null;
+          event.eventType = null;
+          event.onlineLink = null;
+          event.linkShareMode = null;
+        }
+      } catch (fallbackErr) {
+        console.error('Event query failed:', fallbackErr);
+        throw fallbackErr;
+      }
     }
   }
 
@@ -73,10 +123,13 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   }
 
   if (event.visibility === 'PRIVATE') {
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id;
-    if (!userId || (event.organizerId !== userId && session?.user?.role !== 'ADMIN')) {
-      notFound();
+    const tokenValid = token && event.shareToken && token === event.shareToken;
+    if (!tokenValid) {
+      const session = await getServerSession(authOptions);
+      const userId = session?.user?.id;
+      if (!userId || (event.organizerId !== userId && session?.user?.role !== 'ADMIN')) {
+        notFound();
+      }
     }
   }
 
@@ -86,6 +139,10 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     endTime: event.endTime.toISOString(),
     ticketPrice: event.ticketPrice ?? null,
     paymentQrUrl: event.paymentQrUrl ?? null,
+    shareToken: event.shareToken ?? null,
+    eventType: event.eventType ?? null,
+    onlineLink: event.onlineLink ?? null,
+    linkShareMode: event.linkShareMode ?? null,
   });
 
   return (

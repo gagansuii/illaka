@@ -6,7 +6,6 @@ import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useRouteTransition } from '@/components/RouteTransitionProvider';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -14,31 +13,32 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { navigate } = useRouteTransition();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const res = await signIn('credentials', {
-      email,
-      password,
-      rememberMe: rememberMe ? 'true' : 'false',
-      redirect: false,
-      callbackUrl: '/'
-    });
-    setLoading(false);
-    if (!res) {
-      setError('Unable to sign in. Please try again.');
-      return;
-    }
-    if (res.error) {
-      setError('Invalid email or password.');
-      return;
-    }
-    if (res.url) {
-      const nextUrl = new URL(res.url, window.location.origin);
-      navigate(`${nextUrl.pathname}${nextUrl.search}`);
+    try {
+      const res = await signIn('credentials', {
+        email,
+        password,
+        rememberMe: rememberMe ? 'true' : 'false',
+        redirect: false,
+        callbackUrl: '/'
+      });
+      if (!res) {
+        setError('Unable to sign in. Please try again.');
+        return;
+      }
+      if (res.error) {
+        setError('Invalid email or password');
+        return;
+      }
+      if (res.url) {
+        window.location.href = res.url;
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -78,7 +78,7 @@ export default function LoginPage() {
               <p className="eyebrow">Sign in</p>
               <h1 className="mt-4 text-3xl font-semibold">Welcome back</h1>
               <p className="mt-2 text-sm leading-6 text-muted">
-                Sign in to keep discovering local events, RSVPs, and the map around your Illaka.
+                Sign in to keep discovering local events, RSVPs, and the map around your ilaaka.
               </p>
             </div>
 
@@ -99,20 +99,21 @@ export default function LoginPage() {
                 required
                 autoComplete="current-password"
               />
-
-              {/* Remember Me */}
-              <label className="flex cursor-pointer items-center gap-2.5 pt-1">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-[var(--line)] accent-[var(--accent)]"
-                />
-                <span className="text-sm text-muted">Remember me for 30 days</span>
-              </label>
-
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex cursor-pointer items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 rounded border-[var(--line)] accent-[var(--accent)]"
+                  />
+                  <span className="text-sm text-muted">Remember me</span>
+                </label>
+                <Link className="text-sm text-[var(--accent)] hover:underline" href="/forgot-password">
+                  Forgot password?
+                </Link>
+              </div>
               {error ? <p className="rounded-xl bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-950/30">{error}</p> : null}
-
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Signing in…' : 'Sign in'}
               </Button>

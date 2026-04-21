@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowUpRight, CalendarClock, CheckCircle2, Compass, Download, Lock, MapPin, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { ArrowUpRight, CalendarClock, CheckCircle2, Compass, Copy, Download, Globe, Link2, Lock, MapPin, Share2, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { PaymentButton } from '@/components/PaymentButton';
 import { ResilientImage } from '@/components/ResilientImage';
@@ -26,6 +26,10 @@ type EventDetail = {
   isPaid?: boolean;
   ticketPrice?: number | null;
   paymentQrUrl?: string | null;
+  shareToken?: string | null;
+  eventType?: 'PHYSICAL' | 'ONLINE' | null;
+  onlineLink?: string | null;
+  linkShareMode?: 'IMMEDIATE' | 'BEFORE_EVENT' | null;
   organizer?: {
     name?: string | null;
   } | null;
@@ -77,6 +81,48 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
   // For paid events with a QR, RSVP is only enabled after the user confirms payment
   const isPaidWithQr = Boolean(event.isPaid && event.paymentQrUrl);
   const rsvpEnabled = !loading && !joined && (!isPaidWithQr || paymentConfirmed);
+
+  const [copied, setCopied] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
+
+  async function handleShare() {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: event.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+      // Record the share for engagement score
+      fetch(`/api/events/${event.id}/share`, { method: 'POST' }).catch(() => null);
+    } catch {
+      // User cancelled share sheet — ignore
+    }
+  }
+
+  async function handleCopyInvite() {
+    setInviteLoading(true);
+    try {
+      let token = event.shareToken;
+      if (!token) {
+        const res = await fetch(`/api/events/${event.id}/invite`, { method: 'POST' });
+        const json = await res.json() as { token?: string };
+        token = json.token ?? null;
+      }
+      if (token) {
+        const inviteUrl = `${window.location.origin}/events/${event.id}?token=${token}`;
+        await navigator.clipboard.writeText(inviteUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setInviteLoading(false);
+    }
+  }
 
   async function rsvp() {
     if (!rsvpEnabled) return;
@@ -130,13 +176,15 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
               style={{ background: `linear-gradient(135deg, ${theme.accentStrong} 0%, ${theme.accent} 100%)` }}
             />
           )}
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,24,39,0.06)_0%,rgba(17,24,39,0.3)_38%,rgba(17,24,39,0.8)_100%)]" />
+          {/* Only darken the bottom 40% so the photo is visible at the top */}
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,transparent_40%,rgba(17,24,39,0.7)_70%,rgba(17,24,39,0.92)_100%)]" />
           <div className="relative flex min-h-[420px] flex-col justify-between p-6 text-white sm:p-8 lg:p-10">
+            {/* Badges sit top-left — minimal footprint on the photo */}
             <div className="flex flex-wrap gap-2">
-              <span className="rounded-full bg-white/14 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/82">
+              <span className="rounded-full bg-black/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white backdrop-blur-sm">
                 {theme.label}
               </span>
-              <span className="rounded-full bg-white/14 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/82">
+              <span className="rounded-full bg-black/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white backdrop-blur-sm">
                 {event.visibility === 'PRIVATE' ? 'Private' : 'Public'}
               </span>
               {event.isPaid && (
@@ -146,51 +194,45 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
               )}
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end">
-              <div className="max-w-3xl space-y-5">
-                <p className="eyebrow border border-white/12 bg-white/12 text-white">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Neighborhood story
-                </p>
-                <div className="space-y-4">
-                  <h1 className="font-[family:var(--font-fraunces)] text-4xl leading-[0.95] sm:text-5xl lg:text-[4.2rem]">
-                    {event.title}
-                  </h1>
-                  <p className="max-w-2xl text-sm leading-7 text-white/78 sm:text-base">
-                    {event.description}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <span className="info-pill border-white/12 bg-white/12 text-white">
-                    <CalendarClock className="h-4 w-4 text-white/82" />
-                    {formatEventDay(event.startTime)} / {formatEventRange(event.startTime, event.endTime)}
+            {/* Title + pills anchored to the bottom — no description on top of photo */}
+            <div className="space-y-3">
+              <h1 className="font-[family:var(--font-fraunces)] text-4xl leading-[0.95] sm:text-5xl lg:text-[4.2rem]">
+                {event.title}
+              </h1>
+              <div className="flex flex-wrap gap-2">
+                <span className="info-pill border-white/25 bg-white/20 text-white">
+                  <CalendarClock className="h-4 w-4 text-white" />
+                  {formatEventDay(event.startTime)} / {formatEventRange(event.startTime, event.endTime)}
+                </span>
+                <span className="info-pill border-white/25 bg-white/20 text-white">
+                  <Users className="h-4 w-4 text-white" />
+                  {rsvpCount} joined / cap {capacity}
+                </span>
+                {(event.eventType ?? 'PHYSICAL') === 'ONLINE' ? (
+                  <span className="info-pill border-white/25 bg-white/20 text-white">
+                    <Globe className="h-4 w-4 text-white" />
+                    Online event
                   </span>
-                  <span className="info-pill border-white/12 bg-white/12 text-white">
-                    <Users className="h-4 w-4 text-white/82" />
-                    {rsvpCount} joined / cap {capacity}
-                  </span>
-                  <span className="info-pill border-white/12 bg-white/12 text-white">
-                    <MapPin className="h-4 w-4 text-white/82" />
-                    Map-led local meetup
-                  </span>
-                </div>
-              </div>
-
-              <Card className="surface-card-strong rounded-[1.8rem] border-white/14 bg-[rgba(10,16,22,0.38)] p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,0.28)]">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/64">Hosted by</p>
-                <div className="mt-4 flex items-center gap-4">
-                  <div
-                    className="flex h-14 w-14 items-center justify-center rounded-full text-sm font-semibold"
-                    style={{ background: theme.accentSoft, color: '#fff' }}
+                ) : (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="info-pill border-white/25 bg-white/20 text-white hover:opacity-85"
                   >
-                    {organizerInitials || 'IL'}
-                  </div>
-                  <div>
-                    <p className="text-lg font-semibold">{organizerName}</p>
-                    <p className="text-sm text-white/68">Putting something good on the map.</p>
-                  </div>
-                </div>
-              </Card>
+                    <MapPin className="h-4 w-4 text-white" />
+                    View on map
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="info-pill border-white/25 bg-white/20 text-white transition-opacity hover:opacity-80"
+                >
+                  <Share2 className="h-4 w-4 text-white" />
+                  {copied ? 'Link copied!' : 'Share'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -519,6 +561,40 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
                     : 'Free entry'}
                 </span>
               </div>
+              {(event.eventType ?? 'PHYSICAL') === 'ONLINE' ? (
+                event.onlineLink && event.linkShareMode === 'IMMEDIATE' ? (
+                  <a
+                    href={event.onlineLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] px-4 py-3 text-sm transition-colors hover:bg-[var(--surface-strong)] dark:bg-[rgba(15,23,42,0.22)]"
+                  >
+                    <span className="text-muted">Join link</span>
+                    <span className="inline-flex items-center gap-1.5 font-medium" style={{ color: theme.accentStrong }}>
+                      <Globe className="h-3.5 w-3.5" />
+                      Open link
+                    </span>
+                  </a>
+                ) : (
+                  <div className="flex items-center justify-between rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] px-4 py-3 text-sm dark:bg-[rgba(15,23,42,0.22)]">
+                    <span className="text-muted">Join link</span>
+                    <span className="font-medium text-muted">Shared 6 hrs before</span>
+                  </div>
+                )
+              ) : (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] px-4 py-3 text-sm transition-colors hover:bg-[var(--surface-strong)] dark:bg-[rgba(15,23,42,0.22)]"
+                >
+                  <span className="text-muted">Location</span>
+                  <span className="inline-flex items-center gap-1.5 font-medium" style={{ color: theme.accentStrong }}>
+                    <MapPin className="h-3.5 w-3.5" />
+                    Open in Maps
+                  </span>
+                </a>
+              )}
             </div>
           </Card>
 
@@ -530,6 +606,18 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
                 </p>
                 <h2 className="text-2xl font-semibold">Keep the event moving.</h2>
               </div>
+
+              {event.visibility === 'PRIVATE' && (
+                <button
+                  type="button"
+                  onClick={handleCopyInvite}
+                  disabled={inviteLoading}
+                  className="flex w-full items-center gap-3 rounded-[1.5rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] px-4 py-3 text-sm font-medium transition-all hover:bg-[var(--surface-strong)] dark:bg-[rgba(15,23,42,0.22)]"
+                >
+                  {copied ? <Copy className="h-4 w-4 shrink-0" style={{ color: theme.accentStrong }} /> : <Link2 className="h-4 w-4 shrink-0" style={{ color: theme.accentStrong }} />}
+                  <span>{inviteLoading ? 'Generating link…' : copied ? 'Invite link copied!' : 'Copy private invite link'}</span>
+                </button>
+              )}
 
               {rsvpCount >= hostingThreshold ? (
                 <PaymentButton label="Pay hosting fee" reason="hosting_fee" amount={hostingFee} eventId={event.id} />

@@ -1,8 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useMemo, useState } from 'react';
-import { CalendarClock, ImagePlus, LocateFixed, Lock, MapPin, Sparkles, Users } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { CalendarClock, Globe, ImagePlus, Link2, LocateFixed, Lock, MapPin, Sparkles, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -83,8 +83,10 @@ export default function CreateEventPage() {
   const { navigate } = useRouteTransition();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [startTimeVal, setStartTimeVal] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [endTimeVal, setEndTimeVal] = useState('');
   const [capacity, setCapacity] = useState(20);
   const [visibility, setVisibility] = useState<'PUBLIC' | 'PRIVATE'>('PUBLIC');
   const [isPaid, setIsPaid] = useState(false);
@@ -95,16 +97,34 @@ export default function CreateEventPage() {
   const [badgeIcon, setBadgeIcon] = useState('');
   const [categoryKey, setCategoryKey] = useState<EventCategoryKey>('community');
   const [paymentQrUrl, setPaymentQrUrl] = useState('');
+  const [eventType, setEventType] = useState<'PHYSICAL' | 'ONLINE'>('PHYSICAL');
+  const [onlineLink, setOnlineLink] = useState('');
+  const [linkShareMode, setLinkShareMode] = useState<'IMMEDIATE' | 'BEFORE_EVENT'>('IMMEDIATE');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [uploadingBadge, setUploadingBadge] = useState(false);
   const [uploadingQr, setUploadingQr] = useState(false);
 
+  // Auto-detect location on mount so the map isn't stuck on a default city
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLatitude(pos.coords.latitude);
+        setLongitude(pos.coords.longitude);
+      },
+      () => null, // Silent fail — user can set manually
+      { timeout: 8000 }
+    );
+  }, []);
+
   const selectedTheme = EVENT_CATEGORY_OPTIONS.find((option) => option.key === categoryKey) ?? EVENT_CATEGORY_OPTIONS[0];
-  const mapCenter = latitude !== null && longitude !== null ? [latitude, longitude] as [number, number] : [28.6139, 77.209] as [number, number];
+  const mapCenter = latitude !== null && longitude !== null ? [latitude, longitude] as [number, number] : null;
   const previewTitle = title || `New ${selectedTheme.label.toLowerCase()} gathering`;
   const previewDescription = description || selectedTheme.previewLine;
+  const startTime = startDate && startTimeVal ? `${startDate}T${startTimeVal}` : '';
+  const endTime = endDate && endTimeVal ? `${endDate}T${endTimeVal}` : '';
   const previewStart = startTime || DEFAULT_PREVIEW_START;
   const previewEnd = endTime || DEFAULT_PREVIEW_END;
 
@@ -207,6 +227,12 @@ export default function CreateEventPage() {
     );
   }
 
+  // datetime-local gives YYYY-MM-DDTHH:MM with no timezone — treat as IST (UTC+5:30)
+  function toISTIso(localDt: string): string {
+    if (!localDt) return localDt;
+    return new Date(`${localDt}:00+05:30`).toISOString();
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError('');
@@ -236,6 +262,9 @@ export default function CreateEventPage() {
       return;
     }
 
+    const startIso = toISTIso(startTime);
+    const endIso = toISTIso(endTime);
+
     setLoading(true);
     const res = await fetch('/api/events', {
       method: 'POST',
@@ -243,8 +272,8 @@ export default function CreateEventPage() {
       body: JSON.stringify({
         title,
         description,
-        startTime,
-        endTime,
+        startTime: startIso,
+        endTime: endIso,
         capacity,
         visibility,
         isPaid,
@@ -253,7 +282,10 @@ export default function CreateEventPage() {
         longitude,
         bannerUrl,
         badgeIcon,
-        paymentQrUrl: paymentQrUrl || undefined
+        paymentQrUrl: paymentQrUrl || undefined,
+        eventType,
+        onlineLink: eventType === 'ONLINE' ? onlineLink : undefined,
+        linkShareMode: eventType === 'ONLINE' ? linkShareMode : undefined
       })
     });
     setLoading(false);
@@ -302,13 +334,13 @@ export default function CreateEventPage() {
                   style={{ background: `linear-gradient(135deg, ${selectedTheme.accentStrong} 0%, ${selectedTheme.accent} 100%)` }}
                 />
               )}
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,24,39,0.08)_0%,rgba(17,24,39,0.24)_38%,rgba(17,24,39,0.8)_100%)]" />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,24,39,0.18)_0%,rgba(17,24,39,0.42)_38%,rgba(17,24,39,0.88)_100%)]" />
               <div className="relative flex min-h-[360px] flex-col justify-between p-6 text-white sm:p-8">
                 <div className="flex flex-wrap gap-2">
-                  <span className="rounded-full bg-white/14 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/82">
+                  <span className="rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white">
                     {selectedTheme.label}
                   </span>
-                  <span className="rounded-full bg-white/14 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/82">
+                  <span className="rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white">
                     {visibility === 'PUBLIC' ? 'Public listing' : 'Private invite'}
                   </span>
                 </div>
@@ -317,18 +349,18 @@ export default function CreateEventPage() {
                   <h2 className="max-w-2xl font-[family:var(--font-fraunces)] text-4xl leading-[0.95] sm:text-5xl">
                     {previewTitle}
                   </h2>
-                  <p className="max-w-2xl text-sm leading-7 text-white/76 sm:text-base">{previewDescription}</p>
+                  <p className="max-w-2xl text-sm leading-7 text-white/95 sm:text-base">{previewDescription}</p>
                   <div className="flex flex-wrap gap-2">
-                    <span className="info-pill border-white/12 bg-white/12 text-white">
-                      <CalendarClock className="h-4 w-4 text-white/78" />
+                    <span className="info-pill border-white/25 bg-white/20 text-white">
+                      <CalendarClock className="h-4 w-4 text-white" />
                       {formatEventDay(previewStart)} / {formatEventRange(previewStart, previewEnd)}
                     </span>
-                    <span className="info-pill border-white/12 bg-white/12 text-white">
-                      <Users className="h-4 w-4 text-white/78" />
+                    <span className="info-pill border-white/25 bg-white/20 text-white">
+                      <Users className="h-4 w-4 text-white" />
                       Capacity {capacity}
                     </span>
-                    <span className="info-pill border-white/12 bg-white/12 text-white">
-                      <MapPin className="h-4 w-4 text-white/78" />
+                    <span className="info-pill border-white/25 bg-white/20 text-white">
+                      <MapPin className="h-4 w-4 text-white" />
                       {latitude !== null && longitude !== null ? 'Pinned on the map' : 'Choose a location'}
                     </span>
                   </div>
@@ -353,16 +385,26 @@ export default function CreateEventPage() {
             </div>
 
             <div className="relative h-[340px] overflow-hidden border-y border-[var(--line)]">
-              <MapView
-                events={previewEvent}
-                center={mapCenter}
-                radius={2200}
-                previewedEventId={previewEvent[0]?.id}
-                onSelectLocation={(coords) => {
-                  setLatitude(coords[0]);
-                  setLongitude(coords[1]);
-                }}
-              />
+              {mapCenter ? (
+                <MapView
+                  events={previewEvent}
+                  center={mapCenter}
+                  radius={2200}
+                  previewedEventId={previewEvent[0]?.id}
+                  onSelectLocation={(coords) => {
+                    setLatitude(coords[0]);
+                    setLongitude(coords[1]);
+                  }}
+                />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-4 bg-[rgba(255,255,255,0.34)] dark:bg-[rgba(15,23,42,0.22)]">
+                  <MapPin className="h-10 w-10 text-[var(--muted)]" />
+                  <div className="text-center">
+                    <p className="text-sm font-semibold">No location set yet</p>
+                    <p className="mt-1 text-sm text-muted">Use the button above or enter coordinates below to place your event on the map.</p>
+                  </div>
+                </div>
+              )}
               <div className="pointer-events-none absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
                 <Card className="surface-card-strong max-w-sm rounded-[1.5rem] p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--secondary)]">Spatial memory</p>
@@ -445,9 +487,19 @@ export default function CreateEventPage() {
                 <h2 className="text-2xl font-semibold">Make the basics easy to trust at a glance.</h2>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Input type="datetime-local" value={startTime} onChange={(event) => setStartTime(event.target.value)} />
-                <Input type="datetime-local" value={endTime} onChange={(event) => setEndTime(event.target.value)} />
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Start</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  <Input type="time" value={startTimeVal} onChange={(e) => setStartTimeVal(e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <p className="text-sm font-medium">End</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                  <Input type="time" value={endTimeVal} onChange={(e) => setEndTimeVal(e.target.value)} />
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -458,6 +510,94 @@ export default function CreateEventPage() {
                   </span>
                 </div>
                 <Slider value={[capacity]} min={5} max={150} step={1} onValueChange={(value) => setCapacity(value[0] ?? capacity)} />
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Event format</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setEventType('PHYSICAL')}
+                    className={cn(
+                      'rounded-[1.4rem] border p-4 text-left transition-all duration-200 hover:-translate-y-0.5',
+                      eventType === 'PHYSICAL'
+                        ? 'border-transparent shadow-[0_18px_40px_rgba(17,24,39,0.12)]'
+                        : 'border-[var(--line)] bg-[rgba(255,255,255,0.36)] dark:bg-[rgba(15,23,42,0.22)]'
+                    )}
+                    style={eventType === 'PHYSICAL' ? { background: selectedTheme.accentSoft } : undefined}
+                  >
+                    <p className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
+                      <MapPin className="h-4 w-4" />
+                      In-person
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-muted">People show up at a physical location.</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEventType('ONLINE')}
+                    className={cn(
+                      'rounded-[1.4rem] border p-4 text-left transition-all duration-200 hover:-translate-y-0.5',
+                      eventType === 'ONLINE'
+                        ? 'border-transparent shadow-[0_18px_40px_rgba(17,24,39,0.12)]'
+                        : 'border-[var(--line)] bg-[rgba(255,255,255,0.36)] dark:bg-[rgba(15,23,42,0.22)]'
+                    )}
+                    style={eventType === 'ONLINE' ? { background: selectedTheme.accentSoft } : undefined}
+                  >
+                    <p className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
+                      <Globe className="h-4 w-4" />
+                      Online
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-muted">People join via a link from anywhere.</p>
+                  </button>
+                </div>
+
+                {eventType === 'ONLINE' && (
+                  <div className="space-y-3 rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.36)] p-4 dark:bg-[rgba(15,23,42,0.22)]">
+                    <Input
+                      type="url"
+                      placeholder="Meeting link (Zoom, Meet, etc.)"
+                      value={onlineLink}
+                      onChange={(e) => setOnlineLink(e.target.value)}
+                    />
+                    <p className="text-sm font-medium">When to share the link</p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => setLinkShareMode('IMMEDIATE')}
+                        className={cn(
+                          'rounded-[1.2rem] border p-3 text-left transition-all',
+                          linkShareMode === 'IMMEDIATE'
+                            ? 'border-transparent shadow-sm'
+                            : 'border-[var(--line)]'
+                        )}
+                        style={linkShareMode === 'IMMEDIATE' ? { background: selectedTheme.accentSoft } : undefined}
+                      >
+                        <p className="text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
+                          <Link2 className="mb-1 h-4 w-4" />
+                          Share now
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-muted">Visible to attendees immediately after RSVP.</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLinkShareMode('BEFORE_EVENT')}
+                        className={cn(
+                          'rounded-[1.2rem] border p-3 text-left transition-all',
+                          linkShareMode === 'BEFORE_EVENT'
+                            ? 'border-transparent shadow-sm'
+                            : 'border-[var(--line)]'
+                        )}
+                        style={linkShareMode === 'BEFORE_EVENT' ? { background: selectedTheme.accentSoft } : undefined}
+                      >
+                        <p className="text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
+                          <CalendarClock className="mb-1 h-4 w-4" />
+                          6 hrs before
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-muted">You'll get a reminder to share 6 hours before start.</p>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">

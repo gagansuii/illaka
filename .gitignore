@@ -3,6 +3,7 @@ node_modules
 public/uploads
 tsconfig.tsbuildinfo
 desktop.ini
+Desktop.ini
 .env
 .env.local
 _docx_extract/
@@ -11,3 +12,10 @@ _docx_extract.zip
 # Local installers/tools (do not commit)
 postgis-pg18-setup.exe
 handle64.exe
+
+# Claude Code internal files
+.claude/
+
+# Local notes
+"problems from people.txt"
+problems from people.txt

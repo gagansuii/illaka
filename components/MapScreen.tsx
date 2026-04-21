@@ -628,7 +628,7 @@ export function MapScreen() {
       {/* FAB for hosting */}
       <Button
         asChild
-        className="fixed bottom-5 right-5 z-40 h-12 rounded-xl shadow-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white border-0"
+        className="fixed bottom-5 right-5 z-[45] h-12 rounded-xl shadow-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white border-0"
       >
         <Link href="/events/new">
           <Plus className="h-4 w-4 mr-1.5" />
