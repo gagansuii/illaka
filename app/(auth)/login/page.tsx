@@ -11,26 +11,32 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    const res = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-      callbackUrl: '/'
-    });
-    if (!res) {
-      setError('Unable to sign in');
-      return;
-    }
-    if (res.error) {
-      setError('Invalid credentials');
-      return;
-    }
-    if (res.url) {
-      window.location.href = res.url;
+    setLoading(true);
+    try {
+      const res = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+        callbackUrl: '/'
+      });
+      if (!res) {
+        setError('Unable to sign in');
+        return;
+      }
+      if (res.error) {
+        setError('Invalid email or password');
+        return;
+      }
+      if (res.url) {
+        window.location.href = res.url;
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -75,10 +81,15 @@ export default function LoginPage() {
             </div>
 
             <form className="space-y-3" onSubmit={handleSubmit}>
-              <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <div className="flex justify-end">
+                <Link className="text-sm text-[var(--accent)] hover:underline" href="/forgot-password">Forgot password?</Link>
+              </div>
               {error ? <p className="text-sm text-red-500">{error}</p> : null}
-              <Button type="submit" className="w-full">Sign in</Button>
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? 'Signing in…' : 'Sign in'}
+              </Button>
             </form>
 
             <p className="text-sm text-muted">

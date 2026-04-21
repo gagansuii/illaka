@@ -21,6 +21,16 @@ enum Visibility {
   PRIVATE
 }
 
+enum EventType {
+  PHYSICAL
+  ONLINE
+}
+
+enum LinkShareMode {
+  IMMEDIATE
+  BEFORE_EVENT
+}
+
 model User {
   id               String   @id @default(uuid())
   name             String
@@ -41,6 +51,7 @@ model User {
   attendance       Attendance[]
   subscriptions    Subscription[]
   payments         Payment[]
+  passwordResets   PasswordResetToken[]
 }
 
 model Event {
@@ -56,9 +67,13 @@ model Event {
   endTime     DateTime
   visibility  Visibility  @default(PUBLIC)
   capacity    Int
-  organizerId String
-  isPaid      Boolean     @default(false)
-  engagementScore Int     @default(0)
+  organizerId   String
+  isPaid        Boolean       @default(false)
+  engagementScore Int         @default(0)
+  shareToken    String?        @unique
+  eventType     EventType?     @default(PHYSICAL)
+  onlineLink    String?
+  linkShareMode LinkShareMode?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -127,6 +142,17 @@ model Subscription {
   plan      String
   startsAt  DateTime
   endsAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])

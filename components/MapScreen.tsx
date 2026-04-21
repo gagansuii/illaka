@@ -391,7 +391,7 @@ export function MapScreen() {
   return (
     <>
       {mapExpanded ? (
-        <div className="fixed inset-0 z-50 bg-[var(--bg-deep)]">
+        <div className="fixed inset-0 z-[60] bg-[var(--bg-deep)]">
           <div className="relative h-full w-full overflow-hidden">
             <MapView
               events={featuredEvents}
@@ -462,8 +462,8 @@ export function MapScreen() {
                 </p>
               </div>
 
-              <div className="space-y-3">
-                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="relative z-10 space-y-3">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
                     <Input
@@ -474,7 +474,7 @@ export function MapScreen() {
                       className="h-14 pl-11 text-base"
                     />
                   </div>
-                  <Button size="lg" onClick={() => void handleSearch()} className="w-full md:w-auto">
+                  <Button size="lg" onClick={() => void handleSearch()} className="h-14 w-full sm:w-auto">
                     <Search className="h-4 w-4" />
                     Search nearby
                   </Button>
@@ -485,7 +485,7 @@ export function MapScreen() {
                     <button
                       key={category.key}
                       type="button"
-                      className="info-pill px-3 py-1.5 text-xs"
+                      className="info-pill min-h-[40px] px-4 py-2 text-sm"
                       onClick={() => setQuery(category.hint)}
                       style={{ background: category.accentSoft, color: category.accentStrong }}
                     >
@@ -773,7 +773,7 @@ export function MapScreen() {
           ) : null}
         </section>
 
-        <Button asChild className="fixed bottom-5 right-5 z-40 lg:hidden">
+        <Button asChild className="fixed bottom-5 right-5 z-[45] lg:hidden">
           <Link href="/events/new">
             <Sparkles className="h-4 w-4" />
             Host

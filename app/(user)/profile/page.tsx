@@ -2,6 +2,9 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -9,6 +12,7 @@ import { PaymentButton } from '@/components/PaymentButton';
 import { OrganizerDashboard } from '@/components/OrganizerDashboard';
 
 export default function ProfilePage() {
+  const router = useRouter();
   const { data } = useSession();
   const [name, setName] = useState('');
   const [radius, setRadius] = useState(5000);
@@ -41,15 +45,23 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 px-6 py-10">
-      <Card className="space-y-4">
+    <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => router.back()} aria-label="Go back">
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
         <h1 className="text-2xl font-semibold">Your profile</h1>
+        <Button asChild variant="outline" size="sm" className="ml-auto">
+          <Link href="/">Home</Link>
+        </Button>
+      </div>
+      <Card className="space-y-4">
         <div className="space-y-2">
-          <label className="text-sm text-ink/70 dark:text-white/70">Name</label>
+          <label className="text-sm text-muted">Name</label>
           <Input value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div className="space-y-2">
-          <label className="text-sm text-ink/70 dark:text-white/70">Radius preference (meters)</label>
+          <label className="text-sm text-muted">Radius preference (meters)</label>
           <Input type="number" value={radius} onChange={(e) => setRadius(Number(e.target.value))} />
         </div>
         <Button onClick={saveProfile} disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</Button>

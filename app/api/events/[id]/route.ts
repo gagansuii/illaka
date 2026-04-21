@@ -15,8 +15,10 @@ const updateSchema = z.object({
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_: Request, { params }: RouteContext) {
+export async function GET(req: Request, { params }: RouteContext) {
   const { id } = await params;
+  const token = new URL(req.url).searchParams.get('token');
+
   let event;
   try {
     event = await prisma.event.findUnique({ where: { id } });
@@ -27,10 +29,13 @@ export async function GET(_: Request, { params }: RouteContext) {
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   if (event.visibility === 'PRIVATE') {
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id;
-    if (!userId || (event.organizerId !== userId && session?.user?.role !== 'ADMIN')) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const tokenValid = token && event.shareToken && token === event.shareToken;
+    if (!tokenValid) {
+      const session = await getServerSession(authOptions);
+      const userId = session?.user?.id;
+      if (!userId || (event.organizerId !== userId && session?.user?.role !== 'ADMIN')) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
     }
   }
 
