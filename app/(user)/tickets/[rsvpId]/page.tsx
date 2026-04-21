@@ -26,6 +26,7 @@ export default async function TicketPage({ params }: { params: Promise<{ rsvpId:
             latitude: true,
             longitude: true,
             isPaid: true,
+            ticketPrice: true,
             paymentQrUrl: true,
             organizer: { select: { name: true } }
           }
@@ -99,6 +100,7 @@ export default async function TicketPage({ params }: { params: Promise<{ rsvpId:
       latitude: rsvp.event.latitude,
       longitude: rsvp.event.longitude,
       isPaid: rsvp.event.isPaid ?? false,
+      ticketPrice: rsvp.event.ticketPrice ?? null,
       paymentQrUrl: rsvp.event.paymentQrUrl ?? null,
       organizer: rsvp.event.organizer
     },

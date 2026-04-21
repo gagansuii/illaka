@@ -30,6 +30,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         capacity: true,
         organizerId: true,
         isPaid: true,
+        ticketPrice: true,
         paymentQrUrl: true,
         engagementScore: true,
         organizer: { select: { name: true } },
@@ -83,6 +84,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     ...event,
     startTime: event.startTime.toISOString(),
     endTime: event.endTime.toISOString(),
+    ticketPrice: event.ticketPrice ?? null,
     paymentQrUrl: event.paymentQrUrl ?? null,
   });
 

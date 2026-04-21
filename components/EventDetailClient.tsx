@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowUpRight, CalendarClock, Compass, Download, Lock, MapPin, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { ArrowUpRight, CalendarClock, CheckCircle2, Compass, Download, Lock, MapPin, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { PaymentButton } from '@/components/PaymentButton';
 import { ResilientImage } from '@/components/ResilientImage';
@@ -24,12 +24,19 @@ type EventDetail = {
   latitude: number;
   longitude: number;
   isPaid?: boolean;
+  ticketPrice?: number | null;
   paymentQrUrl?: string | null;
   organizer?: {
     name?: string | null;
   } | null;
   rsvps?: Array<{ id: string }>;
 };
+
+function formatINR(paise: number) {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency', currency: 'INR', maximumFractionDigits: 0,
+  }).format(paise / 100);
+}
 
 export function EventDetailClient({ event }: { event: EventDetail }) {
   const { data } = useSession();
@@ -39,16 +46,17 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
   const [joined, setJoined] = useState(false);
   const [rsvpId, setRsvpId] = useState<string | null>(null);
   const [ticketQrDataUrl, setTicketQrDataUrl] = useState<string>('');
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
 
   useEffect(() => {
     if (!rsvpId) return;
-    // Dynamic import avoids pulling the canvas/qrcode bundle into the SSR layer
     import('qrcode').then((QRCode) => {
       QRCode.toDataURL(JSON.stringify({ rsvpId, eventId: event.id }), {
         width: 160, margin: 1, color: { dark: '#0f766e', light: '#ffffff' }
       }).then(setTicketQrDataUrl).catch(() => {});
     }).catch(() => {});
   }, [rsvpId, event.id]);
+
   const hostingThreshold = Number(process.env.NEXT_PUBLIC_HOSTING_FEE_THRESHOLD ?? 50);
   const hostingFee = Number(process.env.NEXT_PUBLIC_HOSTING_FEE_AMOUNT ?? 25000);
   const promotionPrice = Number(process.env.NEXT_PUBLIC_PROMOTION_PRICE ?? 15000);
@@ -66,8 +74,12 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
     .slice(0, 2)
     .toUpperCase();
 
+  // For paid events with a QR, RSVP is only enabled after the user confirms payment
+  const isPaidWithQr = Boolean(event.isPaid && event.paymentQrUrl);
+  const rsvpEnabled = !loading && !joined && (!isPaidWithQr || paymentConfirmed);
+
   async function rsvp() {
-    if (loading || joined) return;
+    if (!rsvpEnabled) return;
 
     setLoading(true);
     setRsvpError('');
@@ -77,20 +89,16 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
     try {
       const res = await fetch(`/api/events/${event.id}/rsvp`, { method: 'POST' });
       if (res.ok) {
-        const data = await res.json().catch(() => null);
-        if (data?.rsvpId) setRsvpId(data.rsvpId);
+        const resData = await res.json().catch(() => null);
+        if (resData?.rsvpId) setRsvpId(resData.rsvpId);
         return;
       }
 
-      let data: any = null;
-      try {
-        data = await res.json();
-      } catch {
-        data = null;
-      }
+      let errData: any = null;
+      try { errData = await res.json(); } catch { errData = null; }
       setJoined(false);
       setRsvpCount((current: number) => Math.max(current - 1, 0));
-      setRsvpError(data?.error ?? 'Could not RSVP. Please try again.');
+      setRsvpError(errData?.error ?? 'Could not RSVP. Please try again.');
     } catch {
       setJoined(false);
       setRsvpCount((current: number) => Math.max(current - 1, 0));
@@ -131,6 +139,11 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
               <span className="rounded-full bg-white/14 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/82">
                 {event.visibility === 'PRIVATE' ? 'Private' : 'Public'}
               </span>
+              {event.isPaid && (
+                <span className="rounded-full bg-amber-500/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white">
+                  {event.ticketPrice ? formatINR(event.ticketPrice) : 'Paid'}
+                </span>
+              )}
             </div>
 
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end">
@@ -248,9 +261,6 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
                   <p className="text-sm text-muted">Building the kind of gathering you can walk into comfortably.</p>
                 </div>
               </div>
-              <div className="rounded-[1.6rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] p-4 text-sm leading-6 text-muted dark:bg-[rgba(15,23,42,0.22)]">
-                Registration flow, payments, and visibility settings stay intact. This page simply gives them a calmer and more persuasive frame.
-              </div>
             </Card>
           </div>
 
@@ -337,6 +347,7 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
               <h2 className="text-2xl font-semibold">Step in with one tap.</h2>
             </div>
 
+            {/* Capacity bar */}
             <div className="rounded-[1.6rem] border border-[var(--line)] bg-[rgba(255,255,255,0.4)] p-4 dark:bg-[rgba(15,23,42,0.22)]">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium text-muted">Capacity filled</span>
@@ -355,15 +366,93 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
               </p>
             </div>
 
+            {/* Payment section — shown before RSVP for paid events */}
+            {event.isPaid && !joined && (
+              <div className="space-y-3">
+                {/* Price badge */}
+                <div className="rounded-[1.4rem] border border-amber-200 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400">Ticket price</p>
+                    <p className="text-lg font-bold text-amber-800 dark:text-amber-300 mt-0.5">
+                      {event.ticketPrice ? formatINR(event.ticketPrice) : 'Paid event'}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-amber-200 dark:bg-amber-800 px-3 py-1 text-xs font-bold text-amber-800 dark:text-amber-200">
+                    UPI / QR
+                  </span>
+                </div>
+
+                {/* Payment QR — mandatory step */}
+                {event.paymentQrUrl ? (
+                  <div className="rounded-[1.4rem] border-2 border-amber-300 bg-amber-50 dark:bg-amber-900/20 p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-3 text-center">
+                      Step 1 — Scan & Pay to complete registration
+                    </p>
+                    <img
+                      src={event.paymentQrUrl}
+                      alt="Payment QR"
+                      width={180}
+                      height={180}
+                      className="mx-auto block rounded-xl"
+                      style={{ objectFit: 'contain' }}
+                    />
+                    <p className="mt-2 text-xs text-center text-amber-700 dark:text-amber-400">
+                      {event.ticketPrice ? `Pay ${formatINR(event.ticketPrice)} via UPI` : 'Scan QR code to pay the organizer'}
+                    </p>
+
+                    {/* Confirmation checkbox */}
+                    <label className="mt-3 flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={paymentConfirmed}
+                        onChange={(e) => setPaymentConfirmed(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 accent-teal-600 cursor-pointer"
+                      />
+                      <span className="text-xs leading-5 text-amber-800 dark:text-amber-300 font-medium">
+                        I have scanned the QR and completed the payment
+                      </span>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="rounded-[1.4rem] border border-amber-200 bg-amber-50 dark:bg-amber-900/20 p-3 text-center">
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      Payment details will be provided at the venue.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-3">
-              <Button onClick={rsvp} disabled={loading || joined} size="lg" className="w-full">
+              {/* Step 2 label for paid events with QR */}
+              {isPaidWithQr && !joined && (
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted text-center">
+                  Step 2 — Confirm your RSVP
+                </p>
+              )}
+
+              <Button
+                onClick={rsvp}
+                disabled={!rsvpEnabled}
+                size="lg"
+                className="w-full"
+              >
                 {loading ? 'Reserving...' : joined ? 'Joined ✓' : 'RSVP now'}
               </Button>
               {rsvpError ? <p className="text-sm text-red-500">{rsvpError}</p> : null}
 
               {joined && rsvpId ? (
                 <>
-                  {/* Ticket QR */}
+                  {/* Success notice */}
+                  <div className="rounded-[1.4rem] border border-green-200 bg-green-50 dark:bg-green-900/20 p-3 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-green-800 dark:text-green-300">You're in!</p>
+                      <p className="text-xs text-green-700 dark:text-green-400">Confirmation sent to your email.</p>
+                    </div>
+                  </div>
+
+                  {/* Entry QR */}
                   {ticketQrDataUrl && (
                     <div className="rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.5)] p-4 text-center dark:bg-[rgba(15,23,42,0.22)]">
                       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted mb-2">Your entry QR code</p>
@@ -372,14 +461,14 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
                     </div>
                   )}
 
-                  {/* Payment QR (for paid events) */}
+                  {/* Payment QR reminder after RSVP (if paid) */}
                   {event.isPaid && event.paymentQrUrl && (
-                    <div className="rounded-[1.4rem] border-2 border-amber-300 bg-amber-50 dark:bg-amber-900/20 p-4 text-center">
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-2">
-                        Payment required — scan to pay
+                    <div className="rounded-[1.4rem] border-2 border-amber-300 bg-amber-50 dark:bg-amber-900/20 p-3 text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-1">
+                        Payment QR
                       </p>
-                      <img src={event.paymentQrUrl} alt="Payment QR" width={140} height={140} className="mx-auto rounded-xl" />
-                      <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">Scan the organizer's QR to complete payment</p>
+                      <img src={event.paymentQrUrl} alt="Payment QR" width={120} height={120} className="mx-auto rounded-xl" />
+                      <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">Keep this handy at the venue</p>
                     </div>
                   )}
 
@@ -424,27 +513,13 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
               </div>
               <div className="flex items-center justify-between rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] px-4 py-3 text-sm dark:bg-[rgba(15,23,42,0.22)]">
                 <span className="text-muted">Entry</span>
-                <span className="font-medium">{event.isPaid ? 'Paid event' : 'Free entry'}</span>
+                <span className="font-medium">
+                  {event.isPaid
+                    ? (event.ticketPrice ? formatINR(event.ticketPrice) : 'Paid event')
+                    : 'Free entry'}
+                </span>
               </div>
             </div>
-
-            {/* Payment QR — shown before and after RSVP for paid events */}
-            {event.isPaid && event.paymentQrUrl && (
-              <div className="rounded-[1.4rem] border-2 border-amber-300 bg-amber-50 dark:bg-amber-900/20 p-4 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400 mb-2">
-                  Scan to pay organizer
-                </p>
-                <img
-                  src={event.paymentQrUrl}
-                  alt="Payment QR"
-                  className="mx-auto rounded-xl"
-                  style={{ width: 160, height: 160, objectFit: 'contain' }}
-                />
-                <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
-                  Complete payment after registering
-                </p>
-              </div>
-            )}
           </Card>
 
           {isOrganizer ? (
@@ -454,9 +529,6 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
                   Organizer actions
                 </p>
                 <h2 className="text-2xl font-semibold">Keep the event moving.</h2>
-                <p className="text-sm leading-6 text-muted">
-                  Payment actions remain the same, but they now sit in a clearer support panel for hosts.
-                </p>
               </div>
 
               {rsvpCount >= hostingThreshold ? (

@@ -31,6 +31,7 @@ const createSchema = z.object({
   visibility: z.enum(['PUBLIC', 'PRIVATE']),
   capacity: z.number().int().min(1),
   isPaid: z.boolean(),
+  ticketPrice: z.number().int().positive().optional(),
   paymentQrUrl: z.string().optional()
 }).refine((d) => new Date(d.endTime) > new Date(d.startTime), {
   message: 'endTime must be after startTime',
@@ -239,16 +240,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Failed to create event' }, { status: 500 });
   }
 
-  // Set optional payment QR URL via Prisma (handles null safely)
-  if (data.paymentQrUrl) {
+  // Set optional fields (paymentQrUrl, ticketPrice) via Prisma — handles null safely
+  if (data.paymentQrUrl || data.ticketPrice) {
     try {
-      await prisma.event.update({
-        where: { id: event.id },
-        data: { paymentQrUrl: data.paymentQrUrl }
-      });
-      event.paymentQrUrl = data.paymentQrUrl;
+      const updateData: Record<string, unknown> = {};
+      if (data.paymentQrUrl) updateData.paymentQrUrl = data.paymentQrUrl;
+      if (data.ticketPrice) updateData.ticketPrice = data.ticketPrice;
+      await prisma.event.update({ where: { id: event.id }, data: updateData });
+      if (data.paymentQrUrl) event.paymentQrUrl = data.paymentQrUrl;
+      if (data.ticketPrice) event.ticketPrice = data.ticketPrice;
     } catch (err) {
-      console.error('Failed to set paymentQrUrl:', err);
+      console.error('Failed to set paymentQrUrl/ticketPrice:', err);
     }
   }
 

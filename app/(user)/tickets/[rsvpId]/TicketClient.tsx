@@ -19,6 +19,7 @@ type TicketData = {
     latitude: number;
     longitude: number;
     isPaid: boolean;
+    ticketPrice: number | null;
     paymentQrUrl: string | null;
     organizer: { name: string | null };
   };
@@ -223,7 +224,9 @@ export function TicketClient({ ticket }: { ticket: TicketData }) {
 
   const amountDisplay = ticket.payment
     ? formatAmount(ticket.payment.amount, ticket.payment.currency)
-    : ticket.event.isPaid ? 'Pay at door' : 'Free';
+    : ticket.event.ticketPrice
+      ? formatAmount(ticket.event.ticketPrice, 'INR')
+      : ticket.event.isPaid ? 'Paid event' : 'Free';
 
   const paymentStatusBadge = ticket.payment ? 'Paid'
     : ticket.event.isPaid ? 'Pending payment' : 'Free entry';

@@ -88,6 +88,7 @@ export default function CreateEventPage() {
   const [capacity, setCapacity] = useState(20);
   const [visibility, setVisibility] = useState<'PUBLIC' | 'PRIVATE'>('PUBLIC');
   const [isPaid, setIsPaid] = useState(false);
+  const [ticketPrice, setTicketPrice] = useState('');
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [bannerUrl, setBannerUrl] = useState('');
@@ -220,6 +221,16 @@ export default function CreateEventPage() {
       return;
     }
 
+    if (isPaid && !paymentQrUrl) {
+      setError('Please upload a payment QR code for paid events.');
+      return;
+    }
+
+    if (isPaid && ticketPrice && (isNaN(Number(ticketPrice)) || Number(ticketPrice) <= 0)) {
+      setError('Please enter a valid ticket price.');
+      return;
+    }
+
     if (startTime && endTime && new Date(endTime) <= new Date(startTime)) {
       setError('End time must be after start time.');
       return;
@@ -237,6 +248,7 @@ export default function CreateEventPage() {
         capacity,
         visibility,
         isPaid,
+        ticketPrice: isPaid && ticketPrice ? Math.round(Number(ticketPrice) * 100) : undefined,
         latitude,
         longitude,
         bannerUrl,
@@ -502,6 +514,26 @@ export default function CreateEventPage() {
                   Toggle pricing behavior without changing the rest of the creation flow.
                 </p>
               </button>
+
+              {isPaid && (
+                <div className="rounded-[1.4rem] border border-amber-200 bg-amber-50 dark:bg-amber-900/20 p-4 space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400">
+                    Ticket price (₹)
+                  </label>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="e.g. 200"
+                    value={ticketPrice}
+                    onChange={(e) => setTicketPrice(e.target.value)}
+                    className="bg-white dark:bg-amber-950/20"
+                  />
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    Enter the amount attendees need to pay (in rupees). A payment QR code upload is required below.
+                  </p>
+                </div>
+              )}
             </Card>
 
             <Card className="surface-card-strong space-y-5">

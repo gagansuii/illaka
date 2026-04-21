@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { recalcEngagementScore } from '@/lib/engagement';
 import { clearEventsCache } from '@/lib/events-cache';
+import { sendTicketEmail } from '@/lib/mailer';
 import { randomUUID } from 'crypto';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -16,17 +17,20 @@ export async function POST(_: Request, { params }: RouteContext) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Explicit select avoids fetching the PostGIS geography buffer and any
-  // columns that may not exist in the production DB (paymentQrUrl, etc.)
   let event: any;
   try {
     event = await prisma.event.findUnique({
       where: { id },
       select: {
         id: true,
+        title: true,
         capacity: true,
         visibility: true,
         organizerId: true,
+        isPaid: true,
+        ticketPrice: true,
+        startTime: true,
+        organizer: { select: { name: true } },
       }
     });
   } catch (err) {
@@ -49,9 +53,6 @@ export async function POST(_: Request, { params }: RouteContext) {
       const count = await tx.rSVP.count({ where: { eventId: event.id } });
       if (count >= event.capacity) throw new EventFullError('Event full');
 
-      // Use raw INSERT so we don't depend on ticketId column existing in the DB.
-      // The DB migration adds ticketId with a DEFAULT, so if it exists it auto-fills.
-      // If the migration hasn't been applied yet, the INSERT still works without it.
       const rows = await tx.$queryRaw<Array<{ id: string }>>`
         INSERT INTO "RSVP" ("id", "userId", "eventId", "createdAt")
         VALUES (${rsvpId}, ${userId}, ${event.id}, NOW())
@@ -82,6 +83,37 @@ export async function POST(_: Request, { params }: RouteContext) {
     await recalcEngagementScore(event.id);
   } catch { /* non-critical */ }
   clearEventsCache();
+
+  // Send confirmation email (non-blocking — failure does not break the RSVP)
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true }
+    });
+    if (user?.email) {
+      const ticketRecord = await prisma.rSVP.findUnique({
+        where: { id: rsvp.id },
+        select: { ticketId: true }
+      });
+      const eventDate = new Intl.DateTimeFormat('en-IN', {
+        weekday: 'short', day: 'numeric', month: 'long',
+        year: 'numeric', hour: '2-digit', minute: '2-digit'
+      }).format(new Date(event.startTime));
+
+      await sendTicketEmail({
+        to: user.email,
+        userName: user.name,
+        eventTitle: event.title,
+        eventDate,
+        ticketId: ticketRecord?.ticketId ?? rsvp.id,
+        rsvpId: rsvp.id,
+        ticketPrice: event.ticketPrice ?? null,
+        organizerName: event.organizer?.name ?? 'Organizer',
+      });
+    }
+  } catch (emailErr) {
+    console.error('[RSVP] Email send failed (non-critical):', emailErr);
+  }
 
   return NextResponse.json({ ok: true, rsvpId: rsvp.id });
 }
