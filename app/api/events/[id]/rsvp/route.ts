@@ -19,20 +19,29 @@ export async function POST(_: Request, { params }: RouteContext) {
 
   let event: any;
   try {
-    event = await prisma.event.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        title: true,
-        capacity: true,
-        visibility: true,
-        organizerId: true,
-        isPaid: true,
-        ticketPrice: true,
-        startTime: true,
-        organizer: { select: { name: true } },
-      }
-    });
+    try {
+      event = await prisma.event.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          title: true,
+          capacity: true,
+          visibility: true,
+          organizerId: true,
+          isPaid: true,
+          ticketPrice: true,
+          startTime: true,
+          organizer: { select: { name: true } },
+        }
+      });
+    } catch {
+      // ticketPrice or organizer relation may not exist yet — fall back to base columns
+      const base = await prisma.event.findUnique({
+        where: { id },
+        select: { id: true, title: true, capacity: true, visibility: true, organizerId: true, isPaid: true, startTime: true }
+      });
+      event = base ? { ...base, ticketPrice: null, organizer: null } : null;
+    }
   } catch (err) {
     console.error('Event fetch failed:', err);
     return NextResponse.json({ error: 'Database error' }, { status: 500 });
