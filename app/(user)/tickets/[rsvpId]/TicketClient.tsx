@@ -45,7 +45,7 @@ function formatAmount(amount: number, currency: string) {
 
 export function TicketClient({ ticket }: { ticket: TicketData }) {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
-  const ticketRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     import('qrcode').then((QRCode) => {
@@ -56,11 +56,39 @@ export function TicketClient({ ticket }: { ticket: TicketData }) {
     }).catch(console.error);
   }, [ticket]);
 
-  // Opens an isolated window containing only the ticket HTML then auto-prints it.
-  // This avoids printing nav, headers, or dark-mode backgrounds.
+  // Triggers a real file download from the server-side PDF route.
+  async function handleDownload() {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      const res = await fetch(`/api/tickets/${ticket.rsvpId}/pdf`);
+      if (!res.ok) throw new Error('PDF generation failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ILLAKA-Ticket-${ticket.ticketId.slice(0, 8).toUpperCase()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed:', err);
+      alert('Could not generate PDF. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  // Print — opens a clean isolated window, no popup-blocker risk because
+  // it is called directly inside a click handler.
   function handlePrint() {
-    const html = ticketRef.current?.innerHTML;
-    if (!html) return;
+    const shortId = ticket.ticketId.slice(0, 8).toUpperCase();
+    const amountLine = ticket.payment
+      ? formatAmount(ticket.payment.amount, ticket.payment.currency)
+      : ticket.event.ticketPrice
+        ? formatAmount(ticket.event.ticketPrice, 'INR')
+        : ticket.event.isPaid ? 'Paid event' : 'Free';
 
     const win = window.open('', '_blank', 'width=900,height=700');
     if (!win) { window.print(); return; }
@@ -69,154 +97,150 @@ export function TicketClient({ ticket }: { ticket: TicketData }) {
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>ILLAKA Ticket · ${ticket.ticketId.slice(0, 8).toUpperCase()}</title>
+  <title>ILLAKA Ticket · #${shortId}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    body { margin: 0; padding: 24px; font-family: system-ui, sans-serif;
+    body { margin: 0; padding: 32px; font-family: system-ui, sans-serif;
            background: #fff; color: #111; -webkit-print-color-adjust: exact;
            print-color-adjust: exact; }
-    @page { size: A4 portrait; margin: 12mm; }
+    @page { size: A4 portrait; margin: 14mm; }
 
-    /* Header gradient */
-    .ticket-header {
+    .wrap { max-width: 680px; margin: 0 auto; }
+
+    .header {
       background: linear-gradient(135deg,#0f766e 0%,#c8663f 100%);
-      padding: 24px 32px; color: white; border-radius: 16px 16px 0 0;
+      padding: 24px 28px; color: white; border-radius: 16px 16px 0 0;
       display: flex; justify-content: space-between; align-items: flex-start;
     }
-    .ticket-header h1 { margin: 8px 0 4px; font-size: 22px; font-weight: 700; }
-    .ticket-header p { margin: 0; font-size: 13px; opacity: .8; }
-    .ticket-header .label { font-size: 10px; font-weight: 700;
-      letter-spacing: .25em; text-transform: uppercase; opacity: .7; }
-    .ticket-header .mono { font-family: monospace; font-size: 13px;
-      font-weight: 700; opacity: .9; }
+    .header h1 { margin: 6px 0 4px; font-size: 22px; font-weight: 700; }
+    .header p  { margin: 0; font-size: 12px; opacity: .82; }
+    .eyebrow   { font-size: 9px; font-weight: 700; letter-spacing: .28em;
+                 text-transform: uppercase; opacity: .72; }
+    .mono      { font-family: monospace; font-size: 13px; font-weight: 700;
+                 opacity: .92; margin-top: 4px; }
     .badge { display: inline-block; margin-top: 8px; padding: 3px 10px;
-      border-radius: 999px; font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .15em; }
-    .badge-green  { background: rgba(74,222,128,.3); }
-    .badge-amber  { background: rgba(251,191, 36,.3); }
-    .badge-white  { background: rgba(255,255,255,.2); }
+      border-radius: 999px; font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .15em; color: #fff; }
+    .badge-free     { background: rgba(255,255,255,.22); }
+    .badge-pending  { background: rgba(251,191,36,.5); }
+    .badge-paid     { background: rgba(74,222,128,.4); }
 
-    /* Body */
-    .ticket-body  { border: 2px solid #e5e7eb; border-top: none;
+    .body { border: 2px solid #e5e7eb; border-top: none;
       border-radius: 0 0 16px 16px; padding: 20px;
-      display: grid; grid-template-columns: 1fr 200px; gap: 16px; }
-    .ticket-fields { display: flex; flex-direction: column; gap: 10px; }
+      display: grid; grid-template-columns: 1fr 190px; gap: 16px; }
+
+    .fields { display: flex; flex-direction: column; gap: 10px; }
     .field { border: 1px solid #e5e7eb; border-radius: 12px;
-      padding: 12px 14px; background: #fafafa; }
-    .field-label { font-size: 10px; font-weight: 700; letter-spacing: .2em;
+      padding: 12px 14px; background: #f9fafb; }
+    .field.green { border-color: #86efac; background: #f0fdf4; }
+    .field.amber { border-color: #fcd34d; background: #fffbeb; }
+    .fl { font-size: 9px; font-weight: 700; letter-spacing: .2em;
       text-transform: uppercase; color: #6b7280; margin-bottom: 4px; }
-    .field-value { font-size: 15px; font-weight: 600; color: #111; }
-    .field-sub   { font-size: 12px; color: #6b7280; margin-top: 2px; }
-    .field-meta  { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .field-green { border-color: #86efac; background: #f0fdf4; }
-    .field-green .field-label { color: #15803d; }
-    .field-amber { border-color: #fcd34d; background: #fffbeb; }
-    .field-amber .field-label { color: #b45309; }
+    .field.green .fl { color: #15803d; }
+    .field.amber .fl { color: #b45309; }
+    .fv { font-size: 14px; font-weight: 600; color: #111; }
+    .fs { font-size: 11px; color: #6b7280; margin-top: 2px; }
+    .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
-    /* QR panel */
-    .qr-panel { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-    .qr-box { border: 2px solid #e5e7eb; border-radius: 12px;
-      padding: 12px; background: #fff; }
-    .qr-box img { display: block; width: 160px; height: 160px; }
-    .qr-label { font-size: 9px; font-weight: 700; letter-spacing: .2em;
+    .qr-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .qr-box { border: 2px solid #e5e7eb; border-radius: 12px; padding: 10px;
+      background: #fff; }
+    .qr-box img { display: block; width: 150px; height: 150px; }
+    .ql { font-size: 8px; font-weight: 700; letter-spacing: .2em;
       text-transform: uppercase; color: #6b7280; text-align: center; }
-    .pay-qr-box { border: 2px solid #fcd34d; border-radius: 12px;
-      padding: 10px; background: #fffbeb; text-align: center; }
-    .pay-qr-box img { display: block; width: 140px; height: 140px; margin: 6px auto; }
-    .pay-qr-label { font-size: 9px; font-weight: 700; letter-spacing: .2em;
+    .pay-box { border: 2px solid #fcd34d; border-radius: 12px; padding: 10px;
+      background: #fffbeb; text-align: center; width: 100%; }
+    .pay-box img { display: block; width: 140px; height: 140px; margin: 6px auto; }
+    .pl { font-size: 8px; font-weight: 700; letter-spacing: .2em;
       text-transform: uppercase; color: #b45309; }
-    .paid-box { border: 2px solid #86efac; border-radius: 12px;
-      padding: 10px; background: #f0fdf4; text-align: center; }
+    .paid-box { border: 2px solid #86efac; border-radius: 12px; padding: 10px;
+      background: #f0fdf4; text-align: center; width: 100%; }
 
-    /* Footer */
-    .ticket-footer { border-top: 1px dashed #e5e7eb; margin: 12px 20px 0;
-      padding: 10px 0; text-align: center; font-size: 10px; color: #9ca3af; }
+    .footer { border-top: 1px dashed #e5e7eb; margin-top: 14px;
+      padding-top: 10px; text-align: center; font-size: 9px; color: #9ca3af; }
   </style>
 </head>
 <body>
-  <div class="ticket-header">
+<div class="wrap">
+  <div class="header">
     <div>
-      <div class="label">ILLAKA · Event Ticket</div>
+      <div class="eyebrow">ILLAKA · Event Ticket</div>
       <h1>${ticket.event.title}</h1>
       <p>Hosted by ${ticket.event.organizer.name ?? 'Organizer'}</p>
     </div>
     <div style="text-align:right">
-      <div class="label">Ticket No.</div>
-      <div class="mono">#${ticket.ticketId.slice(0, 8).toUpperCase()}</div>
-      <span class="badge ${ticket.payment ? 'badge-green' : ticket.event.isPaid ? 'badge-amber' : 'badge-white'}">
+      <div class="eyebrow">Ticket No.</div>
+      <div class="mono">#${shortId}</div>
+      <span class="badge ${ticket.payment ? 'badge-paid' : ticket.event.isPaid ? 'badge-pending' : 'badge-free'}">
         ${ticket.payment ? 'Paid' : ticket.event.isPaid ? 'Pending payment' : 'Free entry'}
       </span>
     </div>
   </div>
 
-  <div class="ticket-body">
-    <div class="ticket-fields">
+  <div class="body">
+    <div class="fields">
       <div class="field">
-        <div class="field-label">👤 Attendee</div>
-        <div class="field-value">${ticket.user.name}</div>
-        <div class="field-sub">${ticket.user.email}</div>
-      </div>
-      <div class="field">
-        <div class="field-label">📅 Date &amp; Time</div>
-        <div class="field-value">${formatDate(ticket.event.startTime)}</div>
-        <div class="field-sub">Until ${formatDate(ticket.event.endTime)}</div>
+        <div class="fl">Attendee</div>
+        <div class="fv">${ticket.user.name}</div>
+        <div class="fs">${ticket.user.email}</div>
       </div>
       <div class="field">
-        <div class="field-label">📍 Location</div>
-        <div class="field-value">${ticket.event.latitude.toFixed(4)}, ${ticket.event.longitude.toFixed(4)}</div>
+        <div class="fl">Date &amp; Time</div>
+        <div class="fv">${formatDate(ticket.event.startTime)}</div>
+        <div class="fs">Until ${formatDate(ticket.event.endTime)}</div>
       </div>
-      <div class="field ${ticket.payment ? 'field-green' : ticket.event.isPaid ? 'field-amber' : ''}">
-        <div class="field-label">💳 Payment</div>
-        <div class="field-value">${ticket.payment ? formatAmount(ticket.payment.amount, ticket.payment.currency) : ticket.event.isPaid ? 'Pay at door' : 'Free'}</div>
-        ${ticket.payment ? `<div class="field-sub">Confirmed · ${formatShortDate(ticket.createdAt)}</div>` : ''}
+      <div class="field">
+        <div class="fl">Location</div>
+        <div class="fv">${ticket.event.latitude.toFixed(4)}, ${ticket.event.longitude.toFixed(4)}</div>
       </div>
-      <div class="field-meta">
+      <div class="field ${ticket.payment ? 'green' : ticket.event.isPaid ? 'amber' : ''}">
+        <div class="fl">Payment</div>
+        <div class="fv">${amountLine}</div>
+        ${ticket.payment ? `<div class="fs">Confirmed · ${formatShortDate(ticket.createdAt)}</div>` : ''}
+      </div>
+      <div class="meta">
         <div class="field">
-          <div class="field-label">Issued</div>
-          <div class="field-value" style="font-size:13px">${formatShortDate(ticket.createdAt)}</div>
+          <div class="fl">Issued</div>
+          <div class="fv" style="font-size:12px">${formatShortDate(ticket.createdAt)}</div>
         </div>
         <div class="field">
-          <div class="field-label">RSVP ID</div>
-          <div class="field-value" style="font-size:13px;font-family:monospace">${ticket.rsvpId.slice(0, 8)}</div>
+          <div class="fl">RSVP ID</div>
+          <div class="fv" style="font-size:12px;font-family:monospace">${ticket.rsvpId.slice(0, 8)}</div>
         </div>
       </div>
     </div>
 
-    <div class="qr-panel">
+    <div class="qr-col">
       ${qrDataUrl ? `
         <div class="qr-box">
-          <img src="${qrDataUrl}" alt="Entry QR"/>
+          <img src="${qrDataUrl}" alt="Entry QR" crossorigin="anonymous"/>
         </div>
-        <div class="qr-label">Scan to verify entry</div>
-        <div class="qr-label" style="font-family:monospace">#${ticket.ticketId.slice(0, 8).toUpperCase()}</div>
-      ` : ''}
+        <div class="ql">Scan to verify entry</div>
+        <div class="ql" style="font-family:monospace">#${shortId}</div>
+      ` : '<div style="width:150px;height:150px;background:#f3f4f6;border-radius:12px"></div>'}
 
       ${ticket.event.isPaid && ticket.event.paymentQrUrl && !ticket.payment ? `
-        <div class="pay-qr-box">
-          <div class="pay-qr-label">Pay organizer</div>
-          <img src="${ticket.event.paymentQrUrl}" alt="Payment QR"/>
-          <div class="pay-qr-label">Scan to pay at door</div>
+        <div class="pay-box">
+          <div class="pl">Pay organizer</div>
+          <img src="${ticket.event.paymentQrUrl}" alt="Payment QR" crossorigin="anonymous"/>
+          <div class="pl">Scan to pay</div>
         </div>
       ` : ''}
 
       ${ticket.payment ? `
         <div class="paid-box">
-          <div style="font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#15803d">✓ Payment confirmed</div>
-          <div style="font-size:14px;font-weight:700;color:#166534;margin-top:4px">${formatAmount(ticket.payment.amount, ticket.payment.currency)}</div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#15803d">✓ Confirmed</div>
+          <div style="font-size:15px;font-weight:700;color:#166534;margin-top:5px">${formatAmount(ticket.payment.amount, ticket.payment.currency)}</div>
         </div>
       ` : ''}
     </div>
   </div>
 
-  <div class="ticket-footer">
-    This ticket is non-transferable · Present QR code at entry · ILLAKA © ${new Date().getFullYear()}
+  <div class="footer">
+    Non-transferable · Present QR at entry · ILLAKA © ${new Date().getFullYear()}
   </div>
-
-  <script>
-    window.onload = function() {
-      setTimeout(function() { window.print(); }, 400);
-    };
-  </script>
+</div>
+<script>window.onload = function() { setTimeout(function() { window.print(); }, 350); };</script>
 </body>
 </html>`);
     win.document.close();
@@ -247,18 +271,19 @@ export function TicketClient({ ticket }: { ticket: TicketData }) {
             Print
           </Button>
           <Button
-            onClick={handlePrint}
+            onClick={handleDownload}
+            disabled={downloading}
             size="sm"
             className="bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white border-0"
           >
             <Download className="h-4 w-4 mr-1.5" />
-            Download PDF
+            {downloading ? 'Generating…' : 'Download PDF'}
           </Button>
         </div>
       </div>
 
       {/* Ticket preview (on-screen) */}
-      <div ref={ticketRef} className="mx-auto max-w-2xl px-4">
+      <div className="mx-auto max-w-2xl px-4">
         <div className="overflow-hidden rounded-[2rem] border-2 border-[var(--line)] bg-[var(--surface-strong)] shadow-[0_28px_90px_rgba(17,24,39,0.18)]">
 
           {/* Header */}
