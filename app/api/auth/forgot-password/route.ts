@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { rateLimit } from '@/lib/rate-limit';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import nodemailer from 'nodemailer';
@@ -32,6 +33,11 @@ async function sendResetEmail(to: string, resetUrl: string) {
 }
 
 export async function POST(req: Request) {
+  const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
+  if (!(await rateLimit(`forgot-password:${ip}`, 3))) {
+    return NextResponse.json({ ok: true }); // silent — don't reveal rate limit to enumeration
+  }
+
   let body: unknown;
   try {
     body = await req.json();

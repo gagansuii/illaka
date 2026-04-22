@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import { EventDetailClient } from '@/components/EventDetailClient';
 import { getServerSession } from 'next-auth';
@@ -8,6 +9,39 @@ type PageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ token?: string }>;
 };
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const event = await prisma.event.findUnique({
+    where: { id },
+    select: { title: true, description: true, bannerUrl: true, startTime: true }
+  });
+
+  if (!event) return { title: 'Event not found' };
+
+  const base = process.env.NEXTAUTH_URL ?? 'https://ilaka.app';
+  const description = event.description.slice(0, 160);
+  const images = event.bannerUrl ? [{ url: event.bannerUrl }] : [];
+
+  return {
+    title: event.title,
+    description,
+    openGraph: {
+      type: 'article',
+      title: event.title,
+      description,
+      url: `${base}/events/${id}`,
+      images,
+      publishedTime: event.startTime.toISOString()
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: event.title,
+      description,
+      images: images.map((i) => i.url)
+    }
+  };
+}
 
 export default async function EventDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;

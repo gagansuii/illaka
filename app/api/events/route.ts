@@ -19,8 +19,8 @@ import {
 } from '@/lib/events-cache';
 
 const createSchema = z.object({
-  title: z.string().min(3).max(200),
-  description: z.string().min(10).max(5000),
+  title: z.string().min(3).max(200).trim(),
+  description: z.string().min(10).max(5000).trim(),
   bannerUrl: z.string().min(1),
   badgeIcon: z.string().min(1),
   latitude: z.number().min(-90).max(90),
