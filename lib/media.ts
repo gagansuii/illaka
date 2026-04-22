@@ -32,14 +32,15 @@ export function sanitizeMediaUrl(url: string) {
   return isExistingLocalMedia(url) ? url : '';
 }
 
-export function sanitizeEventMedia<T extends { bannerUrl: string; badgeIcon: string }>(event: T): T {
+export function sanitizeEventMedia<T extends { bannerUrl: string; badgeIcon: string; paymentQrUrl?: string | null }>(event: T): T {
   return {
     ...event,
     bannerUrl: sanitizeMediaUrl(event.bannerUrl),
-    badgeIcon: sanitizeMediaUrl(event.badgeIcon)
+    badgeIcon: sanitizeMediaUrl(event.badgeIcon),
+    ...(event.paymentQrUrl != null ? { paymentQrUrl: sanitizeMediaUrl(event.paymentQrUrl) } : {})
   };
 }
 
-export function sanitizeEventMediaList<T extends { bannerUrl: string; badgeIcon: string }>(events: T[]): T[] {
+export function sanitizeEventMediaList<T extends { bannerUrl: string; badgeIcon: string; paymentQrUrl?: string | null }>(events: T[]): T[] {
   return events.map((event) => sanitizeEventMedia(event));
 }

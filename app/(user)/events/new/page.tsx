@@ -16,8 +16,6 @@ const MapView = dynamic(
   { ssr: false }
 );
 
-const DEFAULT_PREVIEW_START = '2026-03-16T11:30:00.000Z';
-const DEFAULT_PREVIEW_END = '2026-03-16T13:00:00.000Z';
 
 function UploadDropzone({
   id,
@@ -100,6 +98,8 @@ export default function CreateEventPage() {
   const [error, setError] = useState('');
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [uploadingBadge, setUploadingBadge] = useState(false);
+  const [paymentQrUrl, setPaymentQrUrl] = useState('');
+  const [uploadingPaymentQr, setUploadingPaymentQr] = useState(false);
 
   // Auto-detect location on mount so the map isn't stuck on a default city
   useEffect(() => {
@@ -118,14 +118,33 @@ export default function CreateEventPage() {
   const mapCenter = latitude !== null && longitude !== null ? [latitude, longitude] as [number, number] : null;
   const previewTitle = title || `New ${selectedTheme.label.toLowerCase()} gathering`;
   const previewDescription = description || selectedTheme.previewLine;
-  const startTime = startDate && startTimeVal ? `${startDate}T${startTimeVal}` : '';
-  const endTime = endDate && endTimeVal ? `${endDate}T${endTimeVal}` : '';
-  const previewStart = startTime || DEFAULT_PREVIEW_START;
-  const previewEnd = endTime || DEFAULT_PREVIEW_END;
+  // Append IST offset so the browser treats these as IST regardless of the
+  // user's local timezone — avoids a UTC-vs-local-time offset in the preview.
+  const startTime = startDate && startTimeVal ? `${startDate}T${startTimeVal}:00+05:30` : '';
+  const endTime = endDate && endTimeVal ? `${endDate}T${endTimeVal}:00+05:30` : '';
+  // Use a dynamic "now + 1 h" window so the preview never shows a stale date.
+  const previewFallbackStart = useMemo(() => {
+    const d = new Date();
+    d.setMinutes(0, 0, 0);
+    d.setHours(d.getHours() + 1);
+    return d.toISOString();
+  }, []);
+  const previewFallbackEnd = useMemo(() => {
+    const d = new Date();
+    d.setMinutes(0, 0, 0);
+    d.setHours(d.getHours() + 2);
+    return d.toISOString();
+  }, []);
+  const previewStart = startTime || previewFallbackStart;
+  const previewEnd = endTime || previewFallbackEnd;
 
   // Reuse the live discovery map here so location picking feels native to the product.
   const previewEvent = useMemo(() => {
-    if (latitude === null || longitude === null) return [];
+    // For physical events we need a pinned location to show on the map
+    if (eventType === 'PHYSICAL' && (latitude === null || longitude === null)) return [];
+
+    const lat = latitude ?? 0;
+    const lng = longitude ?? 0;
 
     return [
       {
@@ -134,8 +153,8 @@ export default function CreateEventPage() {
         description: previewDescription,
         bannerUrl,
         badgeIcon,
-        latitude,
-        longitude,
+        latitude: lat,
+        longitude: lng,
         startTime: previewStart,
         endTime: previewEnd,
         visibility,
@@ -145,7 +164,7 @@ export default function CreateEventPage() {
         engagementScore: Math.max(12, Math.round(capacity * 0.6))
       }
     ];
-  }, [badgeIcon, bannerUrl, capacity, endTime, isPaid, latitude, longitude, previewDescription, previewEnd, previewStart, previewTitle, visibility]);
+  }, [badgeIcon, bannerUrl, capacity, eventType, isPaid, latitude, longitude, previewDescription, previewEnd, previewStart, previewTitle, visibility]);
 
   async function upload(file: File, folder: string) {
     const form = new FormData();
@@ -190,6 +209,19 @@ export default function CreateEventPage() {
     }
   }
 
+  async function handlePaymentQrUpload(file: File) {
+    setError('');
+    setUploadingPaymentQr(true);
+    try {
+      const url = await upload(file, 'ilaka/payment-qr');
+      setPaymentQrUrl(url);
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : 'QR upload failed');
+    } finally {
+      setUploadingPaymentQr(false);
+    }
+  }
+
   async function useMyLocation() {
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser.');
@@ -209,17 +241,18 @@ export default function CreateEventPage() {
     );
   }
 
-  // datetime-local gives YYYY-MM-DDTHH:MM with no timezone — treat as IST (UTC+5:30)
+  // startTime / endTime already carry the +05:30 offset (added above), so
+  // passing them through new Date() produces the correct UTC ISO string.
   function toISTIso(localDt: string): string {
     if (!localDt) return localDt;
-    return new Date(`${localDt}:00+05:30`).toISOString();
+    return new Date(localDt).toISOString();
   }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError('');
 
-    if (latitude === null || longitude === null) {
+    if (eventType === 'PHYSICAL' && (latitude === null || longitude === null)) {
       setError('Please place the event on the map or use your current location.');
       return;
     }
@@ -255,7 +288,8 @@ export default function CreateEventPage() {
         badgeIcon,
         eventType,
         onlineLink: eventType === 'ONLINE' ? onlineLink : undefined,
-        linkShareMode: eventType === 'ONLINE' ? linkShareMode : undefined
+        linkShareMode: eventType === 'ONLINE' ? linkShareMode : undefined,
+        paymentQrUrl: isPaid && paymentQrUrl ? paymentQrUrl : undefined
       })
     });
     setLoading(false);
@@ -329,79 +363,88 @@ export default function CreateEventPage() {
                       <Users className="h-4 w-4 text-white" />
                       Capacity {capacity}
                     </span>
-                    <span className="info-pill border-white/25 bg-white/20 text-white">
-                      <MapPin className="h-4 w-4 text-white" />
-                      {latitude !== null && longitude !== null ? 'Pinned on the map' : 'Choose a location'}
-                    </span>
+                    {eventType === 'ONLINE' ? (
+                      <span className="info-pill border-white/25 bg-white/20 text-white">
+                        <Globe className="h-4 w-4 text-white" />
+                        Online event
+                      </span>
+                    ) : (
+                      <span className="info-pill border-white/25 bg-white/20 text-white">
+                        <MapPin className="h-4 w-4 text-white" />
+                        {latitude !== null && longitude !== null ? 'Pinned on the map' : 'Choose a location'}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </Card>
 
-          <Card className="section-shell space-y-5 p-0 overflow-hidden">
-            <div className="flex items-center justify-between px-5 pt-5 sm:px-6 sm:pt-6">
-              <div>
-                <p className="eyebrow">
-                  <MapPin className="h-3.5 w-3.5" />
-                  Location picker
-                </p>
-                <h2 className="mt-3 text-2xl font-semibold">Place it exactly where people should orient themselves.</h2>
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={useMyLocation}>
-                <LocateFixed className="h-4 w-4" />
-                Use my location
-              </Button>
-            </div>
-
-            <div className="relative h-[340px] overflow-hidden border-y border-[var(--line)]">
-              {mapCenter ? (
-                <MapView
-                  events={previewEvent}
-                  center={mapCenter}
-                  radius={2200}
-                  previewedEventId={previewEvent[0]?.id}
-                  onSelectLocation={(coords) => {
-                    setLatitude(coords[0]);
-                    setLongitude(coords[1]);
-                  }}
-                />
-              ) : (
-                <div className="flex h-full flex-col items-center justify-center gap-4 bg-[rgba(255,255,255,0.34)] dark:bg-[rgba(15,23,42,0.22)]">
-                  <MapPin className="h-10 w-10 text-[var(--muted)]" />
-                  <div className="text-center">
-                    <p className="text-sm font-semibold">No location set yet</p>
-                    <p className="mt-1 text-sm text-muted">Use the button above or enter coordinates below to place your event on the map.</p>
-                  </div>
-                </div>
-              )}
-              <div className="pointer-events-none absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
-                <Card className="surface-card-strong max-w-sm rounded-[1.5rem] p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--secondary)]">Spatial memory</p>
-                  <p className="mt-2 text-sm leading-6 text-muted">
-                    Click the map to place the event. Keeping the map central here helps hosts think about discovery the same way attendees will.
+          {eventType === 'PHYSICAL' && (
+            <Card className="section-shell space-y-5 p-0 overflow-hidden">
+              <div className="flex items-center justify-between px-5 pt-5 sm:px-6 sm:pt-6">
+                <div>
+                  <p className="eyebrow">
+                    <MapPin className="h-3.5 w-3.5" />
+                    Location picker
                   </p>
-                </Card>
+                  <h2 className="mt-3 text-2xl font-semibold">Place it exactly where people should orient themselves.</h2>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={useMyLocation}>
+                  <LocateFixed className="h-4 w-4" />
+                  Use my location
+                </Button>
               </div>
-            </div>
 
-            <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2 sm:px-6 sm:pb-6">
-              <Input
-                type="number"
-                step="0.0001"
-                placeholder="Latitude"
-                value={latitude ?? ''}
-                onChange={(event) => setLatitude(event.target.value === '' ? null : Number(event.target.value))}
-              />
-              <Input
-                type="number"
-                step="0.0001"
-                placeholder="Longitude"
-                value={longitude ?? ''}
-                onChange={(event) => setLongitude(event.target.value === '' ? null : Number(event.target.value))}
-              />
-            </div>
-          </Card>
+              <div className="relative h-[340px] overflow-hidden border-y border-[var(--line)]">
+                {mapCenter ? (
+                  <MapView
+                    events={previewEvent}
+                    center={mapCenter}
+                    radius={2200}
+                    previewedEventId={previewEvent[0]?.id}
+                    onSelectLocation={(coords) => {
+                      setLatitude(coords[0]);
+                      setLongitude(coords[1]);
+                    }}
+                  />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center gap-4 bg-[rgba(255,255,255,0.34)] dark:bg-[rgba(15,23,42,0.22)]">
+                    <MapPin className="h-10 w-10 text-[var(--muted)]" />
+                    <div className="text-center">
+                      <p className="text-sm font-semibold">No location set yet</p>
+                      <p className="mt-1 text-sm text-muted">Use the button above or enter coordinates below to place your event on the map.</p>
+                    </div>
+                  </div>
+                )}
+                <div className="pointer-events-none absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
+                  <Card className="surface-card-strong max-w-sm rounded-[1.5rem] p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--secondary)]">Spatial memory</p>
+                    <p className="mt-2 text-sm leading-6 text-muted">
+                      Click the map to place the event. Keeping the map central here helps hosts think about discovery the same way attendees will.
+                    </p>
+                  </Card>
+                </div>
+              </div>
+
+              <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2 sm:px-6 sm:pb-6">
+                <Input
+                  type="number"
+                  step="0.0001"
+                  placeholder="Latitude"
+                  value={latitude ?? ''}
+                  onChange={(event) => setLatitude(event.target.value === '' ? null : Number(event.target.value))}
+                />
+                <Input
+                  type="number"
+                  step="0.0001"
+                  placeholder="Longitude"
+                  value={longitude ?? ''}
+                  onChange={(event) => setLongitude(event.target.value === '' ? null : Number(event.target.value))}
+                />
+              </div>
+            </Card>
+          )}
         </section>
 
         <aside>
@@ -484,87 +527,103 @@ export default function CreateEventPage() {
 
               <div className="space-y-3">
                 <p className="text-sm font-medium">Event format</p>
-                <div className="grid gap-3 sm:grid-cols-2">
+                {/* Segmented control */}
+                <div className="flex overflow-hidden rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.36)] p-1 dark:bg-[rgba(15,23,42,0.22)]">
                   <button
                     type="button"
                     onClick={() => setEventType('PHYSICAL')}
                     className={cn(
-                      'rounded-[1.4rem] border p-4 text-left transition-all duration-200 hover:-translate-y-0.5',
+                      'flex flex-1 items-center justify-center gap-2 rounded-[1.1rem] px-4 py-2.5 text-sm font-semibold transition-all duration-200',
                       eventType === 'PHYSICAL'
-                        ? 'border-transparent shadow-[0_18px_40px_rgba(17,24,39,0.12)]'
-                        : 'border-[var(--line)] bg-[rgba(255,255,255,0.36)] dark:bg-[rgba(15,23,42,0.22)]'
+                        ? 'shadow-[0_4px_14px_rgba(17,24,39,0.1)]'
+                        : 'text-muted hover:text-[var(--text)]'
                     )}
-                    style={eventType === 'PHYSICAL' ? { background: selectedTheme.accentSoft } : undefined}
+                    style={eventType === 'PHYSICAL' ? { background: selectedTheme.accentSoft, color: selectedTheme.accentStrong } : undefined}
                   >
-                    <p className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
-                      <MapPin className="h-4 w-4" />
-                      In-person
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-muted">People show up at a physical location.</p>
+                    <MapPin className="h-4 w-4 shrink-0" />
+                    In-person
                   </button>
                   <button
                     type="button"
                     onClick={() => setEventType('ONLINE')}
                     className={cn(
-                      'rounded-[1.4rem] border p-4 text-left transition-all duration-200 hover:-translate-y-0.5',
+                      'flex flex-1 items-center justify-center gap-2 rounded-[1.1rem] px-4 py-2.5 text-sm font-semibold transition-all duration-200',
                       eventType === 'ONLINE'
-                        ? 'border-transparent shadow-[0_18px_40px_rgba(17,24,39,0.12)]'
-                        : 'border-[var(--line)] bg-[rgba(255,255,255,0.36)] dark:bg-[rgba(15,23,42,0.22)]'
+                        ? 'shadow-[0_4px_14px_rgba(17,24,39,0.1)]'
+                        : 'text-muted hover:text-[var(--text)]'
                     )}
-                    style={eventType === 'ONLINE' ? { background: selectedTheme.accentSoft } : undefined}
+                    style={eventType === 'ONLINE' ? { background: selectedTheme.accentSoft, color: selectedTheme.accentStrong } : undefined}
                   >
-                    <p className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
-                      <Globe className="h-4 w-4" />
-                      Online
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-muted">People join via a link from anywhere.</p>
+                    <Globe className="h-4 w-4 shrink-0" />
+                    Online
                   </button>
                 </div>
 
+                {/* Physical reminder notice */}
+                {eventType === 'PHYSICAL' && (
+                  <div className="flex items-start gap-3 rounded-[1.2rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] px-4 py-3 dark:bg-[rgba(15,23,42,0.22)]">
+                    <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-[var(--secondary)]" />
+                    <p className="text-xs leading-5 text-muted">Attendees will receive reminders 6 hours and 1 hour before the event.</p>
+                  </div>
+                )}
+
+                {/* Online meeting link + share timing */}
                 {eventType === 'ONLINE' && (
-                  <div className="space-y-3 rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.36)] p-4 dark:bg-[rgba(15,23,42,0.22)]">
-                    <Input
-                      type="url"
-                      placeholder="Meeting link (Zoom, Meet, etc.)"
-                      value={onlineLink}
-                      onChange={(e) => setOnlineLink(e.target.value)}
-                    />
-                    <p className="text-sm font-medium">When to share the link</p>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <button
-                        type="button"
-                        onClick={() => setLinkShareMode('IMMEDIATE')}
-                        className={cn(
-                          'rounded-[1.2rem] border p-3 text-left transition-all',
-                          linkShareMode === 'IMMEDIATE'
-                            ? 'border-transparent shadow-sm'
-                            : 'border-[var(--line)]'
-                        )}
-                        style={linkShareMode === 'IMMEDIATE' ? { background: selectedTheme.accentSoft } : undefined}
-                      >
-                        <p className="text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
-                          <Link2 className="mb-1 h-4 w-4" />
-                          Share now
-                        </p>
-                        <p className="mt-1 text-xs leading-5 text-muted">Visible to attendees immediately after RSVP.</p>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setLinkShareMode('BEFORE_EVENT')}
-                        className={cn(
-                          'rounded-[1.2rem] border p-3 text-left transition-all',
-                          linkShareMode === 'BEFORE_EVENT'
-                            ? 'border-transparent shadow-sm'
-                            : 'border-[var(--line)]'
-                        )}
-                        style={linkShareMode === 'BEFORE_EVENT' ? { background: selectedTheme.accentSoft } : undefined}
-                      >
-                        <p className="text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
-                          <CalendarClock className="mb-1 h-4 w-4" />
-                          6 hrs before
-                        </p>
-                        <p className="mt-1 text-xs leading-5 text-muted">You'll get a reminder to share 6 hours before start.</p>
-                      </button>
+                  <div className="space-y-4 rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.36)] p-4 dark:bg-[rgba(15,23,42,0.22)]">
+                    <div className="relative">
+                      <Link2 className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
+                      <Input
+                        type="url"
+                        placeholder="https://meet.google.com/... or zoom.us/j/... or discord.gg/..."
+                        value={onlineLink}
+                        onChange={(e) => setOnlineLink(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">When to share the meeting link</p>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={() => setLinkShareMode('IMMEDIATE')}
+                          className={cn(
+                            'rounded-[1.2rem] border p-3 text-left transition-all',
+                            linkShareMode === 'IMMEDIATE'
+                              ? 'border-transparent shadow-sm'
+                              : 'border-[var(--line)] bg-[rgba(255,255,255,0.5)] dark:bg-[rgba(15,23,42,0.18)]'
+                          )}
+                          style={linkShareMode === 'IMMEDIATE' ? { background: selectedTheme.accentSoft } : undefined}
+                        >
+                          <p className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
+                            <Link2 className="h-4 w-4" />
+                            Share immediately
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-muted">Visible to attendees right after they RSVP.</p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLinkShareMode('BEFORE_EVENT')}
+                          className={cn(
+                            'rounded-[1.2rem] border p-3 text-left transition-all',
+                            linkShareMode === 'BEFORE_EVENT'
+                              ? 'border-transparent shadow-sm'
+                              : 'border-[var(--line)] bg-[rgba(255,255,255,0.5)] dark:bg-[rgba(15,23,42,0.18)]'
+                          )}
+                          style={linkShareMode === 'BEFORE_EVENT' ? { background: selectedTheme.accentSoft } : undefined}
+                        >
+                          <p className="inline-flex items-center gap-1.5 text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
+                            <CalendarClock className="h-4 w-4" />
+                            Before the event
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-muted">Shared automatically 1 hour before the event starts.</p>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 rounded-[1.2rem] bg-[rgba(255,255,255,0.5)] px-4 py-3 dark:bg-[rgba(15,23,42,0.28)]">
+                      <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-[var(--secondary)]" />
+                      <p className="text-xs leading-5 text-muted">Attendees will receive a reminder 1 day before and 1 hour before the meeting.</p>
                     </div>
                   </div>
                 )}
@@ -624,6 +683,19 @@ export default function CreateEventPage() {
                   Toggle pricing behavior without changing the rest of the creation flow.
                 </p>
               </button>
+
+              {isPaid && (
+                <div className="pt-1">
+                  <UploadDropzone
+                    id="payment-qr-upload"
+                    title="Upload payment QR code"
+                    description="Your GPay, PhonePe, or bank QR. Attendees will see this to send you payment."
+                    ready={Boolean(paymentQrUrl)}
+                    loading={uploadingPaymentQr}
+                    onFileSelect={handlePaymentQrUpload}
+                  />
+                </div>
+              )}
             </Card>
 
             <Card className="surface-card-strong space-y-5">

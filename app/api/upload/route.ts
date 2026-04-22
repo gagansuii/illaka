@@ -6,7 +6,7 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 
-const ALLOWED_FOLDERS = new Set(['ilaka/banners', 'ilaka/badges']);
+const ALLOWED_FOLDERS = new Set(['ilaka/banners', 'ilaka/badges', 'ilaka/payment-qr']);
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);

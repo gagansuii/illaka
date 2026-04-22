@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useGeolocation } from '@/lib/useGeolocation';
 import dynamic from 'next/dynamic';
 import { ArrowUpRight, CalendarClock, LocateFixed, MapPin, Maximize2, Minimize2, Radar, Search, Sparkles, Users } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -25,88 +26,6 @@ const LOCATION_SYNC_THROTTLE_MS = 8_000;
 const EVENT_FETCH_DEBOUNCE_MS = 250;
 const PREFETCH_DELAY_MS = 1_200;
 
-const DISCOVER_SEEDED_EVENTS: EventSummary[] = [
-  {
-    id: 'seed-discover-run',
-    title: 'Sunrise Run + Chai',
-    description: 'An easy-paced neighborhood run that ends with chai and conversation.',
-    bannerUrl: '',
-    badgeIcon: '',
-    latitude: 28.6182,
-    longitude: 77.2115,
-    startTime: '2026-04-20T01:30:00.000Z',
-    endTime: '2026-04-20T03:00:00.000Z',
-    visibility: 'PUBLIC',
-    capacity: 30,
-    organizerId: 'seed',
-    isPaid: false,
-    engagementScore: 92
-  },
-  {
-    id: 'seed-discover-art',
-    title: 'Terrace Painting Jam',
-    description: 'A mellow evening workshop with live demos and open easels.',
-    bannerUrl: '',
-    badgeIcon: '',
-    latitude: 28.6124,
-    longitude: 77.2048,
-    startTime: '2026-04-20T11:30:00.000Z',
-    endTime: '2026-04-20T13:30:00.000Z',
-    visibility: 'PUBLIC',
-    capacity: 18,
-    organizerId: 'seed',
-    isPaid: true,
-    engagementScore: 89
-  },
-  {
-    id: 'seed-discover-code',
-    title: 'Local Coding Circle',
-    description: 'A low-pressure build session for beginners and regulars alike.',
-    bannerUrl: '',
-    badgeIcon: '',
-    latitude: 28.6099,
-    longitude: 77.2261,
-    startTime: '2026-04-21T12:00:00.000Z',
-    endTime: '2026-04-21T14:00:00.000Z',
-    visibility: 'PUBLIC',
-    capacity: 26,
-    organizerId: 'seed',
-    isPaid: false,
-    engagementScore: 87
-  },
-  {
-    id: 'seed-discover-market',
-    title: 'Weekend Makers Market',
-    description: 'Find local creators, food pop-ups, and community-led mini sessions.',
-    bannerUrl: '',
-    badgeIcon: '',
-    latitude: 28.6157,
-    longitude: 77.2191,
-    startTime: '2026-04-19T10:00:00.000Z',
-    endTime: '2026-04-19T14:30:00.000Z',
-    visibility: 'PUBLIC',
-    capacity: 80,
-    organizerId: 'seed',
-    isPaid: false,
-    engagementScore: 95
-  },
-  {
-    id: 'seed-discover-yoga',
-    title: 'Park Yoga + Breathwork',
-    description: 'A guided outdoor morning session focused on mobility and reset.',
-    bannerUrl: '',
-    badgeIcon: '',
-    latitude: 28.6213,
-    longitude: 77.2074,
-    startTime: '2026-04-22T01:00:00.000Z',
-    endTime: '2026-04-22T02:15:00.000Z',
-    visibility: 'PUBLIC',
-    capacity: 35,
-    organizerId: 'seed',
-    isPaid: false,
-    engagementScore: 86
-  }
-];
 
 function distanceMeters([lat1, lng1]: [number, number], [lat2, lng2]: [number, number]) {
   const R = 6371e3;
@@ -119,11 +38,11 @@ function distanceMeters([lat1, lng1]: [number, number], [lat2, lng2]: [number, n
 
 export function MapScreen() {
   const { status } = useSession();
-  const [center, setCenter] = useState<[number, number] | null>(null);
+  const { center, status: geoStatus } = useGeolocation();
   const [radius, setRadius] = useState(5000);
-  const [events, setEvents] = useState<EventSummary[]>(DISCOVER_SEEDED_EVENTS);
+  const [events, setEvents] = useState<EventSummary[]>([]);
   const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [mapExpanded, setMapExpanded] = useState(false);
   const [promptIndex, setPromptIndex] = useState(0);
   const [previewedEventId, setPreviewedEventId] = useState<string | null>(null);
@@ -188,32 +107,6 @@ export function MapScreen() {
       // Location sync is best-effort.
     }
   }, [radius, status]);
-
-  useEffect(() => {
-    const resolveFallback = async () => {
-      try {
-        const res = await fetch('/api/geo/ip');
-        if (res.ok) {
-          const data = await res.json();
-          setCenter([data.latitude, data.longitude]);
-          return;
-        }
-      } catch {
-        // IP geo is optional.
-      }
-      setCenter([28.6139, 77.209]);
-    };
-
-    if (!('geolocation' in navigator)) {
-      void resolveFallback();
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => setCenter([pos.coords.latitude, pos.coords.longitude]),
-      () => void resolveFallback()
-    );
-  }, []);
 
   useEffect(() => {
     if (!centerParams) {
@@ -390,7 +283,7 @@ export function MapScreen() {
 
   return (
     <>
-      {mapExpanded ? (
+      {mapExpanded && center ? (
         <div className="fixed inset-0 z-[60] bg-[var(--bg-deep)]">
           <div className="relative h-full w-full overflow-hidden">
             <MapView
@@ -496,8 +389,16 @@ export function MapScreen() {
 
                 <div className="flex flex-wrap gap-2">
                   <span className="info-pill">
-                    <LocateFixed className="h-4 w-4 text-[var(--secondary)]" />
-                    {center ? 'Location locked' : 'Finding your map'}
+                    <LocateFixed className={`h-4 w-4 ${
+                      geoStatus === 'pending' ? 'animate-pulse text-[var(--secondary)]' :
+                      geoStatus === 'resolved' ? 'text-[var(--secondary)]' :
+                      geoStatus === 'ip-fallback' ? 'text-[var(--accent)]' :
+                      'text-[var(--muted)]'
+                    }`} />
+                    {geoStatus === 'pending' && 'Finding your location'}
+                    {geoStatus === 'resolved' && 'Location locked'}
+                    {geoStatus === 'ip-fallback' && 'Approximate location'}
+                    {geoStatus === 'unavailable' && 'Location unavailable'}
                   </span>
                   <span className="info-pill">
                     <MapPin className="h-4 w-4 text-[var(--accent)]" />
@@ -513,14 +414,23 @@ export function MapScreen() {
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
                 <div className="overflow-hidden rounded-[2.2rem] border border-[var(--line)] bg-[rgba(12,18,24,0.08)] shadow-[0_24px_80px_rgba(15,23,42,0.14)]">
                   <div className="relative h-[420px] sm:h-[500px]">
-                    <MapView
-                      events={featuredEvents}
-                      center={center}
-                      radius={radius}
-                      previewedEventId={previewedEventId}
-                      onPreviewEvent={previewEvent}
-                      onOpenEvent={openDrawer}
-                    />
+                    {center ? (
+                      <MapView
+                        events={featuredEvents}
+                        center={center}
+                        radius={radius}
+                        previewedEventId={previewedEventId}
+                        onPreviewEvent={previewEvent}
+                        onOpenEvent={openDrawer}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-[rgba(12,18,24,0.04)]">
+                        <LocateFixed className={`h-7 w-7 ${geoStatus === 'pending' ? 'animate-pulse text-[var(--secondary)]' : 'text-[var(--muted)]'}`} />
+                        <p className="text-sm font-medium text-[var(--muted)]">
+                          {geoStatus === 'pending' ? 'Finding your location…' : 'Location unavailable — enable location access in your browser'}
+                        </p>
+                      </div>
+                    )}
                     <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(12,18,24,0.1)_0%,rgba(12,18,24,0.02)_40%,rgba(12,18,24,0.34)_100%)]" />
 
                     <div className="pointer-events-none absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
@@ -530,9 +440,11 @@ export function MapScreen() {
                         </p>
                         <p className="mt-2 text-sm leading-6 text-muted">{pulseCopy}</p>
                       </Card>
-                      <Button type="button" variant="outline" size="sm" className="pointer-events-auto h-11 w-11 rounded-full p-0" onClick={() => setMapExpanded(true)}>
-                        <Maximize2 className="h-4 w-4" />
-                      </Button>
+                      {center ? (
+                        <Button type="button" variant="outline" size="sm" className="pointer-events-auto h-11 w-11 rounded-full p-0" onClick={() => setMapExpanded(true)}>
+                          <Maximize2 className="h-4 w-4" />
+                        </Button>
+                      ) : null}
                     </div>
 
                     {previewedEvent ? (
@@ -582,7 +494,7 @@ export function MapScreen() {
                         <div className="space-y-4 p-5">
                           <p className="text-sm leading-6 text-muted">{getEventTheme(previewedEvent).previewLine}</p>
                           <div className="grid gap-3 sm:grid-cols-2">
-                            <Button type="button" size="lg" onClick={() => openDrawer(previewedEvent)}>Open drawer</Button>
+                            <Button type="button" size="lg" onClick={() => openDrawer(previewedEvent)}>Preview event</Button>
                             <Button asChild variant="outline" size="lg">
                               <Link href={`/events/${previewedEvent.id}`}>Full page</Link>
                             </Button>

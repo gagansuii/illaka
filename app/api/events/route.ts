@@ -32,7 +32,8 @@ const createSchema = z.object({
   isPaid: z.boolean(),
   eventType: z.enum(['PHYSICAL', 'ONLINE']).optional(),
   onlineLink: z.string().url().optional().or(z.literal('')),
-  linkShareMode: z.enum(['IMMEDIATE', 'BEFORE_EVENT']).optional()
+  linkShareMode: z.enum(['IMMEDIATE', 'BEFORE_EVENT']).optional(),
+  paymentQrUrl: z.string().optional()
 }).refine((d) => new Date(d.endTime) > new Date(d.startTime), {
   message: 'endTime must be after startTime',
   path: ['endTime']
@@ -176,6 +177,7 @@ export async function POST(req: Request) {
   const eventType = data.eventType ?? 'PHYSICAL';
   const onlineLink = data.onlineLink ?? null;
   const linkShareMode = data.linkShareMode ?? null;
+  const paymentQrUrl = data.paymentQrUrl ?? null;
 
   let inserted: any;
   try {
@@ -199,6 +201,7 @@ export async function POST(req: Request) {
         "eventType",
         "onlineLink",
         "linkShareMode",
+        "paymentQrUrl",
         "createdAt",
         "updatedAt"
       ) VALUES (
@@ -220,10 +223,11 @@ export async function POST(req: Request) {
         ${eventType}::"EventType",
         ${onlineLink},
         ${linkShareMode}::"LinkShareMode",
+        ${paymentQrUrl},
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
       )
-      RETURNING "id", "title", "description", "bannerUrl", "badgeIcon", "latitude", "longitude", "startTime", "endTime", "visibility", "capacity", "organizerId", "isPaid", "engagementScore", "eventType", "onlineLink", "linkShareMode", "createdAt", "updatedAt"
+      RETURNING "id", "title", "description", "bannerUrl", "badgeIcon", "latitude", "longitude", "startTime", "endTime", "visibility", "capacity", "organizerId", "isPaid", "engagementScore", "eventType", "onlineLink", "linkShareMode", "paymentQrUrl", "createdAt", "updatedAt"
     `;
   } catch (err) {
     console.error('Event creation failed:', err);

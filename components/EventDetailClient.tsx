@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { ArrowUpRight, CalendarClock, Compass, Copy, Globe, Link2, Lock, MapPin, Share2, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { ArrowUpRight, CalendarClock, Compass, Copy, Download, Globe, Link2, Lock, MapPin, Share2, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { PaymentButton } from '@/components/PaymentButton';
 import { ResilientImage } from '@/components/ResilientImage';
@@ -27,6 +27,7 @@ type EventDetail = {
   eventType?: 'PHYSICAL' | 'ONLINE' | null;
   onlineLink?: string | null;
   linkShareMode?: 'IMMEDIATE' | 'BEFORE_EVENT' | null;
+  paymentQrUrl?: string | null;
   organizer?: {
     name?: string | null;
   } | null;
@@ -275,7 +276,7 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
                 </div>
               </div>
               <div className="rounded-[1.6rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] p-4 text-sm leading-6 text-muted dark:bg-[rgba(15,23,42,0.22)]">
-                RSVP flow, payments, and visibility settings stay intact. This page simply gives them a calmer and more persuasive frame.
+                Ilaaka connects you directly with the person making this happen — no intermediaries, just local trust.
               </div>
             </Card>
           </div>
@@ -395,6 +396,31 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
             </div>
           </Card>
 
+          {event.isPaid && event.paymentQrUrl && !isOrganizer ? (
+            <Card className="surface-card-strong space-y-4">
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: theme.accentStrong }}>
+                  Payment
+                </p>
+                <h2 className="text-xl font-semibold">Scan to pay the organiser.</h2>
+                <p className="text-sm leading-6 text-muted">Use any UPI app — GPay, PhonePe, Paytm, or your bank app.</p>
+              </div>
+              <img
+                src={event.paymentQrUrl}
+                alt="Payment QR code"
+                className="w-44 rounded-[1.2rem] border border-[var(--line)] shadow-sm"
+              />
+              <a
+                href={event.paymentQrUrl}
+                download="payment-qr.png"
+                className="inline-flex items-center gap-2 rounded-[1.2rem] border border-[var(--line)] bg-[rgba(255,255,255,0.36)] px-4 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--surface-strong)] dark:bg-[rgba(15,23,42,0.22)]"
+              >
+                <Download className="h-4 w-4" style={{ color: theme.accentStrong }} />
+                Download QR
+              </a>
+            </Card>
+          ) : null}
+
           <Card className="surface-card-strong space-y-4">
             <div className="flex items-start gap-3">
               <div className="rounded-full p-2" style={{ background: theme.accentSoft, color: theme.accentStrong }}>
@@ -423,18 +449,17 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
                     href={event.onlineLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] px-4 py-3 text-sm transition-colors hover:bg-[var(--surface-strong)] dark:bg-[rgba(15,23,42,0.22)]"
+                    className="flex w-full items-center justify-center gap-2 rounded-[1.4rem] px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    style={{ background: `linear-gradient(90deg, ${theme.accentStrong} 0%, ${theme.accent} 100%)` }}
                   >
-                    <span className="text-muted">Join link</span>
-                    <span className="inline-flex items-center gap-1.5 font-medium" style={{ color: theme.accentStrong }}>
-                      <Globe className="h-3.5 w-3.5" />
-                      Open link
-                    </span>
+                    <Globe className="h-4 w-4" />
+                    Join meeting
+                    <ArrowUpRight className="h-4 w-4" />
                   </a>
                 ) : (
                   <div className="flex items-center justify-between rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] px-4 py-3 text-sm dark:bg-[rgba(15,23,42,0.22)]">
-                    <span className="text-muted">Join link</span>
-                    <span className="font-medium text-muted">Shared 6 hrs before</span>
+                    <span className="text-muted">Meeting link</span>
+                    <span className="font-medium text-muted">Will be shared before the event</span>
                   </div>
                 )
               ) : (
@@ -476,14 +501,14 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
               )}
 
               {rsvpCount >= hostingThreshold ? (
-                <PaymentButton label="Pay hosting fee" reason="hosting_fee" amount={hostingFee} eventId={event.id} />
+                <PaymentButton label="Pay hosting fee" reason="hosting_fee" amount={hostingFee} eventId={event.id} eventTitle={event.title} />
               ) : (
                 <div className="rounded-[1.5rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] p-4 text-sm leading-6 text-muted dark:bg-[rgba(15,23,42,0.22)]">
                   Hosting fee unlocks once the event reaches {hostingThreshold} RSVPs.
                 </div>
               )}
 
-              <PaymentButton label="Boost event promotion" reason="promotion" amount={promotionPrice} eventId={event.id} />
+              <PaymentButton label="Boost event promotion" reason="promotion" amount={promotionPrice} eventId={event.id} eventTitle={event.title} />
             </Card>
           ) : null}
         </aside>
