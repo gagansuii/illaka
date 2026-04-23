@@ -8,15 +8,22 @@ const ALLOWED_STATUSES = new Set(['created', 'authorized', 'captured', 'refunded
 export async function POST(req: Request) {
   const body = await req.text();
   const signature = req.headers.get('x-razorpay-signature');
+
+  // Reject immediately if signature header is absent — prevents null-bypass attacks.
+  if (!signature) {
+    return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
+  }
+
   let secret: string;
   try {
     secret = getEnv('RAZORPAY_WEBHOOK_SECRET');
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({ error: 'Webhook secret is not configured' }, { status: 503 });
   }
 
   const expected = crypto.createHmac('sha256', secret).update(body).digest('hex');
-  if (signature !== expected) {
+  // Use timing-safe comparison to prevent timing attacks on the HMAC.
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 

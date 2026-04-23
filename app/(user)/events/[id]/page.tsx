@@ -47,31 +47,78 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
   const { id } = await params;
   const { token } = await searchParams;
 
-  const event = await prisma.event.findUnique({
-    where: { id },
-    include: { organizer: true, rsvps: true }
-  });
+  let event: Awaited<ReturnType<typeof prisma.event.findUnique>> & {
+    organizer: { id: string; name: string } | null;
+    rsvps: { id: string }[];
+  } | null = null;
+
+  try {
+    event = await prisma.event.findUnique({
+      where: { id },
+      include: {
+        organizer: { select: { id: true, name: true } },
+        rsvps: { select: { id: true } },
+      },
+    });
+  } catch (err) {
+    console.error('Event fetch error:', err);
+    return (
+      <div style={{ maxWidth: 560, margin: '80px auto', padding: '0 20px', fontFamily: 'var(--font-mono), monospace', color: 'var(--ink)', textAlign: 'center' }}>
+        <div style={{ fontFamily: 'var(--font-fraunces), serif', fontSize: 36, fontWeight: 600 }}>Something went wrong.</div>
+        <p style={{ fontSize: 11, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.16em', marginTop: 10 }}>Could not load this event. Please try again.</p>
+        <a href="/" style={{ display: 'inline-block', marginTop: 20, padding: '10px 20px', background: 'var(--terra)', border: '1.5px solid var(--terra-deep)', color: 'var(--cream)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', textDecoration: 'none' }}>← BACK TO WALL</a>
+      </div>
+    );
+  }
 
   if (!event) {
-    return <div className="p-6">Event not found</div>;
+    return (
+      <div style={{ maxWidth: 560, margin: '80px auto', padding: '0 20px', fontFamily: 'var(--font-mono), monospace', color: 'var(--ink)', textAlign: 'center' }}>
+        <div style={{ fontFamily: 'var(--font-fraunces), serif', fontSize: 36, fontWeight: 600 }}>Event not found.</div>
+        <a href="/" style={{ display: 'inline-block', marginTop: 20, padding: '10px 20px', background: 'var(--terra)', border: '1.5px solid var(--terra-deep)', color: 'var(--cream)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', textDecoration: 'none' }}>← BACK TO WALL</a>
+      </div>
+    );
   }
+
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+  const isOrganizer = userId === event.organizerId;
+  const isAdmin = session?.user?.role === 'ADMIN';
 
   if (event.visibility === 'PRIVATE') {
     const tokenValid = token && event.shareToken && token === event.shareToken;
-    if (!tokenValid) {
-      const session = await getServerSession(authOptions);
-      const userId = session?.user?.id;
-      if (!userId || (event.organizerId !== userId && session?.user?.role !== 'ADMIN')) {
-        return <div className="p-6">Event not found</div>;
-      }
+    if (!tokenValid && !isOrganizer && !isAdmin) {
+      return (
+        <div style={{ maxWidth: 560, margin: '80px auto', padding: '0 20px', fontFamily: 'var(--font-mono), monospace', color: 'var(--ink)', textAlign: 'center' }}>
+          <div style={{ fontFamily: 'var(--font-fraunces), serif', fontSize: 36, fontWeight: 600 }}>Event not found.</div>
+          <a href="/" style={{ display: 'inline-block', marginTop: 20, padding: '10px 20px', background: 'var(--terra)', border: '1.5px solid var(--terra-deep)', color: 'var(--cream)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', textDecoration: 'none' }}>← BACK TO WALL</a>
+        </div>
+      );
     }
   }
 
-  const sanitized = sanitizeEventMedia(event) as typeof event;
+  // Past events: only visible to the organizer or admin
+  const isPast = new Date(event.endTime) < new Date();
+  if (isPast && !isOrganizer && !isAdmin) {
+    return (
+      <div style={{ maxWidth: 560, margin: '80px auto', padding: '0 20px', fontFamily: 'var(--font-mono), monospace', color: 'var(--ink)', textAlign: 'center' }}>
+        <div style={{ fontFamily: 'var(--font-fraunces), serif', fontSize: 36, fontWeight: 600 }}>This event has ended.</div>
+        <p style={{ fontSize: 11, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.16em', marginTop: 10 }}>It's no longer open to the public.</p>
+        <a href="/" style={{ display: 'inline-block', marginTop: 20, padding: '10px 20px', background: 'var(--terra)', border: '1.5px solid var(--terra-deep)', color: 'var(--cream)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', textDecoration: 'none' }}>← BACK TO WALL</a>
+      </div>
+    );
+  }
+
+  const sanitized = sanitizeEventMedia(event);
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
-      <EventDetailClient event={{ ...sanitized, shareToken: event.shareToken ?? null }} />
-    </div>
+    <EventDetailClient
+      event={{
+        ...sanitized,
+        organizer: event.organizer,
+        rsvps: event.rsvps,
+        shareToken: event.shareToken ?? null,
+      }}
+    />
   );
 }

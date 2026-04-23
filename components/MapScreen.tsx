@@ -1,15 +1,12 @@
 'use client';
 
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGeolocation } from '@/lib/useGeolocation';
 import dynamic from 'next/dynamic';
-import { ArrowUpRight, CalendarClock, LocateFixed, MapPin, Maximize2, Minimize2, Radar, Search, Sparkles, Users } from 'lucide-react';
+import { LocateFixed, MapPin, Maximize2, Minimize2, Search } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { ResilientImage } from '@/components/ResilientImage';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { SwipeDeck } from '@/components/SwipeDeck';
 import { EventPreviewDrawer } from '@/components/EventPreviewDrawer';
@@ -26,14 +23,69 @@ const LOCATION_SYNC_THROTTLE_MS = 8_000;
 const EVENT_FETCH_DEBOUNCE_MS = 250;
 const PREFETCH_DELAY_MS = 1_200;
 
-
 function distanceMeters([lat1, lng1]: [number, number], [lat2, lng2]: [number, number]) {
   const R = 6371e3;
-  const toRad = (value: number) => (value * Math.PI) / 180;
+  const toRad = (v: number) => (v * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+function FlyerEventCard({ event, onPreview, onOpen, active }: {
+  event: EventSummary;
+  onPreview: (e: EventSummary) => void;
+  onOpen: (e: EventSummary) => void;
+  active: boolean;
+}) {
+  const theme = getEventTheme(event);
+  const tintBg = theme.accentSoft;
+
+  return (
+    <button
+      type="button"
+      onMouseEnter={() => onPreview(event)}
+      onFocus={() => onPreview(event)}
+      onClick={() => onOpen(event)}
+      style={{
+        background: 'var(--paper-card)',
+        border: `1.5px solid ${active ? 'var(--terra)' : 'var(--ink)'}`,
+        boxShadow: active ? '2px 2px 0 var(--terra)' : '2px 2px 0 var(--ink)',
+        padding: 0, cursor: 'pointer', textAlign: 'left',
+        transition: 'all 150ms ease', display: 'block',
+        flexShrink: 0, width: 196,
+        transform: active ? 'translateY(-3px)' : 'none',
+      }}
+    >
+      {event.bannerUrl ? (
+        <div style={{ height: 90, overflow: 'hidden', borderBottom: '1.5px solid var(--ink)', position: 'relative' }}>
+          <ResilientImage
+            src={event.bannerUrl} alt={event.title}
+            className="h-full w-full object-cover"
+            fallback={<div style={{ height: '100%', background: tintBg }} />}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(35,28,21,0.5) 0%, transparent 50%)' }} />
+        </div>
+      ) : (
+        <div style={{ height: 90, background: tintBg, borderBottom: '1.5px solid var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 700, fontSize: 36, color: theme.accentStrong, opacity: 0.5 }}>
+            {event.title.charAt(0)}
+          </span>
+        </div>
+      )}
+      <div style={{ padding: '8px 10px' }}>
+        <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.18em', color: theme.accentStrong, marginBottom: 4 }}>
+          {theme.label}
+        </div>
+        <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 14, lineHeight: 1.15, color: 'var(--ink)' }}>
+          {event.title}
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--ink-soft)', marginTop: 5 }}>
+          {formatEventDay(event.startTime)} · {formatEventRange(event.startTime, event.endTime)}
+        </div>
+      </div>
+    </button>
+  );
 }
 
 export function MapScreen() {
@@ -64,174 +116,89 @@ export function MapScreen() {
   }, [center, radius]);
 
   const featuredEvents = events.slice(0, 6);
-  const previewedEvent = featuredEvents.find((event) => event.id === previewedEventId) ?? featuredEvents[0] ?? null;
+  const previewedEvent = featuredEvents.find(e => e.id === previewedEventId) ?? featuredEvents[0] ?? null;
   const radiusLabel = `${(radius / 1000).toFixed(1)} km`;
 
   const updateLocation = useCallback(async (nextCenter: [number, number]) => {
-    if (status !== 'authenticated' || locationSyncSuppressedRef.current) {
-      return;
-    }
-
+    if (status !== 'authenticated' || locationSyncSuppressedRef.current) return;
     const now = Date.now();
-    if (now - lastLocationSyncAtRef.current < LOCATION_SYNC_THROTTLE_MS) {
-      return;
-    }
-
+    if (now - lastLocationSyncAtRef.current < LOCATION_SYNC_THROTTLE_MS) return;
     const previous = lastLocationSyncRef.current;
     if (previous) {
       const movedMeters = distanceMeters(previous.center, nextCenter);
       const radiusChanged = previous.radius !== radius;
-      if (!radiusChanged && movedMeters < LOCATION_SYNC_DISTANCE_THRESHOLD_METERS) {
-        return;
-      }
+      if (!radiusChanged && movedMeters < LOCATION_SYNC_DISTANCE_THRESHOLD_METERS) return;
     }
-
     lastLocationSyncAtRef.current = now;
-
     try {
       const res = await fetch('/api/users/location', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ latitude: nextCenter[0], longitude: nextCenter[1], radius })
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ latitude: nextCenter[0], longitude: nextCenter[1], radius }),
       });
-
-      if (res.status === 401) {
-        locationSyncSuppressedRef.current = true;
-        return;
-      }
-
-      if (res.ok) {
-        lastLocationSyncRef.current = { center: nextCenter, radius };
-      }
-    } catch {
-      // Location sync is best-effort.
-    }
+      if (res.status === 401) { locationSyncSuppressedRef.current = true; return; }
+      if (res.ok) lastLocationSyncRef.current = { center: nextCenter, radius };
+    } catch { /* best-effort */ }
   }, [radius, status]);
 
   useEffect(() => {
-    if (!centerParams) {
-      return;
-    }
-
+    if (!centerParams) return;
     eventFetchAbortRef.current?.abort();
     const requestId = ++eventRequestIdRef.current;
     let controller: AbortController | null = null;
-
     const timeoutId = window.setTimeout(() => {
       controller = new AbortController();
       eventFetchAbortRef.current = controller;
       setLoading(true);
-
       void (async () => {
         try {
           const res = await fetch(`/api/events?${centerParams}`, { signal: controller.signal, cache: 'no-store' });
           if (!res.ok) {
-            if (requestId === eventRequestIdRef.current) {
-              setHasLoadedRealEvents(true);
-              hasLoadedRealEventsRef.current = true;
-            }
+            if (requestId === eventRequestIdRef.current) { setHasLoadedRealEvents(true); hasLoadedRealEventsRef.current = true; }
             return;
           }
           const data = await res.json();
-          if (controller.signal.aborted || requestId !== eventRequestIdRef.current) {
-            return;
-          }
-
-          const nextEvents = Array.isArray(data.events) ? data.events : [];
-          setEvents(nextEvents);
-          setHasLoadedRealEvents(true);
-          hasLoadedRealEventsRef.current = true;
-        } catch (error) {
-          if (error instanceof Error && error.name === 'AbortError') {
-            return;
-          }
-          if (requestId === eventRequestIdRef.current) {
-            setHasLoadedRealEvents(true);
-            hasLoadedRealEventsRef.current = true;
-          }
+          if (controller.signal.aborted || requestId !== eventRequestIdRef.current) return;
+          setEvents(Array.isArray(data.events) ? data.events : []);
+          setHasLoadedRealEvents(true); hasLoadedRealEventsRef.current = true;
+        } catch (err) {
+          if (err instanceof Error && err.name === 'AbortError') return;
+          if (requestId === eventRequestIdRef.current) { setHasLoadedRealEvents(true); hasLoadedRealEventsRef.current = true; }
         } finally {
-          if (requestId === eventRequestIdRef.current) {
-            setLoading(false);
-          }
+          if (requestId === eventRequestIdRef.current) setLoading(false);
         }
       })();
     }, EVENT_FETCH_DEBOUNCE_MS);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      controller?.abort();
-    };
+    return () => { window.clearTimeout(timeoutId); controller?.abort(); };
   }, [centerParams]);
 
-  useEffect(() => {
-    return () => {
-      eventFetchAbortRef.current?.abort();
-    };
-  }, []);
+  useEffect(() => { return () => { eventFetchAbortRef.current?.abort(); }; }, []);
+  useEffect(() => { if (!center) return; void updateLocation(center); }, [center, updateLocation]);
 
   useEffect(() => {
-    if (!center) return;
-    void updateLocation(center);
-  }, [center, updateLocation]);
-
-  useEffect(() => {
-    if (status === 'authenticated') {
-      locationSyncSuppressedRef.current = false;
-      return;
-    }
-    if (status === 'unauthenticated') {
-      locationSyncSuppressedRef.current = false;
-      lastLocationSyncRef.current = null;
-      lastLocationSyncAtRef.current = 0;
-    }
+    if (status === 'authenticated') { locationSyncSuppressedRef.current = false; return; }
+    if (status === 'unauthenticated') { locationSyncSuppressedRef.current = false; lastLocationSyncRef.current = null; lastLocationSyncAtRef.current = 0; }
   }, [status]);
 
   useEffect(() => {
-    if (!center || prefetchStartedRef.current) {
-      return;
-    }
-
+    if (!center || prefetchStartedRef.current) return;
     prefetchStartedRef.current = true;
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => {
-      const prefetchRadii = Array.from(
-        new Set([
-          radius,
-          Math.max(1_000, radius - 1_000),
-          Math.min(20_000, radius + 1_500)
-        ])
-      );
-      void Promise.all(
-        prefetchRadii.map((prefetchRadius) =>
-          fetch(`/api/events?lat=${center[0]}&lng=${center[1]}&radius=${prefetchRadius}`, {
-            signal: controller.signal,
-            cache: 'no-store'
-          }).catch(() => null)
-        )
-      );
+      const radii = Array.from(new Set([radius, Math.max(1_000, radius - 1_000), Math.min(20_000, radius + 1_500)]));
+      void Promise.all(radii.map(r => fetch(`/api/events?lat=${center[0]}&lng=${center[1]}&radius=${r}`, { signal: controller.signal, cache: 'no-store' }).catch(() => null)));
     }, PREFETCH_DELAY_MS);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      controller.abort();
-    };
+    return () => { window.clearTimeout(timeoutId); controller.abort(); };
   }, [center, radius]);
 
   useEffect(() => {
     if (query) return;
-    const id = window.setInterval(() => {
-      setPromptIndex((current) => (current + 1) % SEARCH_PROMPTS.length);
-    }, 2600);
+    const id = window.setInterval(() => setPromptIndex(c => (c + 1) % SEARCH_PROMPTS.length), 2600);
     return () => window.clearInterval(id);
   }, [query]);
 
   useEffect(() => {
-    if (!featuredEvents.length) {
-      setPreviewedEventId(null);
-      return;
-    }
-
-    if (!previewedEventId || !featuredEvents.some((event) => event.id === previewedEventId)) {
+    if (!featuredEvents.length) { setPreviewedEventId(null); return; }
+    if (!previewedEventId || !featuredEvents.some(e => e.id === previewedEventId)) {
       setPreviewedEventId(featuredEvents[0].id);
     }
   }, [featuredEvents, previewedEventId]);
@@ -242,466 +209,298 @@ export function MapScreen() {
     setLoading(true);
     try {
       const res = await fetch('/api/ai-search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, latitude: center[0], longitude: center[1], radius })
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, latitude: center[0], longitude: center[1], radius }),
       });
-      if (!res.ok) {
-        if (hasLoadedRealEventsRef.current) {
-          setEvents([]);
-        }
-        return;
-      }
+      if (!res.ok) { if (hasLoadedRealEventsRef.current) setEvents([]); return; }
       const data = await res.json();
       setEvents(data.events ?? []);
-      setHasLoadedRealEvents(true);
-      hasLoadedRealEventsRef.current = true;
-    } finally {
-      setLoading(false);
-    }
+      setHasLoadedRealEvents(true); hasLoadedRealEventsRef.current = true;
+    } finally { setLoading(false); }
   }
 
-  function previewEvent(event: EventSummary) {
-    setPreviewedEventId(event.id);
-  }
+  function previewEvent(event: EventSummary) { setPreviewedEventId(event.id); }
+  function openDrawer(event: EventSummary) { setPreviewedEventId(event.id); setDrawerEvent(event); setDrawerOpen(true); }
 
-  function openDrawer(event: EventSummary) {
-    setPreviewedEventId(event.id);
-    setDrawerEvent(event);
-    setDrawerOpen(true);
-  }
-
-  const pulseCopy = !center
-    ? 'Finding your ilaaka and pinning the map around you.'
-    : loading && !hasLoadedRealEvents
-      ? 'Loading a first set of nearby events so the map feels alive right away.'
-      : loading
-      ? 'Refreshing nearby markers and local activity.'
-      : featuredEvents.length
-        ? `${featuredEvents.length} live events in range, with the strongest moments pulled forward first.`
-        : 'Nothing public is live yet. Widen the radius or host the first thing worth showing up for.';
+  const inputStyle: React.CSSProperties = {
+    flex: 1, padding: '12px 14px 12px 38px',
+    border: '1.5px solid var(--ink)', background: 'var(--paper-2)',
+    fontFamily: 'var(--font-mono), monospace', fontSize: 11,
+    color: 'var(--ink)', outline: 'none', borderRadius: 0,
+  };
 
   return (
     <>
-      {mapExpanded && center ? (
-        <div className="fixed inset-0 z-[60] bg-[var(--bg-deep)]">
-          <div className="relative h-full w-full overflow-hidden">
+      {/* — Expanded fullscreen map — */}
+      {mapExpanded && center && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'var(--ink)' }}>
+          <div style={{ position: 'relative', height: '100%', width: '100%' }}>
             <MapView
-              events={featuredEvents}
-              center={center}
-              radius={radius}
+              events={featuredEvents} center={center} radius={radius}
               previewedEventId={previewedEventId}
-              onPreviewEvent={previewEvent}
-              onOpenEvent={openDrawer}
+              onPreviewEvent={previewEvent} onOpenEvent={openDrawer}
             />
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(12,18,24,0.18)_0%,rgba(12,18,24,0.02)_40%,rgba(12,18,24,0.4)_100%)]" />
-
-            <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
-              <Card className="surface-card-strong max-w-2xl rounded-[1.8rem] p-4">
-                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
-                    <Input
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && void handleSearch()}
-                      placeholder={query ? '' : SEARCH_PROMPTS[promptIndex]}
-                      className="h-14 pl-11 text-base"
-                    />
-                  </div>
-                  <Button size="lg" onClick={() => void handleSearch()} className="w-full md:w-auto">
-                    <Search className="h-4 w-4" />
-                    Search
-                  </Button>
+            {/* overlay search */}
+            <div style={{ position: 'absolute', top: 14, left: 14, right: 14, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <div style={{ flex: 1, display: 'flex', background: 'var(--paper-card)', border: '1.5px solid var(--ink)', boxShadow: '2px 2px 0 var(--ink)', overflow: 'hidden' }}>
+                <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
+                  <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', pointerEvents: 'none' }} />
+                  <input
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && void handleSearch()}
+                    placeholder={query ? '' : SEARCH_PROMPTS[promptIndex]}
+                    style={inputStyle}
+                  />
                 </div>
-              </Card>
-              <Button type="button" variant="outline" size="sm" className="h-12 w-12 rounded-full p-0" onClick={() => setMapExpanded(false)}>
-                <Minimize2 className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {previewedEvent ? (
+                <button
+                  type="button" onClick={() => void handleSearch()}
+                  style={{ padding: '12px 16px', background: 'var(--terra)', border: 'none', borderLeft: '1.5px solid var(--ink)', color: 'var(--cream)', fontFamily: 'var(--font-mono), monospace', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', cursor: 'pointer' }}
+                >
+                  SEARCH
+                </button>
+              </div>
               <button
-                type="button"
-                onClick={() => openDrawer(previewedEvent)}
-                className="absolute bottom-4 left-4 right-4 rounded-[1.8rem] border border-white/16 bg-[rgba(15,23,42,0.58)] p-4 text-left text-white shadow-[0_18px_44px_rgba(15,23,42,0.2)] backdrop-blur-xl sm:max-w-md"
+                type="button" onClick={() => setMapExpanded(false)}
+                style={{ padding: 10, background: 'var(--paper-card)', border: '1.5px solid var(--ink)', boxShadow: '2px 2px 0 var(--ink)', cursor: 'pointer', color: 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/64">Marker preview</p>
-                <p className="mt-2 text-xl font-semibold">{previewedEvent.title}</p>
-                <p className="mt-1 text-sm text-white/72">
-                  {formatEventDay(previewedEvent.startTime)} / {formatEventRange(previewedEvent.startTime, previewedEvent.endTime)}
-                </p>
+                <Minimize2 size={16} />
               </button>
-            ) : null}
+            </div>
+
+            {/* floating event preview */}
+            {previewedEvent && (
+              <button
+                type="button" onClick={() => openDrawer(previewedEvent)}
+                style={{ position: 'absolute', bottom: 14, left: 14, right: 14, background: 'var(--paper-card)', border: '1.5px solid var(--ink)', boxShadow: '2px 2px 0 var(--ink)', padding: '12px 14px', textAlign: 'left', cursor: 'pointer', maxWidth: 360 }}
+              >
+                <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--ink-soft)', marginBottom: 4 }}>MARKER PREVIEW</div>
+                <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 20, lineHeight: 1.1, color: 'var(--ink)' }}>{previewedEvent.title}</div>
+                <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--ink-soft)', marginTop: 6 }}>
+                  {formatEventDay(previewedEvent.startTime)} · {formatEventRange(previewedEvent.startTime, previewedEvent.endTime)}
+                </div>
+              </button>
+            )}
           </div>
         </div>
-      ) : null}
+      )}
 
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-8 px-4 pb-24 pt-6 sm:px-6 lg:px-8">
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
-          <section className="section-shell relative overflow-hidden p-5 sm:p-6 lg:p-8">
-            <div className="absolute inset-x-0 top-0 h-36 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.42),transparent_72%)]" />
-            <div className="relative space-y-6">
-              <div className="space-y-4">
-                <p className="eyebrow">
-                  <Radar className="h-3.5 w-3.5" />
-                  Hyperlocal field guide
-                </p>
-                <h1 className="max-w-3xl font-[family:var(--font-fraunces)] text-4xl leading-[0.94] sm:text-5xl lg:text-[3.85rem]">
-                  Discover the kind of things that make a neighborhood feel alive.
-                </h1>
-                <p className="max-w-2xl text-[15px] leading-7 text-muted sm:text-base">
-                  The map stays central, the markers stay lively, and every strong signal can open into a quick drawer without breaking your flow.
-                </p>
-              </div>
-
-              <div className="relative z-10 space-y-3">
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
-                    <Input
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && void handleSearch()}
-                      placeholder={query ? '' : SEARCH_PROMPTS[promptIndex]}
-                      className="h-14 pl-11 text-base"
-                    />
-                  </div>
-                  <Button size="lg" onClick={() => void handleSearch()} className="h-14 w-full sm:w-auto">
-                    <Search className="h-4 w-4" />
-                    Search nearby
-                  </Button>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {EVENT_CATEGORY_OPTIONS.map((category) => (
-                    <button
-                      key={category.key}
-                      type="button"
-                      className="info-pill min-h-[40px] px-4 py-2 text-sm"
-                      onClick={() => setQuery(category.hint)}
-                      style={{ background: category.accentSoft, color: category.accentStrong }}
-                    >
-                      {category.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <span className="info-pill">
-                    <LocateFixed className={`h-4 w-4 ${
-                      geoStatus === 'pending' ? 'animate-pulse text-[var(--secondary)]' :
-                      geoStatus === 'resolved' ? 'text-[var(--secondary)]' :
-                      geoStatus === 'ip-fallback' ? 'text-[var(--accent)]' :
-                      'text-[var(--muted)]'
-                    }`} />
-                    {geoStatus === 'pending' && 'Finding your location'}
-                    {geoStatus === 'resolved' && 'Location locked'}
-                    {geoStatus === 'ip-fallback' && 'Approximate location'}
-                    {geoStatus === 'unavailable' && 'Location unavailable'}
-                  </span>
-                  <span className="info-pill">
-                    <MapPin className="h-4 w-4 text-[var(--accent)]" />
-                    {featuredEvents.length} live events
-                  </span>
-                  <span className="info-pill">
-                    <CalendarClock className="h-4 w-4 text-[var(--secondary)]" />
-                    Radius {radiusLabel}
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-                <div className="overflow-hidden rounded-[2.2rem] border border-[var(--line)] bg-[rgba(12,18,24,0.08)] shadow-[0_24px_80px_rgba(15,23,42,0.14)]">
-                  <div className="relative h-[420px] sm:h-[500px]">
-                    {center ? (
-                      <MapView
-                        events={featuredEvents}
-                        center={center}
-                        radius={radius}
-                        previewedEventId={previewedEventId}
-                        onPreviewEvent={previewEvent}
-                        onOpenEvent={openDrawer}
-                      />
-                    ) : (
-                      <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-[rgba(12,18,24,0.04)]">
-                        <LocateFixed className={`h-7 w-7 ${geoStatus === 'pending' ? 'animate-pulse text-[var(--secondary)]' : 'text-[var(--muted)]'}`} />
-                        <p className="text-sm font-medium text-[var(--muted)]">
-                          {geoStatus === 'pending' ? 'Finding your location…' : 'Location unavailable — enable location access in your browser'}
-                        </p>
-                      </div>
-                    )}
-                    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(12,18,24,0.1)_0%,rgba(12,18,24,0.02)_40%,rgba(12,18,24,0.34)_100%)]" />
-
-                    <div className="pointer-events-none absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
-                      <Card className="surface-card-strong pointer-events-auto max-w-md rounded-[1.6rem] p-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--secondary)]">
-                          Neighborhood pulse
-                        </p>
-                        <p className="mt-2 text-sm leading-6 text-muted">{pulseCopy}</p>
-                      </Card>
-                      {center ? (
-                        <Button type="button" variant="outline" size="sm" className="pointer-events-auto h-11 w-11 rounded-full p-0" onClick={() => setMapExpanded(true)}>
-                          <Maximize2 className="h-4 w-4" />
-                        </Button>
-                      ) : null}
-                    </div>
-
-                    {previewedEvent ? (
-                      <button
-                        type="button"
-                        onClick={() => openDrawer(previewedEvent)}
-                        className="absolute bottom-4 left-4 right-4 rounded-[1.8rem] border border-white/16 bg-[rgba(15,23,42,0.58)] p-4 text-left text-white shadow-[0_18px_44px_rgba(15,23,42,0.2)] backdrop-blur-xl sm:max-w-md"
-                      >
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/64">Marker preview</p>
-                        <p className="mt-2 text-xl font-semibold">{previewedEvent.title}</p>
-                        <p className="mt-1 text-sm text-white/72">
-                          {formatEventDay(previewedEvent.startTime)} / {formatEventRange(previewedEvent.startTime, previewedEvent.endTime)}
-                        </p>
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <Card className="surface-card-strong overflow-hidden p-0">
-                    {previewedEvent ? (
-                      <>
-                        <button type="button" className="w-full text-left" onClick={() => openDrawer(previewedEvent)}>
-                          <div className="relative h-48 overflow-hidden">
-                            {previewedEvent.bannerUrl ? (
-                              <ResilientImage
-                                src={previewedEvent.bannerUrl}
-                                alt={previewedEvent.title}
-                                className="h-full w-full object-cover"
-                                fallback={
-                                  <div
-                                    className="h-full w-full"
-                                    style={{ background: `linear-gradient(135deg, ${getEventTheme(previewedEvent).accentStrong} 0%, ${getEventTheme(previewedEvent).accent} 100%)` }}
-                                  />
-                                }
-                              />
-                            ) : (
-                              <div className="h-full w-full" style={{ background: `linear-gradient(135deg, ${getEventTheme(previewedEvent).accentStrong} 0%, ${getEventTheme(previewedEvent).accent} 100%)` }} />
-                            )}
-                            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.04)_14%,rgba(15,23,42,0.72)_100%)]" />
-                            <div className="absolute left-4 right-4 bottom-4 text-white">
-                              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/68">{getEventTheme(previewedEvent).label}</p>
-                              <h2 className="mt-2 text-2xl font-semibold leading-tight">{previewedEvent.title}</h2>
-                            </div>
-                          </div>
-                        </button>
-                        <div className="space-y-4 p-5">
-                          <p className="text-sm leading-6 text-muted">{getEventTheme(previewedEvent).previewLine}</p>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <Button type="button" size="lg" onClick={() => openDrawer(previewedEvent)}>Preview event</Button>
-                            <Button asChild variant="outline" size="lg">
-                              <Link href={`/events/${previewedEvent.id}`}>Full page</Link>
-                            </Button>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="p-5 text-sm leading-6 text-muted">Hover a marker or tap a card to preview it here.</div>
-                    )}
-                  </Card>
-
-                  <Card className="surface-card-strong overflow-hidden p-0">
-                    <div className="bg-[linear-gradient(140deg,rgba(106,136,123,0.92)_0%,rgba(184,111,79,0.9)_100%)] p-5 text-white">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/72">Discovery control</p>
-                      <h2 className="mt-3 font-[family:var(--font-fraunces)] text-3xl leading-none">Let the map breathe.</h2>
-                      <p className="mt-3 text-sm leading-6 text-white/78">Keep the radius tight for serendipity or widen it when you want a fuller neighborhood picture.</p>
-                    </div>
-                    <div className="space-y-5 p-5">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-muted">Search radius</span>
-                        <span className="font-semibold text-[var(--accent)]">{radiusLabel}</span>
-                      </div>
-                      <div>
-                        <Slider value={[radius]} min={1000} max={20000} step={500} onValueChange={(value) => setRadius(value[0] ?? radius)} />
-                        <div className="mt-2 flex justify-between text-xs text-muted">
-                          <span>1 km</span>
-                          <span>20 km</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              </div>
-
-              <div className="flex gap-3 overflow-x-auto pb-1">
-                {featuredEvents.map((event) => {
-                  const theme = getEventTheme(event);
-                  return (
-                    <button
-                      key={event.id}
-                      type="button"
-                      onMouseEnter={() => previewEvent(event)}
-                      onFocus={() => previewEvent(event)}
-                      onClick={() => openDrawer(event)}
-                      className="min-w-[220px] rounded-[1.75rem] border border-[var(--line)] bg-[rgba(255,255,255,0.42)] p-4 text-left transition duration-200 hover:-translate-y-1 hover:bg-[var(--surface-strong)] dark:bg-[rgba(15,23,42,0.24)]"
-                    >
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.24em]" style={{ color: theme.accentStrong }}>
-                        {theme.label}
-                      </p>
-                      <h3 className="mt-2 text-lg font-semibold leading-tight">{event.title}</h3>
-                      <p className="mt-3 text-xs uppercase tracking-[0.18em] text-muted">
-                        {formatEventDay(event.startTime)} / {formatEventRange(event.startTime, event.endTime)}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-
-          <aside className="space-y-6">
-            <Card className="space-y-4">
-              <div className="space-y-3">
-                <p className="eyebrow">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Mobile swipe
-                </p>
-                <h2 className="text-2xl font-semibold">Keep discovery playful.</h2>
-                <p className="text-sm leading-6 text-muted">
-                  Swipe through the strongest picks when you want a faster pass without losing the warmth of the map.
-                </p>
-              </div>
-              <SwipeDeck events={featuredEvents} loading={loading} />
-            </Card>
-
-            <Card className="surface-card-strong overflow-hidden p-0">
-              <div className="p-5 sm:p-6">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">Host something</p>
-                <h2 className="mt-3 font-[family:var(--font-fraunces)] text-3xl leading-none">
-                  Turn a good local idea into a real invitation.
-                </h2>
-                <p className="mt-3 text-sm leading-6 text-muted">
-                  The creation flow now behaves more like a small creative studio, with live previews and better visual feedback.
-                </p>
-                <div className="mt-5">
-                  <Button asChild size="lg">
-                    <Link href="/events/new">
-                      <Sparkles className="h-4 w-4" />
-                      Create an event
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          </aside>
+      <div style={{
+        maxWidth: 720, margin: '0 auto', padding: '0 16px 100px',
+        fontFamily: 'var(--font-mono), ui-monospace, monospace', color: 'var(--ink)',
+      }}>
+        {/* Masthead */}
+        <div style={{ padding: '18px 0 14px', borderBottom: '1.5px solid var(--ink)', marginBottom: 0 }}>
+          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.24em', color: 'var(--ink-soft)' }}>
+            DISCOVER · YOUR ILAAKA
+          </div>
+          <h1 style={{
+            fontFamily: 'var(--font-fraunces), serif', fontWeight: 600,
+            fontSize: 'clamp(28px, 7vw, 42px)', lineHeight: 0.95, letterSpacing: '-0.025em', marginTop: 6,
+          }}>
+            what's happening{' '}
+            <span style={{ fontFamily: 'var(--font-serif), serif', fontStyle: 'italic', color: 'var(--terra)' }}>round the corner.</span>
+          </h1>
         </div>
 
-        <section className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="eyebrow">
-                <MapPin className="h-3.5 w-3.5" />
-                Around you now
+        {/* Search bar */}
+        <div style={{ display: 'flex', border: '1.5px solid var(--ink)', background: 'var(--paper-card)', boxShadow: '2px 2px 0 var(--ink)', margin: '16px 0 0', overflow: 'hidden' }}>
+          <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
+            <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)', pointerEvents: 'none' }} />
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && void handleSearch()}
+              placeholder={query ? '' : SEARCH_PROMPTS[promptIndex]}
+              style={inputStyle}
+            />
+          </div>
+          <button
+            type="button" onClick={() => void handleSearch()}
+            style={{ padding: '12px 16px', background: 'var(--terra)', border: 'none', borderLeft: '1.5px solid var(--ink)', color: 'var(--cream)', fontFamily: 'var(--font-mono), monospace', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            SEARCH NEARBY
+          </button>
+        </div>
+
+        {/* Vibe filter chips */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+          {EVENT_CATEGORY_OPTIONS.map(cat => (
+            <button
+              key={cat.key} type="button"
+              onClick={() => setQuery(cat.hint)}
+              style={{
+                padding: '5px 12px', border: `1.5px solid var(--ink)`,
+                background: cat.accentSoft, color: cat.accentStrong,
+                fontFamily: 'var(--font-mono), monospace', fontSize: 9,
+                textTransform: 'uppercase', letterSpacing: '0.14em', cursor: 'pointer',
+              }}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Status pills */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10, marginBottom: 14 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', border: '1px solid var(--ink-faint)', background: 'var(--paper-2)', fontFamily: 'var(--font-mono), monospace', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--ink-soft)' }}>
+            <LocateFixed size={10} style={{ color: geoStatus === 'resolved' ? 'var(--sage)' : geoStatus === 'pending' ? 'var(--mustard)' : 'var(--ink-faint)' }} />
+            {geoStatus === 'pending' ? 'FINDING YOU…' : geoStatus === 'resolved' ? 'LOCATED' : geoStatus === 'ip-fallback' ? 'APPROX. LOCATION' : 'NO LOCATION'}
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', border: '1px solid var(--ink-faint)', background: 'var(--paper-2)', fontFamily: 'var(--font-mono), monospace', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--ink-soft)' }}>
+            <MapPin size={10} style={{ color: 'var(--terra)' }} />
+            {featuredEvents.length} EVENTS
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', border: '1px solid var(--ink-faint)', background: 'var(--paper-2)', fontFamily: 'var(--font-mono), monospace', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--ink-soft)' }}>
+            ◉ {radiusLabel} RADIUS
+          </span>
+        </div>
+
+        {/* Map */}
+        <div style={{ border: '1.5px solid var(--ink)', boxShadow: '2px 2px 0 var(--ink)', position: 'relative', overflow: 'hidden', height: 340 }}>
+          {center ? (
+            <MapView
+              events={featuredEvents} center={center} radius={radius}
+              previewedEventId={previewedEventId}
+              onPreviewEvent={previewEvent} onOpenEvent={openDrawer}
+            />
+          ) : (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'var(--paper-2)' }}>
+              <LocateFixed size={28} color={geoStatus === 'pending' ? 'var(--mustard)' : 'var(--ink-faint)'} style={{ animation: geoStatus === 'pending' ? 'pulse 1.5s ease-in-out infinite' : 'none' }} />
+              <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 10, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+                {geoStatus === 'pending' ? 'FINDING YOUR ILAAKA…' : 'ENABLE LOCATION ACCESS'}
               </p>
-              <h2 className="mt-3 font-[family:var(--font-fraunces)] text-4xl leading-none">
-                A calmer list view when you want to compare.
-              </h2>
             </div>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/events/new">Create your own</Link>
-            </Button>
-          </div>
+          )}
 
-          {loading ? (
-            <div className="grid gap-4 transition-opacity duration-300 md:grid-cols-2">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="h-[260px] animate-pulse rounded-[2rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] dark:bg-[rgba(15,23,42,0.28)]" />
+          {/* Expand button */}
+          {center && (
+            <button
+              type="button" onClick={() => setMapExpanded(true)}
+              style={{ position: 'absolute', top: 10, right: 10, padding: 8, background: 'var(--paper-card)', border: '1.5px solid var(--ink)', boxShadow: '1px 1px 0 var(--ink)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
+            >
+              <Maximize2 size={14} color="var(--ink)" />
+            </button>
+          )}
+
+          {/* Floating event preview card */}
+          {previewedEvent && (
+            <button
+              type="button" onClick={() => openDrawer(previewedEvent)}
+              style={{ position: 'absolute', bottom: 10, left: 10, background: 'var(--paper-card)', border: '1.5px solid var(--ink)', boxShadow: '2px 2px 0 var(--ink)', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', maxWidth: 240, zIndex: 10 }}
+            >
+              <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 7, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--ink-soft)', marginBottom: 3 }}>PINNED</div>
+              <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 15, lineHeight: 1.1, color: 'var(--ink)' }}>{previewedEvent.title}</div>
+              <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--ink-soft)', marginTop: 4 }}>
+                {formatEventDay(previewedEvent.startTime)} · {formatEventRange(previewedEvent.startTime, previewedEvent.endTime)}
+              </div>
+            </button>
+          )}
+        </div>
+
+        {/* Radius control */}
+        <div style={{ border: '1.5px solid var(--ink)', borderTop: 'none', background: 'var(--paper-card)', boxShadow: '2px 2px 0 var(--ink)', padding: '10px 14px', marginBottom: 18 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--ink-soft)' }}>SEARCH RADIUS</span>
+            <span style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 16, color: 'var(--terra)' }}>{radiusLabel}</span>
+          </div>
+          <Slider value={[radius]} min={1000} max={20000} step={500} onValueChange={v => setRadius(v[0] ?? radius)} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+            <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 8, color: 'var(--ink-faint)', letterSpacing: '0.14em' }}>1 KM</span>
+            <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 8, color: 'var(--ink-faint)', letterSpacing: '0.14em' }}>20 KM</span>
+          </div>
+        </div>
+
+        {/* Horizontal event strip */}
+        {featuredEvents.length > 0 && (
+          <>
+            <div className="illaka-sep" style={{ margin: '0 0 12px' }}>
+              <span>near you now</span>
+            </div>
+            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
+              {featuredEvents.map(event => (
+                <FlyerEventCard
+                  key={event.id} event={event}
+                  active={event.id === previewedEventId}
+                  onPreview={previewEvent} onOpen={openDrawer}
+                />
               ))}
             </div>
-          ) : null}
+          </>
+        )}
 
-          {!loading && featuredEvents.length ? (
-            <div className="grid gap-4 transition-opacity duration-300 md:grid-cols-2">
-              {featuredEvents.map((event) => {
-                const theme = getEventTheme(event);
-                return (
-                  <article key={event.id} className="overflow-hidden rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] shadow-[0_24px_70px_rgba(17,24,39,0.12)] transition-all duration-200 hover:-translate-y-1 hover:bg-[var(--surface-strong)]" onMouseEnter={() => previewEvent(event)}>
-                    <button type="button" className="block w-full text-left" onClick={() => openDrawer(event)}>
-                      <div className="relative h-52 overflow-hidden">
-                        {event.bannerUrl ? (
-                          <ResilientImage
-                            src={event.bannerUrl}
-                            alt={event.title}
-                            className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-                            fallback={
-                              <div
-                                className="flex h-full w-full items-center justify-center text-5xl text-white"
-                                style={{ background: `linear-gradient(135deg, ${theme.accentStrong} 0%, ${theme.accent} 100%)` }}
-                              >
-                                {event.title.charAt(0)}
-                              </div>
-                            }
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-5xl text-white" style={{ background: `linear-gradient(135deg, ${theme.accentStrong} 0%, ${theme.accent} 100%)` }}>
-                            {event.title.charAt(0)}
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.04)_18%,rgba(15,23,42,0.68)_100%)]" />
-                        <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
-                          <span className="rounded-full bg-white/86 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-800">{theme.label}</span>
-                          <span className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]" style={{ background: theme.accentSoft, color: theme.accentStrong }}>
-                            {formatEventDay(event.startTime)}
-                          </span>
-                        </div>
-                        <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                          <h3 className="text-2xl font-semibold leading-tight">{event.title}</h3>
-                          <p className="mt-1 text-sm text-white/72">{theme.previewLine}</p>
-                        </div>
-                      </div>
-                    </button>
+        {/* Loading skeletons */}
+        {loading && !hasLoadedRealEvents && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 16 }}>
+            {[1,2,3,4].map(i => (
+              <div key={i} style={{ height: 180, border: '1.5px solid var(--ink-faint)', background: 'var(--paper-2)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+            ))}
+          </div>
+        )}
 
-                    <div className="space-y-4 p-5">
-                      <p className="line-clamp-3 text-sm leading-6 text-muted">{event.description}</p>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="info-pill px-3 py-1.5 text-xs">
-                          <CalendarClock className="h-3.5 w-3.5" style={{ color: theme.accent }} />
-                          {formatEventRange(event.startTime, event.endTime)}
-                        </span>
-                        <span className="info-pill px-3 py-1.5 text-xs">
-                          <Users className="h-3.5 w-3.5" style={{ color: theme.accent }} />
-                          Cap {event.capacity}
-                        </span>
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <Button type="button" variant="outline" size="sm" onClick={() => openDrawer(event)}>
-                          Quick view
-                        </Button>
-                        <Button asChild size="sm">
-                          <Link href={`/events/${event.id}`}>Open full page</Link>
-                        </Button>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+        {/* Empty state */}
+        {!loading && hasLoadedRealEvents && featuredEvents.length === 0 && (
+          <div style={{ marginTop: 20, border: '1.5px dashed var(--ink-faint)', padding: '28px 20px', textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 22, color: 'var(--ink-soft)', marginBottom: 8 }}>
+              Nothing pinned yet.
             </div>
-          ) : null}
-        </section>
+            <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 10, color: 'var(--ink-faint)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 16 }}>
+              WIDEN THE RADIUS OR HOST THE FIRST THING WORTH SHOWING UP FOR.
+            </p>
+            <Link href="/events/new" style={{
+              display: 'inline-block', padding: '10px 20px',
+              background: 'var(--terra)', border: '1.5px solid var(--terra-deep)',
+              boxShadow: '2px 2px 0 var(--terra-deep)', color: 'var(--cream)',
+              fontFamily: 'var(--font-mono), monospace', fontSize: 10,
+              fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', textDecoration: 'none',
+            }}>
+              HOST SOMETHING →
+            </Link>
+          </div>
+        )}
 
-        <Button asChild className="fixed bottom-5 right-5 z-[45] lg:hidden">
-          <Link href="/events/new">
-            <Sparkles className="h-4 w-4" />
-            Host
+        {/* Swipe deck section */}
+        {featuredEvents.length > 0 && (
+          <>
+            <div className="illaka-sep" style={{ margin: '20px 0 12px' }}>
+              <span>swipe through</span>
+            </div>
+            <div style={{ background: 'var(--paper-card)', border: '1.5px solid var(--ink)', boxShadow: '2px 2px 0 var(--ink)', padding: 16 }}>
+              <SwipeDeck events={featuredEvents} loading={loading} />
+            </div>
+          </>
+        )}
+
+        {/* Host CTA */}
+        <div className="illaka-sep" style={{ margin: '20px 0 12px' }}>
+          <span>host something</span>
+        </div>
+        <div style={{ border: '1.5px solid var(--ink)', boxShadow: '2px 2px 0 var(--ink)', background: 'var(--paper-card)', padding: 18, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, right: 0, width: 80, height: 80, background: 'linear-gradient(135deg, rgba(200,85,54,0.12), transparent)', borderLeft: '1.5px solid rgba(200,85,54,0.2)', borderBottom: '1.5px solid rgba(200,85,54,0.2)' }} />
+          <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 22, lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: 8 }}>
+            Turn a good local idea into
+            <br /><span style={{ fontFamily: 'var(--font-serif), serif', fontStyle: 'italic', color: 'var(--terra)' }}>a real invitation.</span>
+          </div>
+          <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 10, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.12em', lineHeight: 1.7, marginBottom: 14 }}>
+            Pin a gathering to the wall. Neighbours find it, RSVP, and show up.
+          </p>
+          <Link href="/events/new" style={{
+            display: 'inline-block', padding: '11px 20px',
+            background: 'var(--terra)', border: '1.5px solid var(--terra-deep)',
+            boxShadow: '2px 2px 0 var(--terra-deep)', color: 'var(--cream)',
+            fontFamily: 'var(--font-mono), monospace', fontSize: 10,
+            fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em', textDecoration: 'none',
+          }}>
+            CREATE AN EVENT →
           </Link>
-        </Button>
+        </div>
       </div>
 
       <EventPreviewDrawer
         event={drawerEvent}
         open={drawerOpen}
-        onOpenChange={(open) => {
-          setDrawerOpen(open);
-          if (!open) setDrawerEvent(null);
-        }}
+        onOpenChange={open => { setDrawerOpen(open); if (!open) setDrawerEvent(null); }}
       />
     </>
   );
 }
-

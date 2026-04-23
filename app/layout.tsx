@@ -1,11 +1,14 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Space_Grotesk, Fraunces } from 'next/font/google';
+import { Space_Grotesk, Fraunces, Caveat, Instrument_Serif, Space_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { AuthProvider } from '@/components/AuthProvider';
 
 const space = Space_Grotesk({ subsets: ['latin'], variable: '--font-space' });
-const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-fraunces' });
+const fraunces = Fraunces({ subsets: ['latin'], axes: ['opsz'], variable: '--font-fraunces' });
+const caveat = Caveat({ subsets: ['latin'], variable: '--font-caveat' });
+const instrumentSerif = Instrument_Serif({ subsets: ['latin'], style: ['normal', 'italic'], weight: '400', variable: '--font-serif' });
+const spaceMono = Space_Mono({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-mono' });
 
 const BASE_URL = process.env.NEXTAUTH_URL ?? 'https://ilaka.app';
 
@@ -34,7 +37,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${space.variable} ${fraunces.variable} font-sans`}>
+      <body className={`${space.variable} ${fraunces.variable} ${caveat.variable} ${instrumentSerif.variable} ${spaceMono.variable} font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>

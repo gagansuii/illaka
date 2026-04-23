@@ -2,19 +2,15 @@ import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import { getEnv } from './config';
 
-// NEXTAUTH_SECRET must be set in production; use the helper to throw if it's missing
-type Nullable = string | undefined;
-let authSecret: Nullable;
-try {
-  authSecret = getEnv('NEXTAUTH_SECRET');
-} catch {
-  // allow default in dev
-  authSecret = process.env.NODE_ENV === 'production' ? undefined : 'dev-secret';
-}
+// NEXTAUTH_SECRET must always be set — there is no insecure fallback.
+// In production a missing secret will cause NextAuth to refuse to start.
+// In development set NEXTAUTH_SECRET in .env.local (any non-empty value works).
+const authSecret = process.env.NEXTAUTH_SECRET;
 
-const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+// 14 days — balances UX (users aren't logged out constantly) against the
+// blast radius of a stolen session cookie.
+const SESSION_MAX_AGE_SECONDS = 14 * 24 * 60 * 60;
 
 export const authOptions: NextAuthOptions = {
   // Persist login across refresh/revisit using NextAuth JWT httpOnly cookies.

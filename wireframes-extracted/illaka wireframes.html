@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1280" />
+<title>illaka · wireframes</title>
+<link rel="stylesheet" href="wire.css" />
+<link rel="stylesheet" href="hifi.css" />
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: 'Space Mono', ui-monospace, monospace; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="wire-primitives.jsx"></script>
+<script type="text/babel" src="screens-home.jsx"></script>
+<script type="text/babel" src="screens-feed.jsx"></script>
+<script type="text/babel" src="screens-host.jsx"></script>
+<script type="text/babel" src="screens-rest.jsx"></script>
+<script type="text/babel" src="hifi-primitives.jsx"></script>
+<script type="text/babel" src="hifi-main.jsx"></script>
+<script type="text/babel" src="hifi-event.jsx"></script>
+<script type="text/babel" src="hifi-more.jsx"></script>
+
+<script type="text/babel">
+const PHONE_W = 320;
+const PHONE_H = 640;
+const DESK_W = 1100;
+const DESK_H = 680;
+
+// wrap each screen in a .wf container so fonts/colors apply
+const F = ({ children }) => <div className="wf" style={{ width: '100%', height: '100%' }}>{children}</div>;
+// hi-fi wrapper
+const H = ({ children }) => <div className="hf" style={{ width: '100%', height: '100%' }}>{children}</div>;
+
+function App() {
+  return (
+    <DesignCanvas>
+
+      <DCSection id="cover" title="illaka · wireframes" subtitle="riso + newsprint + bulletin wall · mobile-first · ≤3 clicks to anything">
+        <DCArtboard id="intro" label="design notes" width={440} height={640}>
+          <div className="wf" style={{ padding: 28, height: '100%', boxSizing: 'border-box', overflow: 'auto' }}>
+            <span className="label">VOL. I · APR '26</span>
+            <h1 style={{ fontSize: 56, marginTop: 6, lineHeight: 0.9 }}>
+              illaka <em className="serif" style={{ color: 'var(--terra)' }}>—<br />leveled up.</em>
+            </h1>
+            <div className="dotline" style={{ marginTop: 14 }} />
+            <p className="serif" style={{ fontSize: 16, lineHeight: 1.5, marginTop: 12 }}>
+              Wireframes for 8 screens, 2–4 variations each. All reskin, no re-architect — same logic you have, with an earthy, bazaar-warm, flyer-wall feel.
+            </p>
+            <Divider label="the system" />
+            <ul className="mono" style={{ fontSize: 11, lineHeight: 1.8, paddingLeft: 16, margin: 0 }}>
+              <li>paper base · warm off-white w/ grain</li>
+              <li>ink: deep coffee-brown, not black</li>
+              <li>2 accents: terracotta + sage</li>
+              <li>type: caveat (hand) · instrument serif (display) · space mono (labels)</li>
+              <li>flyers tilt slightly · tape strips · stamps</li>
+              <li>everything ≤ 3 taps from home</li>
+            </ul>
+            <Divider label="reading order" />
+            <ol className="mono" style={{ fontSize: 11, lineHeight: 1.8, paddingLeft: 16, margin: 0 }}>
+              <li>home / landing →</li>
+              <li>feed →</li>
+              <li>event detail →</li>
+              <li>map →</li>
+              <li>host flow →</li>
+              <li>profile →</li>
+              <li>onboarding →</li>
+              <li>neighborhood hub</li>
+            </ol>
+          </div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="home" title="Home / landing" subtitle="what you see when you open the app · 3 directions + 1 desktop">
+        <DCArtboard id="home-a" label="A · editorial wall" width={PHONE_W} height={PHONE_H}><F><HomeA /></F></DCArtboard>
+        <DCArtboard id="home-b" label="B · map-first" width={PHONE_W} height={PHONE_H}><F><HomeB /></F></DCArtboard>
+        <DCArtboard id="home-c" label="C · tonight / action-first" width={PHONE_W} height={PHONE_H}><F><HomeC /></F></DCArtboard>
+        <DCArtboard id="home-d" label="D · desktop bulletin" width={DESK_W} height={DESK_H}><F><HomeDesktop /></F></DCArtboard>
+      </DCSection>
+
+      <DCSection id="feed" title="Event discovery feed" subtitle="the list — three different organising ideas">
+        <DCArtboard id="feed-a" label="A · search + cards (close to current)" width={PHONE_W} height={PHONE_H}><F><FeedA /></F></DCArtboard>
+        <DCArtboard id="feed-b" label="B · bulletin board, collaged" width={PHONE_W} height={PHONE_H}><F><FeedB /></F></DCArtboard>
+        <DCArtboard id="feed-c" label="C · time-lane · by hour" width={PHONE_W} height={PHONE_H}><F><FeedC /></F></DCArtboard>
+      </DCSection>
+
+      <DCSection id="event" title="Event detail" subtitle="once you tap an event">
+        <DCArtboard id="event-a" label="A · editorial / structured" width={PHONE_W} height={PHONE_H}><F><EventA /></F></DCArtboard>
+        <DCArtboard id="event-b" label="B · flyer taped to the wall" width={PHONE_W} height={PHONE_H}><F><EventB /></F></DCArtboard>
+      </DCSection>
+
+      <DCSection id="map" title="Map / explore" subtitle="pins around you">
+        <DCArtboard id="map-a" label="A · map + chips" width={PHONE_W} height={PHONE_H}><F><MapA /></F></DCArtboard>
+        <DCArtboard id="map-b" label="B · fullscreen map + floating card" width={PHONE_W} height={PHONE_H}><F><MapB /></F></DCArtboard>
+      </DCSection>
+
+      <DCSection id="host" title="Host event · quick & detailed" subtitle="quick mode = 3 fields · detailed = 4 steps">
+        <DCArtboard id="host-q" label="quick · one screen" width={PHONE_W} height={PHONE_H}><F><HostQuick /></F></DCArtboard>
+        <DCArtboard id="host-1" label="detailed 1 · story" width={PHONE_W} height={PHONE_H}><F><HostDetailed1 /></F></DCArtboard>
+        <DCArtboard id="host-2" label="detailed 2 · place & time" width={PHONE_W} height={PHONE_H}><F><HostDetailed2 /></F></DCArtboard>
+        <DCArtboard id="host-3" label="detailed 3 · the look" width={PHONE_W} height={PHONE_H}><F><HostDetailed3 /></F></DCArtboard>
+        <DCArtboard id="host-4" label="detailed 4 · preview & publish" width={PHONE_W} height={PHONE_H}><F><HostDetailed4 /></F></DCArtboard>
+      </DCSection>
+
+      <DCSection id="profile" title="Profile" subtitle="badges · vibes · memories · hood">
+        <DCArtboard id="prof-a" label="A · id card + badges" width={PHONE_W} height={PHONE_H}><F><ProfileA /></F></DCArtboard>
+        <DCArtboard id="prof-b" label="B · cover + tabs" width={PHONE_W} height={PHONE_H}><F><ProfileB /></F></DCArtboard>
+        <DCArtboard id="prof-c" label="C · scrapbook / collage" width={PHONE_W} height={PHONE_H}><F><ProfileC /></F></DCArtboard>
+      </DCSection>
+
+      <DCSection id="onboard" title="Onboarding" subtitle="welcome → hood → vibe → face">
+        <DCArtboard id="ob-1" label="1 · welcome" width={PHONE_W} height={PHONE_H}><F><Onboard1 /></F></DCArtboard>
+        <DCArtboard id="ob-2" label="2 · your hood" width={PHONE_W} height={PHONE_H}><F><Onboard2 /></F></DCArtboard>
+        <DCArtboard id="ob-3" label="3 · your vibe" width={PHONE_W} height={PHONE_H}><F><Onboard3 /></F></DCArtboard>
+        <DCArtboard id="ob-4" label="4 · your face" width={PHONE_W} height={PHONE_H}><F><Onboard4 /></F></DCArtboard>
+      </DCSection>
+
+      <DCSection id="hood" title="Neighborhood hub" subtitle="your block, beyond just events">
+        <DCArtboard id="hood-a" label="A · pulse + regulars + spots" width={PHONE_W} height={PHONE_H}><F><HoodA /></F></DCArtboard>
+        <DCArtboard id="hood-b" label="B · bulletin · ask/offer/lost/welcome" width={PHONE_W} height={PHONE_H}><F><HoodB /></F></DCArtboard>
+      </DCSection>
+
+      <DCSection id="hifi" title="Hi-fi direction · taped flyer wall" subtitle="where the wireframes are headed · same logic, earthy riso skin">
+        <DCArtboard id="hi-home" label="home · editorial wall" width={PHONE_W} height={PHONE_H}><H><HiHome /></H></DCArtboard>
+        <DCArtboard id="hi-feed" label="feed · collaged bulletin" width={PHONE_W} height={PHONE_H}><H><HiFeed /></H></DCArtboard>
+        <DCArtboard id="hi-event" label="event · flyer taped" width={PHONE_W} height={PHONE_H}><H><HiEvent /></H></DCArtboard>
+        <DCArtboard id="hi-map" label="map · fullscreen + card" width={PHONE_W} height={PHONE_H}><H><HiMap /></H></DCArtboard>
+        <DCArtboard id="hi-profile" label="profile · id + badges" width={PHONE_W} height={PHONE_H}><H><HiProfile /></H></DCArtboard>
+        <DCArtboard id="hi-host1" label="host · step 1 story" width={PHONE_W} height={PHONE_H}><H><HiHost1 /></H></DCArtboard>
+        <DCArtboard id="hi-host2" label="host · step 2 place & time" width={PHONE_W} height={PHONE_H}><H><HiHost2 /></H></DCArtboard>
+        <DCArtboard id="hi-hood" label="hood · lodi block" width={PHONE_W} height={PHONE_H}><H><HiHood /></H></DCArtboard>
+        <DCArtboard id="hi-ob1" label="onboard · welcome" width={PHONE_W} height={PHONE_H}><H><HiOnboard /></H></DCArtboard>
+        <DCArtboard id="hi-ob2" label="onboard · your hood" width={PHONE_W} height={PHONE_H}><H><HiOnboardHood /></H></DCArtboard>
+      </DCSection>
+
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

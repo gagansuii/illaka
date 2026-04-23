@@ -83,6 +83,7 @@ async function fetchEventsFromDb(lat: number, lng: number, radius: number) {
       "engagementScore"
     FROM "Event"
     WHERE "visibility" = 'PUBLIC'
+      AND "endTime" >= NOW()
       AND ST_DWithin(
         location,
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,

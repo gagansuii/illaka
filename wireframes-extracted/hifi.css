@@ -1,0 +1,582 @@
+/* illaka hi-fi — earthy indie · warm paper + terracotta + sage */
+
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&display=swap');
+
+:root {
+  --paper: #f2ece0;
+  --paper-2: #ebe3d1;
+  --paper-3: #e2d7bf;
+  --paper-card: #faf5e9;
+  --ink: #231c15;
+  --ink-2: #3a2f23;
+  --ink-soft: #6b5e4c;
+  --ink-faint: #9a8b74;
+  --terra: #c85536;
+  --terra-2: #e37e5c;
+  --terra-deep: #9a3e23;
+  --sage: #6c7d57;
+  --sage-2: #96a77e;
+  --mustard: #d4a73a;
+  --plum: #6b4568;
+  --sky: #5a7d8a;
+  --cream: #fff6e4;
+}
+
+.hf {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  color: var(--ink);
+  background: var(--paper);
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background-image:
+    radial-gradient(circle at 15% 25%, rgba(35,28,21,0.035) 0, transparent 2px),
+    radial-gradient(circle at 70% 60%, rgba(35,28,21,0.03) 0, transparent 2px),
+    radial-gradient(circle at 85% 15%, rgba(200,85,54,0.04) 0, transparent 3px),
+    radial-gradient(circle at 25% 80%, rgba(108,125,87,0.035) 0, transparent 3px),
+    radial-gradient(circle at 50% 40%, rgba(35,28,21,0.02) 0, transparent 1.5px);
+  background-size: 90px 90px, 140px 140px, 220px 220px, 180px 180px, 60px 60px;
+}
+
+.hf .display {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  font-variation-settings: "opsz" 144;
+}
+
+.hf .serif {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+
+.hf .hand {
+  font-family: 'Caveat', cursive;
+  font-weight: 600;
+}
+
+.hf .mono {
+  font-family: 'Space Mono', ui-monospace, monospace;
+}
+
+.hf .tab {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--ink-soft);
+}
+
+/* Stamp pill */
+.hf .stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border: 1.5px solid currentColor;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.hf .stamp-ink { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.hf .stamp-terra { background: var(--terra); color: var(--cream); border-color: var(--terra); }
+.hf .stamp-sage { background: var(--sage); color: var(--cream); border-color: var(--sage); }
+.hf .stamp-paper { background: var(--paper-card); color: var(--ink); border-color: var(--ink); }
+
+.hf .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1.4px solid var(--ink);
+  border-radius: 999px;
+  font-size: 10px;
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  background: var(--paper-card);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.hf .pill-fill { background: var(--ink); color: var(--cream); }
+.hf .pill-terra { background: var(--terra); color: var(--cream); border-color: var(--terra); }
+.hf .pill-sage { background: var(--sage); color: var(--cream); border-color: var(--sage); }
+.hf .pill-ghost { background: transparent; }
+
+/* Card with paper feel */
+.hf .card {
+  background: var(--paper-card);
+  border: 1.5px solid var(--ink);
+  position: relative;
+}
+
+.hf .card-sh { box-shadow: 3px 3px 0 var(--ink); }
+.hf .card-sh-sm { box-shadow: 2px 2px 0 var(--ink); }
+
+.hf .tape {
+  position: absolute;
+  width: 58px;
+  height: 18px;
+  background: linear-gradient(180deg, rgba(212, 167, 58, 0.45) 0%, rgba(212, 167, 58, 0.25) 100%);
+  border-left: 1px dashed rgba(35,28,21,0.25);
+  border-right: 1px dashed rgba(35,28,21,0.25);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  z-index: 2;
+}
+
+.hf .tape-sage {
+  background: linear-gradient(180deg, rgba(150, 167, 126, 0.55) 0%, rgba(108,125,87,0.3) 100%);
+}
+
+/* Image placeholders — riso-ink feel */
+.hf .img-hero {
+  background:
+    linear-gradient(135deg, rgba(200,85,54,0.22) 0%, rgba(108,125,87,0.15) 55%, rgba(35,28,21,0.12) 100%),
+    repeating-linear-gradient(45deg, transparent 0 6px, rgba(35,28,21,0.05) 6px 7px);
+  border: 1.5px solid var(--ink);
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  padding: 12px;
+  color: var(--cream);
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  overflow: hidden;
+}
+
+.hf .img-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(200,85,54,0.35) 0, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(108,125,87,0.3) 0, transparent 45%),
+    radial-gradient(circle at 60% 20%, rgba(212,167,58,0.25) 0, transparent 40%);
+}
+
+.hf .img-hero > * { position: relative; z-index: 1; }
+
+.hf .img-terra {
+  background:
+    linear-gradient(135deg, rgba(200,85,54,0.35), rgba(154,62,35,0.2)),
+    repeating-linear-gradient(-45deg, transparent 0 5px, rgba(35,28,21,0.06) 5px 6px);
+  border: 1.5px solid var(--terra-deep);
+  color: var(--cream);
+}
+
+.hf .img-sage {
+  background:
+    linear-gradient(135deg, rgba(108,125,87,0.35), rgba(80,95,65,0.2)),
+    repeating-linear-gradient(45deg, transparent 0 5px, rgba(35,28,21,0.06) 5px 6px);
+  border: 1.5px solid var(--sage);
+  color: var(--cream);
+}
+
+.hf .img-mustard {
+  background:
+    linear-gradient(135deg, rgba(212,167,58,0.4), rgba(180,140,40,0.25)),
+    repeating-linear-gradient(-45deg, transparent 0 5px, rgba(35,28,21,0.06) 5px 6px);
+  border: 1.5px solid var(--mustard);
+  color: var(--ink);
+}
+
+.hf .img-plum {
+  background:
+    linear-gradient(135deg, rgba(107,69,104,0.4), rgba(70,40,70,0.2)),
+    repeating-linear-gradient(45deg, transparent 0 5px, rgba(35,28,21,0.06) 5px 6px);
+  border: 1.5px solid var(--plum);
+  color: var(--cream);
+}
+
+.hf .img-ink {
+  background: var(--ink-2);
+  border: 1.5px solid var(--ink);
+  color: var(--cream);
+  position: relative;
+  overflow: hidden;
+}
+
+.hf .img-ink::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(200,85,54,0.25), transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(108,125,87,0.2), transparent 50%);
+}
+
+/* Buttons */
+.hf .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 18px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  border: 1.5px solid var(--ink);
+  background: var(--paper-card);
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+.hf .btn-terra { background: var(--terra); color: var(--cream); border-color: var(--terra-deep); box-shadow: 2px 2px 0 var(--terra-deep); }
+.hf .btn-ink { background: var(--ink); color: var(--cream); box-shadow: 2px 2px 0 var(--ink-2); }
+.hf .btn-sage { background: var(--sage); color: var(--cream); border-color: var(--sage); box-shadow: 2px 2px 0 rgba(35,28,21,0.4); }
+.hf .btn-ghost { background: transparent; }
+.hf .btn-sm { padding: 9px 14px; min-height: 40px; font-size: 10px; }
+
+/* Dotted separators */
+.hf .dotline { border-top: 1.5px dotted var(--ink-faint); }
+.hf .solidline { background: var(--ink); height: 1.5px; }
+
+/* Circle/avatar */
+.hf .circle {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--ink);
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  color: var(--cream);
+}
+
+/* Tilt helpers */
+.hf .tilt-l { transform: rotate(-1.4deg); }
+.hf .tilt-r { transform: rotate(1.6deg); }
+.hf .tilt-ll { transform: rotate(-2.6deg); }
+.hf .tilt-rr { transform: rotate(2.8deg); }
+
+/* Layout */
+.hf .row { display: flex; }
+.hf .col { display: flex; flex-direction: column; }
+.hf .gap-4 { gap: 4px; }
+.hf .gap-6 { gap: 6px; }
+.hf .gap-8 { gap: 8px; }
+.hf .gap-10 { gap: 10px; }
+.hf .gap-12 { gap: 12px; }
+.hf .gap-14 { gap: 14px; }
+.hf .gap-16 { gap: 16px; }
+.hf .gap-20 { gap: 20px; }
+
+/* scroll */
+.hf *::-webkit-scrollbar { display: none; }
+.hf * { scrollbar-width: none; }
+
+/* Phone frame */
+.hf-phone {
+  width: 100%;
+  height: 100%;
+  background: var(--paper);
+  position: relative;
+  overflow: hidden;
+}
+
+.hf-phone .notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 24px;
+  background: var(--ink);
+  border-radius: 0 0 14px 14px;
+  z-index: 30;
+}
+
+.hf-phone .statusbar {
+  height: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 22px 0;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* Bottom nav bar */
+.hf-bottomnav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: var(--paper-card);
+  border-top: 1.5px solid var(--ink);
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  padding: 9px 0 0;
+  z-index: 20;
+}
+
+.hf-bottomnav .item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: var(--ink-soft);
+}
+.hf-bottomnav .item.active { color: var(--terra); }
+.hf-bottomnav .item .lbl {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.hf-bottomnav .host-btn {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--terra);
+  border: 1.5px solid var(--terra-deep);
+  color: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -14px;
+  box-shadow: 0 2px 0 var(--terra-deep), 0 4px 10px rgba(0,0,0,0.2);
+  font-size: 22px;
+}
+
+/* Top bar */
+.hf-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 18px 8px;
+}
+
+.hf-topbar .logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hf-topbar .logo .mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--terra);
+  border: 1.5px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cream);
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 14px;
+  position: relative;
+}
+
+.hf-topbar .logo .mark::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px dashed rgba(255,246,228,0.5);
+  border-radius: 50%;
+}
+
+.hf-topbar .logo .wordmark {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Map background sketch */
+.hf-map {
+  position: relative;
+  background: var(--paper-2);
+  overflow: hidden;
+  background-image:
+    linear-gradient(100deg, transparent 0 28%, rgba(90,125,138,0.18) 28% 30%, transparent 30%),
+    linear-gradient(100deg, transparent 0 52%, rgba(90,125,138,0.12) 52% 53%, transparent 53%),
+    linear-gradient(20deg, transparent 0 40%, rgba(108,125,87,0.18) 40% 42%, transparent 42%),
+    linear-gradient(-40deg, transparent 0 62%, rgba(35,28,21,0.1) 62% 63%, transparent 63%),
+    repeating-linear-gradient(0deg, transparent 0 22px, rgba(35,28,21,0.035) 22px 23px),
+    repeating-linear-gradient(90deg, transparent 0 22px, rgba(35,28,21,0.035) 22px 23px);
+}
+
+.hf-map .park {
+  position: absolute;
+  background: rgba(108,125,87,0.22);
+  border: 1.2px solid rgba(108,125,87,0.5);
+  border-radius: 40% 60% 50% 50% / 50% 40% 60% 50%;
+}
+
+.hf-map .water {
+  position: absolute;
+  background: rgba(90,125,138,0.22);
+  border: 1.2px solid rgba(90,125,138,0.5);
+  border-radius: 60% 40% 50% 60%;
+}
+
+.hf-map .pin {
+  position: absolute;
+  transform: translate(-50%, -100%);
+}
+
+.hf-map .pin-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--terra);
+  border: 1.5px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cream);
+  font-size: 13px;
+  box-shadow: 0 2px 3px rgba(0,0,0,0.15);
+}
+
+.hf-map .pin-dot.sage { background: var(--sage); }
+.hf-map .pin-dot.mustard { background: var(--mustard); color: var(--ink); }
+.hf-map .pin-dot.plum { background: var(--plum); }
+.hf-map .pin-dot.ink { background: var(--ink); }
+
+.hf-map .pin-me {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--sky);
+  border: 2px solid var(--cream);
+  box-shadow: 0 0 0 2px var(--sky), 0 0 0 10px rgba(90,125,138,0.2);
+}
+
+.hf-map .pin-tail {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translate(-50%, -5px);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 8px solid var(--ink);
+}
+
+/* text color utilities */
+.hf .c-terra { color: var(--terra); }
+.hf .c-sage { color: var(--sage); }
+.hf .c-mustard { color: var(--mustard); }
+.hf .c-ink-soft { color: var(--ink-soft); }
+.hf .c-ink-faint { color: var(--ink-faint); }
+.hf .c-cream { color: var(--cream); }
+
+/* tints */
+.hf .tint-terra { background: rgba(200,85,54,0.14); }
+.hf .tint-sage { background: rgba(108,125,87,0.14); }
+.hf .tint-mustard { background: rgba(212,167,58,0.18); }
+.hf .tint-plum { background: rgba(107,69,104,0.14); }
+.hf .tint-paper { background: var(--paper-2); }
+
+/* underline accent */
+.hf .u-terra {
+  position: relative;
+  display: inline-block;
+}
+.hf .u-terra::after {
+  content: '';
+  position: absolute;
+  left: -4px; right: -4px; bottom: 1px;
+  height: 7px;
+  background: var(--terra);
+  opacity: 0.35;
+  border-radius: 3px;
+  transform: rotate(-0.4deg) skewX(-2deg);
+  z-index: -1;
+}
+
+/* printed stamp */
+.hf .stamp-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--terra-deep);
+  color: var(--terra-deep);
+  border-radius: 50%;
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 10px;
+  transform: rotate(-12deg);
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+
+/* small icon box */
+.hf .icon-box {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+
+/* number step badge */
+.hf .num-step {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--terra);
+  color: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 13px;
+  border: 1.5px solid var(--ink);
+  flex-shrink: 0;
+}
+
+.hf .num-step.done { background: var(--sage); }
+.hf .num-step.todo { background: var(--paper-card); color: var(--ink-soft); }
+
+/* sparkline bars (for profile stats / event attendance) */
+.hf .bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 28px;
+}
+.hf .bars > span {
+  flex: 1;
+  background: var(--terra);
+  border: 1px solid var(--ink);
+  min-height: 4px;
+}
+
+/* map dot legend */
+.hf .legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  display: inline-block;
+}

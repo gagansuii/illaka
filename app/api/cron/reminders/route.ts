@@ -79,12 +79,16 @@ interface ReminderWindow {
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   // ----- auth ----------------------------------------------------------------
+  // CRON_SECRET must always be set. If absent, the endpoint is rejected to
+  // prevent unauthenticated callers from triggering mass reminder emails.
   const cronSecret = getEnvOptional('CRON_SECRET');
-  if (cronSecret) {
-    const authHeader = req.headers.get('authorization');
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  if (!cronSecret) {
+    console.error('[cron/reminders] CRON_SECRET is not configured — endpoint disabled');
+    return NextResponse.json({ error: 'Endpoint not configured' }, { status: 503 });
+  }
+  const authHeader = req.headers.get('authorization');
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const now = new Date();
@@ -175,8 +179,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             reminderLabel: window.label,
           });
         } else {
-          // For PHYSICAL events use lat/lng as fallback location text.
-          const locationText = `${event.latitude}, ${event.longitude}`;
+          // Do NOT include precise coordinates in reminder emails — they expose the
+          // event host's exact location to potentially unverified attendees and can
+          // be harvested from email metadata. Direct attendees to the event page.
+          const locationText = 'See the event page for full location details.';
           html = physicalEmailHtml({
             userName: user.name,
             eventTitle: event.title,

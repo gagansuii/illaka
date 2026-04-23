@@ -4,6 +4,26 @@
 
 :root {
   color-scheme: light;
+
+  /* ── Illaka earthy design system ── */
+  --paper:      #f2ece0;
+  --paper-2:    #ebe3d1;
+  --paper-3:    #e2d7bf;
+  --paper-card: #faf5e9;
+  --ink:        #231c15;
+  --ink-2:      #3a2f23;
+  --ink-soft:   #6b5e4c;
+  --ink-faint:  #9a8b74;
+  --terra:      #c85536;
+  --terra-2:    #e37e5c;
+  --terra-deep: #9a3e23;
+  --sage:       #6c7d57;
+  --sage-2:     #96a77e;
+  --mustard:    #d4a73a;
+  --plum:       #6b4568;
+  --sky:        #5a7d8a;
+  --cream:      #fff6e4;
+
   --bg: #f5ede2;
   --bg-deep: #eadfce;
   --surface: rgba(255, 249, 241, 0.72);
@@ -42,12 +62,14 @@ body {
 body {
   @apply antialiased;
   min-height: 100%;
-  color: var(--text);
-  background:
-    radial-gradient(circle at 14% 18%, rgba(247, 174, 102, 0.32), transparent 28%),
-    radial-gradient(circle at 84% 14%, rgba(78, 122, 232, 0.16), transparent 24%),
-    radial-gradient(circle at 50% 88%, rgba(15, 118, 110, 0.18), transparent 30%),
-    linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+  color: var(--ink);
+  background: var(--paper);
+  background-image:
+    radial-gradient(circle at 15% 25%, rgba(35,28,21,0.035) 0, transparent 2px),
+    radial-gradient(circle at 70% 60%, rgba(35,28,21,0.03) 0, transparent 2px),
+    radial-gradient(circle at 85% 15%, rgba(200,85,54,0.04) 0, transparent 3px),
+    radial-gradient(circle at 25% 80%, rgba(108,125,87,0.035) 0, transparent 3px);
+  background-size: 90px 90px, 140px 140px, 220px 220px, 180px 180px;
   position: relative;
   overflow-x: hidden;
 }
@@ -317,4 +339,149 @@ input {
   .text-muted {
     color: var(--muted);
   }
+}
+
+/* ── Illaka flyer-wall design primitives ── */
+
+/* Stamp label */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border: 1.5px solid currentColor;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+}
+.stamp-terra { background: var(--terra); color: var(--cream); border-color: var(--terra-deep); }
+.stamp-sage  { background: var(--sage);  color: var(--cream); border-color: var(--sage); }
+.stamp-ink   { background: var(--ink);   color: var(--cream); border-color: var(--ink); }
+.stamp-paper { background: var(--paper-card); color: var(--ink); border-color: var(--ink); }
+.stamp-mustard { background: var(--mustard); color: var(--ink); border-color: var(--mustard); }
+
+/* Tape strip */
+.tape {
+  position: absolute;
+  width: 58px;
+  height: 18px;
+  background: linear-gradient(180deg, rgba(212,167,58,0.45) 0%, rgba(212,167,58,0.25) 100%);
+  border-left: 1px dashed rgba(35,28,21,0.25);
+  border-right: 1px dashed rgba(35,28,21,0.25);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  z-index: 2;
+}
+.tape-sage {
+  background: linear-gradient(180deg, rgba(150,167,126,0.55) 0%, rgba(108,125,87,0.3) 100%);
+}
+
+/* Flyer card */
+.flyer-card {
+  background: var(--paper-card);
+  border: 1.5px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  position: relative;
+}
+.flyer-card-sm {
+  background: var(--paper-card);
+  border: 1.5px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  position: relative;
+}
+
+/* Slight tilts for flyer pinboard feel */
+.tilt-l  { transform: rotate(-1.4deg); }
+.tilt-r  { transform: rotate(1.6deg); }
+.tilt-ll { transform: rotate(-2.6deg); }
+.tilt-rr { transform: rotate(2.8deg); }
+
+/* Ornate section separator */
+.illaka-sep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 14px;
+}
+.illaka-sep::before,
+.illaka-sep::after { content: ''; flex: 1; height: 1.5px; background: var(--ink); opacity: 0.18; }
+.illaka-sep span {
+  font-family: var(--font-mono), monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+/* Paper-feel image placeholder tints */
+.img-terra {
+  background:
+    linear-gradient(135deg, rgba(200,85,54,0.35), rgba(154,62,35,0.2)),
+    repeating-linear-gradient(-45deg, transparent 0 5px, rgba(35,28,21,0.06) 5px 6px);
+}
+.img-sage {
+  background:
+    linear-gradient(135deg, rgba(108,125,87,0.35), rgba(80,95,65,0.2)),
+    repeating-linear-gradient(45deg, transparent 0 5px, rgba(35,28,21,0.06) 5px 6px);
+}
+.img-mustard {
+  background:
+    linear-gradient(135deg, rgba(212,167,58,0.4), rgba(180,140,40,0.25)),
+    repeating-linear-gradient(-45deg, transparent 0 5px, rgba(35,28,21,0.06) 5px 6px);
+}
+
+/* Bottom nav (mobile) */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: var(--paper-card);
+  border-top: 1.5px solid var(--ink);
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  padding: 9px 0 0;
+  z-index: 40;
+}
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: var(--ink-soft);
+  min-width: 48px;
+  cursor: pointer;
+}
+.bottom-nav-item.active { color: var(--terra); }
+.bottom-nav-item span {
+  font-family: var(--font-mono), monospace;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.bottom-nav-host {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--terra);
+  border: 1.5px solid var(--terra-deep);
+  color: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -14px;
+  box-shadow: 0 2px 0 var(--terra-deep), 0 4px 10px rgba(0,0,0,0.18);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+/* Pill (filter tag) */
+.pill-terra {
+  background: var(--terra);
+  color: var(--cream);
+  border-color: var(--terra-deep);
 }

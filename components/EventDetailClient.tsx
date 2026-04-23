@@ -2,12 +2,11 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { ArrowUpRight, CalendarClock, Compass, Copy, Download, Globe, Link2, Lock, MapPin, Share2, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { ArrowUpRight, Copy, Download, Globe, Link2, Lock, MapPin, Share2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { PaymentButton } from '@/components/PaymentButton';
 import { ResilientImage } from '@/components/ResilientImage';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { formatEventClock, formatEventDay, formatEventRange, getEventTheme } from '@/lib/event-style';
 
 type EventDetail = {
@@ -28,11 +27,36 @@ type EventDetail = {
   onlineLink?: string | null;
   linkShareMode?: 'IMMEDIATE' | 'BEFORE_EVENT' | null;
   paymentQrUrl?: string | null;
-  organizer?: {
-    name?: string | null;
-  } | null;
+  isPaid?: boolean;
+  organizer?: { name?: string | null } | null;
   rsvps?: Array<{ id: string }>;
 };
+
+const Stamp = ({ children, kind = 'terra' }: { children: React.ReactNode; kind?: string }) => (
+  <span className={`stamp stamp-${kind}`}>{children}</span>
+);
+
+const Sep = ({ label }: { label: string }) => (
+  <div className="illaka-sep" style={{ margin: '18px 0 12px' }}>
+    <span>{label}</span>
+  </div>
+);
+
+const AVATAR_COLORS = ['var(--terra)', 'var(--sage)', 'var(--mustard)', 'var(--plum)', 'var(--sky)', 'var(--terra-2)', 'var(--sage-2)'];
+
+function Avatar({ letter, size = 32, bg = 'var(--terra)' }: { letter: string; size?: number; bg?: string }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%',
+      background: bg, border: '1.5px solid var(--ink)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: 'var(--font-fraunces), serif', fontWeight: 700,
+      fontSize: size * 0.4, color: 'var(--cream)', flexShrink: 0,
+    }}>
+      {letter}
+    </div>
+  );
+}
 
 export function EventDetailClient({ event }: { event: EventDetail }) {
   const { data } = useSession();
@@ -50,12 +74,7 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
   const seatsLeft = Math.max(capacity - rsvpCount, 0);
   const fillPercent = Math.min(100, Math.round((rsvpCount / capacity) * 100));
   const organizerName = event.organizer?.name || 'Local organizer';
-  const organizerInitials = organizerName
-    .split(' ')
-    .map((part: string) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  const organizerInitials = organizerName.split(' ').map((p: string) => p[0]).join('').slice(0, 2).toUpperCase();
 
   const [copied, setCopied] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
@@ -70,11 +89,8 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }
-      // Record the share for engagement score
       fetch(`/api/events/${event.id}/share`, { method: 'POST' }).catch(() => null);
-    } catch {
-      // User cancelled share sheet — ignore
-    }
+    } catch { /* cancelled */ }
   }
 
   async function handleCopyInvite() {
@@ -92,400 +108,290 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
       }
-    } catch {
-      // ignore
-    } finally {
+    } catch { /* ignore */ } finally {
       setInviteLoading(false);
     }
   }
 
   async function rsvp() {
     if (loading || joined) return;
-
     setLoading(true);
     setRsvpError('');
     setJoined(true);
-    setRsvpCount((current: number) => current + 1);
-
+    setRsvpCount((c: number) => c + 1);
     try {
       const res = await fetch(`/api/events/${event.id}/rsvp`, { method: 'POST' });
-      if (res.ok) {
-        return;
+      if (!res.ok) {
+        let data: any = null;
+        try { data = await res.json(); } catch { data = null; }
+        setJoined(false);
+        setRsvpCount((c: number) => Math.max(c - 1, 0));
+        setRsvpError(data?.error ?? 'Could not RSVP. Please try again.');
       }
-
-      let data: any = null;
-      try {
-        data = await res.json();
-      } catch {
-        data = null;
-      }
-      setJoined(false);
-      setRsvpCount((current: number) => Math.max(current - 1, 0));
-      setRsvpError(data?.error ?? 'Could not RSVP. Please try again.');
     } catch {
       setJoined(false);
-      setRsvpCount((current: number) => Math.max(current - 1, 0));
+      setRsvpCount((c: number) => Math.max(c - 1, 0));
       setRsvpError('Could not RSVP. Please try again.');
     } finally {
       setLoading(false);
     }
   }
 
+  const isOnline = (event.eventType ?? 'PHYSICAL') === 'ONLINE';
+
   return (
-    <div className="space-y-8">
-      <section className="section-shell overflow-hidden p-0">
-          <div className="relative min-h-[420px] overflow-hidden rounded-[2rem]">
+    <div
+      style={{
+        maxWidth: 640,
+        margin: '0 auto',
+        padding: '0 0 140px',
+        fontFamily: 'var(--font-mono), ui-monospace, monospace',
+        color: 'var(--ink)',
+      }}
+    >
+      {/* Back bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px 0' }}>
+        <Link
+          href="/"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.22em',
+            color: 'var(--ink-soft)', textDecoration: 'none',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 5l-7 7 7 7" />
+          </svg>
+          BACK TO WALL
+        </Link>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            onClick={handleShare}
+            style={{
+              width: 36, height: 36, border: '1.5px solid var(--ink)',
+              background: 'var(--paper-card)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            }}
+            aria-label="Share"
+          >
+            <Share2 size={15} />
+          </button>
+        </div>
+      </div>
+
+      <div style={{ padding: '8px 16px 0' }}>
+        {/* ── Main flyer card ── */}
+        <div
+          className="flyer-card"
+          style={{ padding: 18, marginTop: 8, position: 'relative' }}
+        >
+          {/* Tape strips */}
+          <span className="tape" style={{ top: -10, left: 20, transform: 'rotate(-5deg)', width: 72 }} />
+          <span className="tape tape-sage" style={{ top: -10, right: 20, transform: 'rotate(6deg)', width: 72 }} />
+
+          {/* Header row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 4 }}>
+            <span style={{
+              fontFamily: 'var(--font-mono), monospace', fontSize: 9,
+              textTransform: 'uppercase', letterSpacing: '0.22em', color: 'var(--ink-soft)',
+            }}>
+              {event.visibility === 'PRIVATE' ? '🔒 PRIVATE EVENT' : 'PUBLIC WALL'}
+            </span>
+            <Stamp kind="terra">
+              {seatsLeft > 0 ? `${seatsLeft} SPOTS LEFT` : 'FULL'}
+            </Stamp>
+          </div>
+
+          {/* Title */}
+          <h1 style={{
+            fontFamily: 'var(--font-fraunces), serif', fontWeight: 600,
+            fontSize: 'clamp(36px, 8vw, 52px)', lineHeight: 0.95,
+            letterSpacing: '-0.02em', marginTop: 10, color: 'var(--ink)',
+          }}>
+            {event.title}
+          </h1>
+
+          {/* Hero image */}
+          <div style={{ marginTop: 14, position: 'relative', overflow: 'hidden', border: '1.5px solid var(--ink)' }}>
             {event.bannerUrl ? (
               <ResilientImage
                 src={event.bannerUrl}
                 alt={event.title}
-                className="absolute inset-0 h-full w-full object-cover"
+                className="w-full object-cover"
+                style={{ minHeight: 180, maxHeight: 240, display: 'block' }}
                 fallback={
-                  <div
-                    className="absolute inset-0"
-                    style={{ background: `linear-gradient(135deg, ${theme.accentStrong} 0%, ${theme.accent} 100%)` }}
-                  />
+                  <div style={{
+                    minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: `linear-gradient(135deg, ${theme.accentStrong}, ${theme.accent})`,
+                    fontSize: 56, fontFamily: 'var(--font-fraunces), serif', fontWeight: 700,
+                    color: 'white',
+                  }}>
+                    {event.title.charAt(0)}
+                  </div>
                 }
               />
             ) : (
-              <div
-                className="absolute inset-0"
-              style={{ background: `linear-gradient(135deg, ${theme.accentStrong} 0%, ${theme.accent} 100%)` }}
+              <div style={{
+                minHeight: 180, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: `linear-gradient(135deg, rgba(200,85,54,0.22), rgba(108,125,87,0.15))`,
+                fontSize: 56, fontFamily: 'var(--font-fraunces), serif', fontWeight: 700,
+                color: 'var(--ink-soft)',
+              }}>
+                {event.title.charAt(0)}
+              </div>
+            )}
+          </div>
+
+          {/* At-a-glance 3-col grid */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
+            border: '1.5px solid var(--ink)', marginTop: 14,
+          }}>
+            {[
+              ['WHEN', formatEventDay(event.startTime), formatEventClock(event.startTime), 'rgba(200,85,54,0.08)'],
+              ['WHERE', isOnline ? 'Online' : 'View map', isOnline ? '' : '↗ directions', 'rgba(108,125,87,0.08)'],
+              ['CAPACITY', `${rsvpCount}/${capacity}`, `${fillPercent}% filled`, 'rgba(212,167,58,0.1)'],
+            ].map(([k, a, b, bg], i) => (
+              <div key={k} style={{
+                padding: 10,
+                borderRight: i < 2 ? '1.5px solid var(--ink)' : 'none',
+                background: bg,
+              }}>
+                <div style={{ fontSize: 8, fontFamily: 'var(--font-mono), monospace', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--ink-soft)' }}>{k}</div>
+                <div style={{ fontFamily: 'var(--font-serif), serif', fontSize: 16, marginTop: 3, lineHeight: 1.1, fontStyle: 'italic' }}>{a}</div>
+                <div style={{ fontSize: 9, marginTop: 2, color: 'var(--ink-soft)' }}>{b}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Story ── */}
+        <Sep label="the story" />
+        <p style={{
+          fontFamily: 'var(--font-serif), serif', fontSize: 17,
+          lineHeight: 1.55, color: 'var(--ink-2)', fontStyle: 'italic',
+        }}>
+          {event.description}
+        </p>
+
+        {/* ── Host card ── */}
+        <Sep label="your host" />
+        <div className="flyer-card-sm" style={{ padding: 14 }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <Avatar letter={organizerInitials || 'IL'} size={52} bg="var(--mustard)" />
+            <div style={{ flex: 1 }}>
+              <div style={{
+                fontFamily: 'var(--font-fraunces), serif', fontWeight: 600,
+                fontSize: 20, lineHeight: 1,
+              }}>
+                {organizerName}
+              </div>
+              <div style={{ marginTop: 5, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <Stamp kind="paper">LOCAL HOST</Stamp>
+                {event.visibility === 'PUBLIC' && <Stamp kind="sage">PUBLIC</Stamp>}
+              </div>
+            </div>
+          </div>
+          <p style={{
+            fontFamily: 'var(--font-caveat), cursive', fontWeight: 600,
+            fontSize: 17, marginTop: 12, color: 'var(--ink-soft)', lineHeight: 1.3,
+          }}>
+            "Building the kind of gathering you can walk into comfortably."
+          </p>
+        </div>
+
+        {/* ── Location ── */}
+        <Sep label={isOnline ? 'join link' : 'where'} />
+        {isOnline ? (
+          event.onlineLink && event.linkShareMode === 'IMMEDIATE' ? (
+            <a
+              href={event.onlineLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                padding: '12px 18px', background: 'var(--terra)',
+                border: '1.5px solid var(--terra-deep)', boxShadow: '2px 2px 0 var(--terra-deep)',
+                color: 'var(--cream)', fontFamily: 'var(--font-mono), monospace',
+                fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '0.16em', textDecoration: 'none',
+              }}
+            >
+              <Globe size={15} />
+              JOIN MEETING →
+            </a>
+          ) : (
+            <div style={{
+              padding: '12px 14px', border: '1.5px solid var(--ink)',
+              background: 'var(--paper-2)', fontSize: 11,
+              fontFamily: 'var(--font-mono), monospace', color: 'var(--ink-soft)',
+            }}>
+              MEETING LINK · WILL BE SHARED BEFORE THE EVENT
+            </div>
+          )
+        ) : (
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 14px', border: '1.5px solid var(--ink)',
+              background: 'var(--paper-card)', textDecoration: 'none',
+              color: 'var(--ink)',
+            }}
+          >
+            <div>
+              <div style={{ fontFamily: 'var(--font-serif), serif', fontSize: 16, fontStyle: 'italic' }}>
+                {formatEventDay(event.startTime)} · {formatEventRange(event.startTime, event.endTime)}
+              </div>
+              <div style={{ fontSize: 9, fontFamily: 'var(--font-mono), monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: 'var(--ink-soft)', marginTop: 4 }}>
+                TAP TO OPEN IN MAPS
+              </div>
+            </div>
+            <span style={{ color: 'var(--terra)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <MapPin size={15} />
+              <ArrowUpRight size={15} />
+            </span>
+          </a>
+        )}
+
+        {/* ── Attendees ── */}
+        <Sep label={`${rsvpCount} going`} />
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+          {Array.from({ length: Math.min(rsvpCount, 10) }).map((_, i) => (
+            <Avatar
+              key={i}
+              letter={String.fromCharCode(65 + (i % 26))}
+              size={30}
+              bg={AVATAR_COLORS[i % AVATAR_COLORS.length]}
             />
+          ))}
+          {rsvpCount > 10 && (
+            <div style={{
+              width: 30, height: 30, borderRadius: '50%',
+              background: 'var(--paper-2)', border: '1.5px solid var(--ink)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 10, fontFamily: 'var(--font-mono), monospace',
+            }}>
+              +{rsvpCount - 10}
+            </div>
           )}
-          {/* Only darken the bottom 40% so the photo is visible at the top */}
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,transparent_40%,rgba(17,24,39,0.7)_70%,rgba(17,24,39,0.92)_100%)]" />
-          <div className="relative flex min-h-[420px] flex-col justify-between p-6 text-white sm:p-8 lg:p-10">
-            {/* Badges sit top-left — minimal footprint on the photo */}
-            <div className="flex flex-wrap gap-2">
-              <span className="rounded-full bg-black/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white backdrop-blur-sm">
-                {theme.label}
-              </span>
-              <span className="rounded-full bg-black/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white backdrop-blur-sm">
-                {event.visibility === 'PRIVATE' ? 'Private' : 'Public'}
-              </span>
-            </div>
-
-            {/* Title + pills anchored to the bottom — no description on top of photo */}
-            <div className="space-y-3">
-              <h1 className="font-[family:var(--font-fraunces)] text-4xl leading-[0.95] sm:text-5xl lg:text-[4.2rem]">
-                {event.title}
-              </h1>
-              <div className="flex flex-wrap gap-2">
-                <span className="info-pill border-white/25 bg-white/20 text-white">
-                  <CalendarClock className="h-4 w-4 text-white" />
-                  {formatEventDay(event.startTime)} / {formatEventRange(event.startTime, event.endTime)}
-                </span>
-                <span className="info-pill border-white/25 bg-white/20 text-white">
-                  <Users className="h-4 w-4 text-white" />
-                  {rsvpCount} joined / cap {capacity}
-                </span>
-                {(event.eventType ?? 'PHYSICAL') === 'ONLINE' ? (
-                  <span className="info-pill border-white/25 bg-white/20 text-white">
-                    <Globe className="h-4 w-4 text-white" />
-                    Online event
-                  </span>
-                ) : (
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="info-pill border-white/25 bg-white/20 text-white hover:opacity-85"
-                  >
-                    <MapPin className="h-4 w-4 text-white" />
-                    View on map
-                  </a>
-                )}
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="info-pill border-white/25 bg-white/20 text-white transition-opacity hover:opacity-80"
-                >
-                  <Share2 className="h-4 w-4 text-white" />
-                  {copied ? 'Link copied!' : 'Share'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_360px]">
-        <div className="space-y-6">
-          <Card className="section-shell space-y-5 p-6">
-            <div className="space-y-3">
-              <p className="eyebrow">
-                <Compass className="h-3.5 w-3.5" />
-                What it feels like
-              </p>
-              <h2 className="font-[family:var(--font-fraunces)] text-3xl leading-none">An event with a clear local rhythm.</h2>
-              <p className="text-sm leading-7 text-muted sm:text-base">{theme.previewLine}</p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {theme.storyBeats.map((beat) => (
-                <article
-                  key={beat}
-                  className="rounded-[1.6rem] border border-[var(--line)] bg-[rgba(255,255,255,0.4)] p-4 transition-all duration-200 hover:-translate-y-1 hover:bg-[var(--surface-strong)] dark:bg-[rgba(15,23,42,0.24)]"
-                >
-                  <p className="text-sm leading-6 text-muted">{beat}</p>
-                </article>
-              ))}
-            </div>
-          </Card>
-
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_0.8fr]">
-            <Card className="surface-card-strong space-y-5">
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: theme.accentStrong }}>
-                  Event story
-                </p>
-                <h2 className="text-2xl font-semibold">Why people show up</h2>
-              </div>
-              <p className="text-sm leading-7 text-muted sm:text-base">{event.description}</p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[1.5rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] p-4 dark:bg-[rgba(15,23,42,0.22)]">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Starts</p>
-                  <p className="mt-2 text-lg font-semibold">{formatEventClock(event.startTime)}</p>
-                  <p className="mt-1 text-sm text-muted">{formatEventDay(event.startTime)}</p>
-                </div>
-                <div className="rounded-[1.5rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] p-4 dark:bg-[rgba(15,23,42,0.22)]">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Ends</p>
-                  <p className="mt-2 text-lg font-semibold">{formatEventClock(event.endTime)}</p>
-                  <p className="mt-1 text-sm text-muted">{formatEventDay(event.endTime)}</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="surface-card-strong space-y-5">
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: theme.accentStrong }}>
-                  Organizer note
-                </p>
-                <h2 className="text-2xl font-semibold">Hosted by someone nearby.</h2>
-              </div>
-              <div className="flex items-center gap-4 rounded-[1.6rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] p-4 dark:bg-[rgba(15,23,42,0.22)]">
-                <div
-                  className="flex h-14 w-14 items-center justify-center rounded-full text-sm font-semibold text-white"
-                  style={{ background: `linear-gradient(135deg, ${theme.accentStrong} 0%, ${theme.accent} 100%)` }}
-                >
-                  {organizerInitials || 'IL'}
-                </div>
-                <div>
-                  <p className="text-lg font-semibold">{organizerName}</p>
-                  <p className="text-sm text-muted">Building the kind of gathering you can walk into comfortably.</p>
-                </div>
-              </div>
-              <div className="rounded-[1.6rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] p-4 text-sm leading-6 text-muted dark:bg-[rgba(15,23,42,0.22)]">
-                Ilaaka connects you directly with the person making this happen — no intermediaries, just local trust.
-              </div>
-            </Card>
-          </div>
-
-          <Card className="section-shell space-y-5 p-6">
-            <div className="space-y-2">
-              <p className="eyebrow">
-                <Sparkles className="h-3.5 w-3.5" />
-                Media and cues
-              </p>
-              <h2 className="font-[family:var(--font-fraunces)] text-3xl leading-none">Small visuals that make the event easier to place.</h2>
-            </div>
-            <div className="grid gap-4 md:grid-cols-[minmax(0,1.3fr)_0.7fr]">
-              <div className="overflow-hidden rounded-[1.8rem] border border-[var(--line)]">
-                {event.bannerUrl ? (
-                  <ResilientImage
-                    src={event.bannerUrl}
-                    alt={event.title}
-                    className="h-full min-h-[240px] w-full object-cover transition-transform duration-500 hover:scale-[1.03]"
-                    fallback={
-                      <div
-                        className="flex min-h-[240px] items-center justify-center text-5xl font-semibold text-white"
-                        style={{ background: `linear-gradient(135deg, ${theme.accentStrong} 0%, ${theme.accent} 100%)` }}
-                      >
-                        {event.title.charAt(0)}
-                      </div>
-                    }
-                  />
-                ) : (
-                  <div
-                    className="flex min-h-[240px] items-center justify-center text-5xl font-semibold text-white"
-                    style={{ background: `linear-gradient(135deg, ${theme.accentStrong} 0%, ${theme.accent} 100%)` }}
-                  >
-                    {event.title.charAt(0)}
-                  </div>
-                )}
-              </div>
-              <div className="grid gap-4">
-                <div className="flex min-h-[116px] items-center justify-between rounded-[1.8rem] border border-[var(--line)] bg-[rgba(255,255,255,0.36)] p-4 dark:bg-[rgba(15,23,42,0.24)]">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Identity</p>
-                    <p className="mt-2 text-lg font-semibold">{theme.label}</p>
-                  </div>
-                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[1.35rem] border border-white/30 bg-white/70">
-                    {event.badgeIcon ? (
-                      <ResilientImage
-                        src={event.badgeIcon}
-                        alt=""
-                        className="h-full w-full object-cover"
-                        fallback={
-                          <span className="text-sm font-semibold" style={{ color: theme.accentStrong }}>
-                            {theme.shortLabel}
-                          </span>
-                        }
-                      />
-                    ) : (
-                      <span className="text-sm font-semibold" style={{ color: theme.accentStrong }}>
-                        {theme.shortLabel}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div
-                  className="min-h-[116px] rounded-[1.8rem] border p-4 text-white"
-                  style={{ borderColor: theme.accentSoft, background: `linear-gradient(135deg, ${theme.accentStrong} 0%, ${theme.accent} 100%)` }}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/72">Neighborhood pull</p>
-                  <p className="mt-3 text-sm leading-6 text-white/82">
-                    {rsvpCount > 0
-                      ? `${rsvpCount} people already plan to show up, which gives this one some social gravity.`
-                      : 'Still quiet enough to be an easy first RSVP.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Card>
+          {rsvpCount === 0 && (
+            <span style={{ fontSize: 11, fontFamily: 'var(--font-mono), monospace', color: 'var(--ink-soft)' }}>
+              BE THE FIRST TO JOIN
+            </span>
+          )}
         </div>
 
-        <aside className="space-y-6 xl:sticky xl:top-6 xl:self-start">
-          <Card className="surface-card-strong space-y-5">
-            <div className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: theme.accentStrong }}>
-                RSVP panel
-              </p>
-              <h2 className="text-2xl font-semibold">Step in with one tap.</h2>
-            </div>
-
-            <div className="rounded-[1.6rem] border border-[var(--line)] bg-[rgba(255,255,255,0.4)] p-4 dark:bg-[rgba(15,23,42,0.22)]">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-muted">Capacity filled</span>
-                <span className="font-semibold" style={{ color: theme.accentStrong }}>
-                  {fillPercent}%
-                </span>
-              </div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-[rgba(15,23,42,0.08)] dark:bg-[rgba(255,255,255,0.08)]">
-                <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{ width: `${fillPercent}%`, background: `linear-gradient(90deg, ${theme.accent} 0%, ${theme.accentStrong} 100%)` }}
-                />
-              </div>
-              <p className="mt-3 text-sm text-muted">
-                {seatsLeft > 0 ? `${seatsLeft} spots still open.` : 'Capacity is currently full, but you can still try the RSVP flow.'}
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <Button onClick={rsvp} disabled={loading || joined} size="lg" className="w-full">
-                {loading ? 'Reserving...' : joined ? 'Joined' : 'RSVP now'}
-              </Button>
-              {rsvpError ? <p className="text-sm text-red-500">{rsvpError}</p> : null}
-              <Button asChild variant="outline" size="lg" className="w-full">
-                <Link href="/">
-                  Keep exploring
-                  <ArrowUpRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </Card>
-
-          {event.isPaid && event.paymentQrUrl && !isOrganizer ? (
-            <Card className="surface-card-strong space-y-4">
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: theme.accentStrong }}>
-                  Payment
-                </p>
-                <h2 className="text-xl font-semibold">Scan to pay the organiser.</h2>
-                <p className="text-sm leading-6 text-muted">Use any UPI app — GPay, PhonePe, Paytm, or your bank app.</p>
-              </div>
-              <img
-                src={event.paymentQrUrl}
-                alt="Payment QR code"
-                className="w-44 rounded-[1.2rem] border border-[var(--line)] shadow-sm"
-              />
-              <a
-                href={event.paymentQrUrl}
-                download="payment-qr.png"
-                className="inline-flex items-center gap-2 rounded-[1.2rem] border border-[var(--line)] bg-[rgba(255,255,255,0.36)] px-4 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--surface-strong)] dark:bg-[rgba(15,23,42,0.22)]"
-              >
-                <Download className="h-4 w-4" style={{ color: theme.accentStrong }} />
-                Download QR
-              </a>
-            </Card>
-          ) : null}
-
-          <Card className="surface-card-strong space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="rounded-full p-2" style={{ background: theme.accentSoft, color: theme.accentStrong }}>
-                <ShieldCheck className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">At-a-glance details</p>
-                <p className="mt-1 text-sm leading-6 text-muted">Key information stays close to the action so the page remains easy to scan.</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] px-4 py-3 text-sm dark:bg-[rgba(15,23,42,0.22)]">
-                <span className="text-muted">When</span>
-                <span className="font-medium">{formatEventRange(event.startTime, event.endTime)}</span>
-              </div>
-              <div className="flex items-center justify-between rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] px-4 py-3 text-sm dark:bg-[rgba(15,23,42,0.22)]">
-                <span className="text-muted">Visibility</span>
-                <span className="inline-flex items-center gap-2 font-medium">
-                  <Lock className="h-3.5 w-3.5" />
-                  {event.visibility}
-                </span>
-              </div>
-              {(event.eventType ?? 'PHYSICAL') === 'ONLINE' ? (
-                event.onlineLink && event.linkShareMode === 'IMMEDIATE' ? (
-                  <a
-                    href={event.onlineLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex w-full items-center justify-center gap-2 rounded-[1.4rem] px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                    style={{ background: `linear-gradient(90deg, ${theme.accentStrong} 0%, ${theme.accent} 100%)` }}
-                  >
-                    <Globe className="h-4 w-4" />
-                    Join meeting
-                    <ArrowUpRight className="h-4 w-4" />
-                  </a>
-                ) : (
-                  <div className="flex items-center justify-between rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] px-4 py-3 text-sm dark:bg-[rgba(15,23,42,0.22)]">
-                    <span className="text-muted">Meeting link</span>
-                    <span className="font-medium text-muted">Will be shared before the event</span>
-                  </div>
-                )
-              ) : (
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] px-4 py-3 text-sm transition-colors hover:bg-[var(--surface-strong)] dark:bg-[rgba(15,23,42,0.22)]"
-                >
-                  <span className="text-muted">Location</span>
-                  <span className="inline-flex items-center gap-1.5 font-medium" style={{ color: theme.accentStrong }}>
-                    <MapPin className="h-3.5 w-3.5" />
-                    Open in Maps
-                  </span>
-                </a>
-              )}
-            </div>
-          </Card>
-
-          {isOrganizer ? (
-            <Card className="surface-card-strong space-y-4">
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: theme.accentStrong }}>
-                  Organizer actions
-                </p>
-                <h2 className="text-2xl font-semibold">Keep the event moving.</h2>
+        {/* ── Organizer actions (if host) ── */}
+        {isOrganizer && (
+          <>
+            <Sep label="organizer actions" />
+            <div className="flyer-card-sm" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.22em', color: 'var(--ink-soft)' }}>
+                MANAGE THIS EVENT
               </div>
 
               {event.visibility === 'PRIVATE' && (
@@ -493,25 +399,137 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
                   type="button"
                   onClick={handleCopyInvite}
                   disabled={inviteLoading}
-                  className="flex w-full items-center gap-3 rounded-[1.5rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] px-4 py-3 text-sm font-medium transition-all hover:bg-[var(--surface-strong)] dark:bg-[rgba(15,23,42,0.22)]"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 14px', border: '1.5px solid var(--ink)',
+                    background: 'var(--paper-2)', cursor: 'pointer',
+                    fontFamily: 'var(--font-mono), monospace', fontSize: 10,
+                    textTransform: 'uppercase', letterSpacing: '0.14em',
+                  }}
                 >
-                  {copied ? <Copy className="h-4 w-4 shrink-0" style={{ color: theme.accentStrong }} /> : <Link2 className="h-4 w-4 shrink-0" style={{ color: theme.accentStrong }} />}
-                  <span>{inviteLoading ? 'Generating link…' : copied ? 'Invite link copied!' : 'Copy private invite link'}</span>
+                  {copied ? <Copy size={14} /> : <Link2 size={14} />}
+                  {inviteLoading ? 'GENERATING…' : copied ? 'INVITE LINK COPIED!' : 'COPY PRIVATE INVITE LINK'}
                 </button>
               )}
 
               {rsvpCount >= hostingThreshold ? (
-                <PaymentButton label="Pay hosting fee" reason="hosting_fee" amount={hostingFee} eventId={event.id} eventTitle={event.title} />
+                <PaymentButton label="PAY HOSTING FEE" reason="hosting_fee" amount={hostingFee} eventId={event.id} eventTitle={event.title} />
               ) : (
-                <div className="rounded-[1.5rem] border border-[var(--line)] bg-[rgba(255,255,255,0.34)] p-4 text-sm leading-6 text-muted dark:bg-[rgba(15,23,42,0.22)]">
-                  Hosting fee unlocks once the event reaches {hostingThreshold} RSVPs.
+                <div style={{
+                  padding: '10px 14px', border: '1.5px solid var(--ink)',
+                  background: 'var(--paper-2)', fontSize: 10,
+                  fontFamily: 'var(--font-mono), monospace', color: 'var(--ink-soft)',
+                }}>
+                  HOSTING FEE UNLOCKS AT {hostingThreshold} RSVPs · {rsvpCount}/{hostingThreshold} NOW
                 </div>
               )}
 
-              <PaymentButton label="Boost event promotion" reason="promotion" amount={promotionPrice} eventId={event.id} eventTitle={event.title} />
-            </Card>
-          ) : null}
-        </aside>
+              <PaymentButton label="BOOST EVENT PROMOTION" reason="promotion" amount={promotionPrice} eventId={event.id} eventTitle={event.title} />
+            </div>
+          </>
+        )}
+
+        {/* ── Payment QR ── */}
+        {event.isPaid && event.paymentQrUrl && !isOrganizer && (
+          <>
+            <Sep label="payment" />
+            <div className="flyer-card-sm" style={{ padding: 14 }}>
+              <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.22em', color: 'var(--ink-soft)', marginBottom: 10 }}>
+                SCAN TO PAY · UPI APPS ACCEPTED
+              </div>
+              <img src={event.paymentQrUrl} alt="Payment QR code" style={{ width: 160, border: '1.5px solid var(--ink)', display: 'block' }} />
+              <a
+                href={event.paymentQrUrl}
+                download="payment-qr.png"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 10,
+                  padding: '8px 12px', border: '1.5px solid var(--ink)',
+                  background: 'var(--paper-2)', fontSize: 10, textDecoration: 'none',
+                  fontFamily: 'var(--font-mono), monospace', color: 'var(--ink)',
+                  textTransform: 'uppercase', letterSpacing: '0.14em',
+                }}
+              >
+                <Download size={13} />
+                DOWNLOAD QR
+              </a>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── Sticky RSVP bottom bar ── */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        padding: '12px 16px',
+        background: 'var(--paper-card)',
+        borderTop: '1.5px solid var(--ink)',
+        zIndex: 30,
+      }}>
+        <div style={{ maxWidth: 640, margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div>
+              <div style={{ fontFamily: 'var(--font-serif), serif', fontSize: 18, lineHeight: 1, fontStyle: 'italic' }}>
+                {formatEventRange(event.startTime, event.endTime)}
+              </div>
+              <div style={{ fontSize: 9, fontFamily: 'var(--font-mono), monospace', textTransform: 'uppercase', letterSpacing: '0.18em', color: 'var(--ink-soft)', marginTop: 3 }}>
+                {formatEventDay(event.startTime)} · {seatsLeft > 0 ? `${seatsLeft} SPOTS LEFT` : 'FULL'}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                type="button"
+                onClick={handleShare}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 40, height: 40, border: '1.5px solid var(--ink)',
+                  background: 'transparent', cursor: 'pointer',
+                }}
+                aria-label="Share"
+              >
+                <Share2 size={15} />
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Link
+              href="/"
+              style={{
+                flex: 0.6, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '11px 14px', border: '1.5px solid var(--ink)',
+                background: 'transparent', color: 'var(--ink)',
+                fontFamily: 'var(--font-mono), monospace', fontSize: 10,
+                fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em',
+                textDecoration: 'none',
+              }}
+            >
+              ← BACK
+            </Link>
+            <button
+              type="button"
+              onClick={rsvp}
+              disabled={loading || joined}
+              style={{
+                flex: 1.4, padding: '11px 18px',
+                background: joined ? 'var(--sage)' : loading ? 'var(--ink-faint)' : 'var(--terra)',
+                border: `1.5px solid ${joined ? 'var(--sage)' : 'var(--terra-deep)'}`,
+                boxShadow: `2px 2px 0 ${joined ? 'var(--sage)' : 'var(--terra-deep)'}`,
+                color: 'var(--cream)',
+                fontFamily: 'var(--font-mono), monospace', fontSize: 11,
+                fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.16em',
+                cursor: loading || joined ? 'default' : 'pointer',
+              }}
+            >
+              {loading ? 'RESERVING…' : joined ? '✓ YOU\'RE IN' : 'RSVP · I\'M IN →'}
+            </button>
+          </div>
+
+          {rsvpError && (
+            <p style={{ fontSize: 10, color: 'var(--terra)', marginTop: 6, fontFamily: 'var(--font-mono), monospace' }}>
+              {rsvpError}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
