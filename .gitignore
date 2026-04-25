@@ -19,3 +19,8 @@ handle64.exe
 # Local notes
 "problems from people.txt"
 problems from people.txt
+
+# Claude Code skill directories
+anthropic-skills/
+awesome-claude-skills/
+ui-ux-pro-max-skill/
