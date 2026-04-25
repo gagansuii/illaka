@@ -1,16 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { CalendarClock, MapPin, Sparkles, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { ResilientImage } from '@/components/ResilientImage';
+
 import type { EventSummary } from '@/lib/types';
 import { formatEventDay, formatEventRange, getEventTheme } from '@/lib/event-style';
 
 const metricPillClasses = 'info-pill px-3 py-1.5 text-xs';
-const surfaceCardClasses = 'rounded-[1.5rem] border border-[var(--line)] bg-[rgba(255,255,255,0.52)] p-4 dark:bg-[rgba(15,23,42,0.26)]';
+const surfaceCardClasses =
+  'rounded-[1.5rem] border border-[var(--line)] bg-[rgba(255,255,255,0.52)] p-4 dark:bg-[rgba(15,23,42,0.26)]';
 
 export function EventPreviewDrawer({
   event,
@@ -28,20 +29,18 @@ export function EventPreviewDrawer({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="overflow-x-hidden p-0">
-        <VisuallyHidden>
-          {/* Required by Radix for accessible dialog labeling while keeping the current visual layout. */}
-          <DialogTitle>{event.title}</DialogTitle>
-        </VisuallyHidden>
-        <VisuallyHidden>
-          <DialogDescription>{`Quick preview drawer for ${event.title}.`}</DialogDescription>
-        </VisuallyHidden>
+        {/* sr-only keeps these in the accessibility tree without affecting the visual layout. */}
+        <DialogTitle className="sr-only">{event.title}</DialogTitle>
+        <DialogDescription className="sr-only">{`Quick preview drawer for ${event.title}.`}</DialogDescription>
 
         <div className="sticky top-0 z-20 border-b border-[var(--line)] bg-[linear-gradient(180deg,rgba(255,255,255,0.8)_0%,var(--surface-strong)_68%)] px-5 pb-4 pt-3 backdrop-blur-xl dark:bg-[linear-gradient(180deg,rgba(30,41,59,0.58)_0%,var(--surface-strong)_68%)]">
-          {/* Drag affordance for the mobile bottom-sheet behavior. */}
+          {/* Drag affordance for mobile bottom-sheet behavior. */}
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[rgba(71,85,105,0.24)] md:hidden" />
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 space-y-1.5">
-              <p className="truncate text-base font-semibold leading-tight tracking-[-0.01em] text-[var(--text)]">{event.title}</p>
+              <p className="truncate text-base font-semibold leading-tight tracking-[-0.01em] text-[var(--text)]">
+                {event.title}
+              </p>
               <p className="text-xs font-medium uppercase tracking-[0.24em]" style={{ color: theme.accentStrong }}>
                 Event Preview
               </p>
@@ -101,9 +100,7 @@ export function EventPreviewDrawer({
               ) : null}
             </div>
             <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-white/72">
-                {theme.previewLine}
-              </p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-white/72">{theme.previewLine}</p>
               <h2 className="mt-2 text-[1.75rem] font-semibold leading-tight tracking-[-0.02em]">{event.title}</h2>
             </div>
           </div>
@@ -149,7 +146,9 @@ export function EventPreviewDrawer({
             </Button>
           </div>
 
-          <div className={`${surfaceCardClasses} bg-[linear-gradient(160deg,rgba(255,255,255,0.65)_0%,rgba(255,255,255,0.42)_100%)] dark:bg-[linear-gradient(160deg,rgba(15,23,42,0.34)_0%,rgba(15,23,42,0.24)_100%)]`}>
+          <div
+            className={`${surfaceCardClasses} bg-[linear-gradient(160deg,rgba(255,255,255,0.65)_0%,rgba(255,255,255,0.42)_100%)] dark:bg-[linear-gradient(160deg,rgba(15,23,42,0.34)_0%,rgba(15,23,42,0.24)_100%)]`}
+          >
             <div className="flex items-center gap-2 text-sm font-medium">
               <MapPin className="h-4 w-4" style={{ color: theme.accent }} />
               Nearby and easy to remember

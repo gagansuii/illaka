@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getDatabaseErrorDetails } from '@/lib/database-errors';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { rateLimit } from '@/lib/rate-limit';
@@ -30,6 +31,8 @@ const createSchema = z.object({
   visibility: z.enum(['PUBLIC', 'PRIVATE']),
   capacity: z.number().int().min(1),
   isPaid: z.boolean(),
+  ticketPrice: z.number().int().positive().optional(),
+  paymentQrUrl: z.string().optional(),
   eventType: z.enum(['PHYSICAL', 'ONLINE']).optional(),
   onlineLink: z.string().url().optional().or(z.literal('')),
   linkShareMode: z.enum(['IMMEDIATE', 'BEFORE_EVENT']).optional(),
@@ -119,7 +122,8 @@ export async function GET(req: Request) {
   const lat = Number(searchParams.get('lat'));
   const lng = Number(searchParams.get('lng'));
   const rawRadius = Number(searchParams.get('radius') ?? 5000);
-  const radius = Number.isFinite(rawRadius) && rawRadius > 0 ? rawRadius : 5000;
+  // Use at least 10 km so newly created events are discoverable
+  const radius = Number.isFinite(rawRadius) && rawRadius > 0 ? Math.max(rawRadius, 10_000) : 10_000;
 
   if (!(await rateLimit(`events:${normalizeCoord(lat)}:${normalizeCoord(lng)}`))) {
     return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
@@ -154,13 +158,18 @@ export async function GET(req: Request) {
       return NextResponse.json({ events: cached.events });
     }
     console.error('Events query failed:', err);
-    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    const details = getDatabaseErrorDetails(err);
+    return NextResponse.json({ error: details.message, events: [] }, { status: details.status });
   }
 }
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  if (!(await rateLimit(`events:create:${session.user.id}`, 10))) {
+    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+  }
 
   let body: unknown;
   try {
@@ -173,8 +182,18 @@ export async function POST(req: Request) {
 
   const data = parsed.data;
   const eventId = randomUUID();
-  const startTime = new Date(data.startTime);
-  const endTime = new Date(data.endTime);
+
+  // datetime-local inputs omit seconds ("2026-04-20T10:30"); normalize to full ISO
+  const normalizeDateTime = (dt: string) =>
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dt) ? dt + ':00' : dt;
+
+  const startTime = new Date(normalizeDateTime(data.startTime));
+  const endTime = new Date(normalizeDateTime(data.endTime));
+
+  if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+    return NextResponse.json({ error: 'Invalid date/time format. Please re-select start and end times.' }, { status: 400 });
+  }
+
   const eventType = data.eventType ?? 'PHYSICAL';
   const onlineLink = data.onlineLink ?? null;
   const linkShareMode = data.linkShareMode ?? null;
@@ -182,6 +201,8 @@ export async function POST(req: Request) {
 
   let inserted: any;
   try {
+    // Keep the raw SQL for the PostGIS geography column; paymentQrUrl is
+    // updated separately below to avoid null-handling issues in raw queries.
     inserted = await prisma.$queryRaw<any>`
       INSERT INTO "Event" (
         "id",
@@ -230,14 +251,29 @@ export async function POST(req: Request) {
       )
       RETURNING "id", "title", "description", "bannerUrl", "badgeIcon", "latitude", "longitude", "startTime", "endTime", "visibility", "capacity", "organizerId", "isPaid", "engagementScore", "eventType", "onlineLink", "linkShareMode", "paymentQrUrl", "createdAt", "updatedAt"
     `;
-  } catch (err) {
-    console.error('Event creation failed:', err);
-    return NextResponse.json({ error: 'Failed to create event' }, { status: 500 });
+  } catch (err: any) {
+    const msg = err?.message ?? String(err);
+    console.error('Event creation failed:', msg, err);
+    return NextResponse.json({ error: `Event creation failed: ${msg}` }, { status: 500 });
   }
 
   const event = inserted[0];
   if (!event) {
     return NextResponse.json({ error: 'Failed to create event' }, { status: 500 });
+  }
+
+  // Set optional fields (paymentQrUrl, ticketPrice) via Prisma — handles null safely
+  if (data.paymentQrUrl || data.ticketPrice) {
+    try {
+      const updateData: Record<string, unknown> = {};
+      if (data.paymentQrUrl) updateData.paymentQrUrl = data.paymentQrUrl;
+      if (data.ticketPrice) updateData.ticketPrice = data.ticketPrice;
+      await prisma.event.update({ where: { id: event.id }, data: updateData });
+      if (data.paymentQrUrl) event.paymentQrUrl = data.paymentQrUrl;
+      if (data.ticketPrice) event.ticketPrice = data.ticketPrice;
+    } catch (err) {
+      console.error('Failed to set paymentQrUrl/ticketPrice:', err);
+    }
   }
 
   // Best-effort: index in Pinecone for AI search. Failure here does not roll back the event.

@@ -1,98 +1,256 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Compass, MapPin, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useHeroScroll } from '@/animations/useHeroScroll';
+import { useRef, useState } from 'react';
+import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
+import { MapPin, Map, LayoutList, ArrowRight } from 'lucide-react';
+import { SmokeLayer } from '@/components/SmokeLayer';
 
-const NeighborhoodCanvas = dynamic(
-  () => import('@/three/NeighborhoodCanvas').then((module) => module.NeighborhoodCanvas),
-  {
-    ssr: false,
-    loading: () => <div className="h-full w-full animate-pulse bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.85),rgba(255,255,255,0.08))]" />
-  }
-);
+const TAGS = [
+  { label: 'Run Clubs',       icon: '⚡' },
+  { label: 'Art Workshops',   icon: '🎨' },
+  { label: 'Skill Swaps',     icon: '🔄' },
+  { label: 'Street Food',     icon: '🍜' },
+  { label: 'Open Mics',       icon: '🎤' },
+] as const;
 
-export function HeroSection() {
-  const { sectionRef, headlineRef, bodyRef, ctaRef, progressRef } = useHeroScroll();
+/* ── Reusable funky button with click-position ripple ── */
+function HeritageButton({
+  href,
+  variant = 'primary',
+  children,
+}: {
+  href: string;
+  variant?: 'primary' | 'ghost';
+  children: React.ReactNode;
+}) {
+  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
+
+  const addRipple = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const id   = Date.now();
+    setRipples(r => [...r, {
+      id,
+      x: ((e.clientX - rect.left) / rect.width)  * 100,
+      y: ((e.clientY - rect.top)  / rect.height) * 100,
+    }]);
+    setTimeout(() => setRipples(r => r.filter(rp => rp.id !== id)), 750);
+  };
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative min-h-[100svh] overflow-hidden px-4 pt-28 [--hero-progress:0] sm:px-6 lg:px-8"
+    <motion.a
+      href={href}
+      whileHover={{ scale: 1.03, y: -3 }}
+      whileTap={{ scale: 0.97, y: 0 }}
+      transition={{ type: 'spring', stiffness: 440, damping: 20 }}
+      onClick={addRipple}
+      className={`heritage-btn heritage-btn--${variant}`}
     >
-      <div className="absolute inset-0 opacity-70">
-        <NeighborhoodCanvas progressRef={progressRef} />
-      </div>
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(245,237,226,0.26)_0%,rgba(245,237,226,0.02)_32%,rgba(245,237,226,0.72)_100%)] dark:bg-[linear-gradient(180deg,rgba(9,13,19,0.18)_0%,rgba(9,13,19,0.04)_35%,rgba(9,13,19,0.82)_100%)]" />
+      <span className="relative z-10 flex items-center gap-2">{children}</span>
+      {ripples.map(rp => (
+        <span
+          key={rp.id}
+          className="heritage-btn__ripple"
+          style={{ left: `${rp.x}%`, top: `${rp.y}%` }}
+        />
+      ))}
+    </motion.a>
+  );
+}
 
-      <div className="relative mx-auto grid min-h-[calc(100svh-7rem)] max-w-[1440px] items-end gap-10 pb-10 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="max-w-3xl space-y-6">
-          <p className="eyebrow w-fit border border-white/40 bg-[rgba(255,255,255,0.55)] shadow-[0_18px_40px_rgba(17,24,39,0.1)] dark:border-white/10 dark:bg-[rgba(15,23,42,0.36)]">
-            <Compass className="h-3.5 w-3.5" />
-            Cinematic neighborhood discovery
-          </p>
+/* ── Animated Feed / Map toggle ── */
+function ViewToggle() {
+  const [active, setActive] = useState<'feed' | 'map'>('feed');
 
-          <div ref={headlineRef} className="space-y-4">
-            <h1 className="max-w-4xl font-[family:var(--font-fraunces)] text-5xl leading-[0.9] sm:text-6xl lg:text-[6.2rem]">
-              Your neighbourhood is more alive than you think.
-            </h1>
+  return (
+    <div className="heritage-toggle" role="tablist">
+      {(['feed', 'map'] as const).map(v => (
+        <button
+          key={v}
+          role="tab"
+          aria-selected={active === v}
+          onClick={() => setActive(v)}
+          className={`heritage-toggle__btn${active === v ? ' active' : ''}`}
+        >
+          {active === v && (
+            <motion.span
+              layoutId="heritage-toggle-pill"
+              className="heritage-toggle__pill"
+              transition={{ type: 'spring', stiffness: 520, damping: 32 }}
+            />
+          )}
+          <span className="relative z-10 flex items-center gap-1.5">
+            {v === 'feed' ? <LayoutList className="h-3 w-3" /> : <Map className="h-3 w-3" />}
+            {v === 'feed' ? 'Feed' : 'Map'}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ── Main hero ── */
+export function HeroSection() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start start', 'end start'],
+  });
+
+  const smooth = useSpring(scrollYProgress, { stiffness: 55, damping: 22, restDelta: 0.001 });
+
+  const imageY    = useTransform(smooth, [0, 1], ['0%', '18%']);
+  const contentY  = useTransform(smooth, [0, 0.5], ['0%', '-14%']);
+  const contentOp = useTransform(smooth, [0, 0.4], [1, 0]);
+  const hintOp    = useTransform(smooth, [0, 0.14], [1, 0]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full overflow-hidden"
+      style={{ height: '100svh', minHeight: '680px', background: '#161311' }}
+    >
+      {/* Full-bleed parallax photo */}
+      <motion.div
+        style={{ y: imageY, height: '118%' }}
+        className="absolute inset-x-0 top-0 will-change-transform"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/ui-image.jpeg"
+          alt=""
+          className="w-full h-full object-cover object-[center_28%]"
+          draggable={false}
+          fetchPriority="high"
+        />
+      </motion.div>
+
+      {/* Heritage gradient overlay — transparent → #161311 */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'linear-gradient(to bottom, rgba(22,19,17,0) 0%, rgba(22,19,17,0.18) 38%, rgba(22,19,17,0.72) 68%, rgba(22,19,17,1) 100%)',
+          zIndex: 2,
+        }}
+      />
+
+      {/* Vignette sides */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 42%, rgba(22,19,17,0.55) 100%)',
+          zIndex: 2,
+        }}
+      />
+
+      {/* Grain */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.038'/%3E%3C/svg%3E")`,
+          backgroundSize: '128px 128px',
+          mixBlendMode: 'overlay',
+          zIndex: 3,
+        }}
+      />
+
+      {/* ── Bottom content block ── */}
+      <motion.div
+        style={{ y: contentY, opacity: contentOp, zIndex: 10 }}
+        className="absolute bottom-0 left-0 w-full px-6 pb-16 sm:px-12 sm:pb-20 max-w-screen-2xl mx-auto"
+      >
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 md:gap-16">
+
+          {/* Left: eyebrow + headline + tags */}
+          <div className="max-w-3xl">
+            <motion.span
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
+              className="heritage-eyebrow mb-5"
+            >
+              <MapPin className="inline h-2.5 w-2.5 mr-1.5" />
+              Discover your neighbourhood
+            </motion.span>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 32 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1], delay: 0.25 }}
+              className="font-headline italic text-on-surface tracking-tighter leading-[0.9] mt-5 mb-6"
+              style={{ fontSize: 'clamp(3rem, 8vw, 7rem)' }}
+            >
+              More alive than<br className="hidden sm:block" /> you think.
+            </motion.h1>
+
+            {/* Tags */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.55 }}
+              className="flex flex-wrap gap-2 mb-0 md:mb-0"
+            >
+              {TAGS.map((tag, i) => (
+                <motion.button
+                  key={tag.label}
+                  initial={{ opacity: 0, scale: 0.88 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.32, delay: 0.58 + i * 0.065 }}
+                  whileHover={{ scale: 1.06, y: -2 }}
+                  whileTap={{ scale: 0.96 }}
+                  className="heritage-tag"
+                >
+                  <span aria-hidden>{tag.icon}</span>
+                  {tag.label}
+                </motion.button>
+              ))}
+            </motion.div>
           </div>
 
-          <div ref={bodyRef} className="space-y-4">
-            <p className="max-w-2xl text-base leading-8 text-muted sm:text-lg">
-              Discover the people, skills, and stories around you through a map-first platform built for local curiosity.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <span className="info-pill">
-                <MapPin className="h-4 w-4 text-[var(--accent)]" />
-                Run clubs
-              </span>
-              <span className="info-pill">
-                <MapPin className="h-4 w-4 text-[var(--secondary)]" />
-                Art workshops
-              </span>
-              <span className="info-pill">
-                <MapPin className="h-4 w-4 text-[var(--accent)]" />
-                Skillshare sessions
-              </span>
+          {/* Right: toggle + CTAs */}
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.42 }}
+            className="flex flex-col gap-4 md:items-end shrink-0"
+          >
+            <ViewToggle />
+            <div className="flex flex-wrap gap-3">
+              <HeritageButton href="/discover" variant="primary">
+                Explore events
+                <ArrowRight className="h-3.5 w-3.5" />
+              </HeritageButton>
+              <HeritageButton href="/events/new" variant="ghost">
+                Host something
+              </HeritageButton>
             </div>
-          </div>
-
-          <div ref={ctaRef} className="flex flex-wrap gap-3">
-            <Button asChild size="lg">
-              <Link href="/discover">Explore your Ilaaka</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link href="/events/new">Start an Activity</Link>
-            </Button>
-          </div>
+          </motion.div>
         </div>
+      </motion.div>
 
-        <div className="grid gap-4 lg:pb-6">
-          <div className="rounded-[1.8rem] border border-white/45 bg-[rgba(255,255,255,0.62)] p-5 shadow-[0_24px_60px_rgba(17,24,39,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-[rgba(15,23,42,0.34)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--secondary)]">Live signal</p>
-            <p className="mt-3 text-2xl font-semibold">Nodes are waking up across the city.</p>
-            <p className="mt-2 text-sm leading-6 text-muted">Scroll to reveal how Ilaaka turns familiar streets into invitations.</p>
-          </div>
-          <div className="rounded-[1.8rem] border border-white/45 bg-[rgba(255,255,255,0.56)] p-5 shadow-[0_24px_60px_rgba(17,24,39,0.12)] backdrop-blur-2xl dark:border-white/10 dark:bg-[rgba(15,23,42,0.3)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--accent)]">Movement</p>
-            <div className="mt-3 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(200,102,63,0.16)]">
-                <Sparkles className="h-5 w-5 text-[var(--accent)]" />
-              </div>
-              <p className="text-sm leading-6 text-muted">
-                Ilaaka is not just an app. It is a movement to rediscover local life.
-              </p>
-            </div>
-          </div>
-        </div>
+      {/* Smoke */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 8, pointerEvents: 'none' }}>
+        <SmokeLayer />
       </div>
 
-      <div className="pointer-events-none absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/40 bg-[rgba(255,255,255,0.56)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--muted)] backdrop-blur-xl dark:border-white/10 dark:bg-[rgba(15,23,42,0.32)]">
-        Scroll to explore
-      </div>
-    </section>
+      {/* Scroll hint */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.4, duration: 0.6 }}
+        style={{ opacity: hintOp, zIndex: 15 }}
+        className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center"
+      >
+        <motion.svg
+          animate={{ y: [0, 6, 0] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+          className="h-5 w-5 text-on-surface/30"
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M19 9l-7 7-7-7" />
+        </motion.svg>
+      </motion.div>
+    </div>
   );
 }

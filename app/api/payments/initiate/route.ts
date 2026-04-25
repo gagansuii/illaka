@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     order = await razorpay.orders.create({
       amount,
       currency: parsed.data.currency.toUpperCase(),
-      receipt: `ilaka_${Date.now()}`
+      receipt: `illaka_${Date.now()}`
     });
   } catch (err) {
     console.error('Razorpay order creation failed', err);

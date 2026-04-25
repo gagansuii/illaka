@@ -3,17 +3,12 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
-// NEXTAUTH_SECRET must always be set — there is no insecure fallback.
-// In production a missing secret will cause NextAuth to refuse to start.
-// In development set NEXTAUTH_SECRET in .env.local (any non-empty value works).
 const authSecret = process.env.NEXTAUTH_SECRET;
 
-// 14 days — balances UX (users aren't logged out constantly) against the
-// blast radius of a stolen session cookie.
-const SESSION_MAX_AGE_SECONDS = 14 * 24 * 60 * 60;
+const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+const SESSION_SHORT_AGE_SECONDS = 24 * 60 * 60;
 
 export const authOptions: NextAuthOptions = {
-  // Persist login across refresh/revisit using NextAuth JWT httpOnly cookies.
   session: { strategy: 'jwt', maxAge: SESSION_MAX_AGE_SECONDS },
   jwt: { maxAge: SESSION_MAX_AGE_SECONDS },
   providers: [
@@ -21,7 +16,8 @@ export const authOptions: NextAuthOptions = {
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
+        password: { label: 'Password', type: 'password' },
+        rememberMe: { label: 'Remember Me', type: 'text' }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
@@ -30,7 +26,13 @@ export const authOptions: NextAuthOptions = {
         if (!user) return null;
         const valid = await bcrypt.compare(credentials.password, user.password);
         if (!valid) return null;
-        return { id: user.id, name: user.name, email: user.email, role: user.role };
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          rememberMe: credentials.rememberMe === 'true'
+        };
       }
     })
   ],
@@ -39,6 +41,13 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = (user as any).id;
         token.role = (user as any).role;
+        token.rememberMe = (user as any).rememberMe ?? true;
+        token.createdAt = Math.floor(Date.now() / 1000);
+
+        // Short session: expire after 24 hours when Remember Me is unchecked
+        if (!token.rememberMe) {
+          token.exp = Math.floor(Date.now() / 1000) + SESSION_SHORT_AGE_SECONDS;
+        }
       }
       return token;
     },

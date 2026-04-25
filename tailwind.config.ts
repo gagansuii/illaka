@@ -4,26 +4,79 @@ const config: Config = {
   darkMode: ['class'],
   content: [
     './app/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}'
+    './components/**/*.{ts,tsx}',
+    './sections/**/*.{ts,tsx}',
   ],
   theme: {
     extend: {
       colors: {
-        ink: '#0b0c10',
-        pearl: '#f5f7fb',
-        glass: 'rgba(255,255,255,0.08)',
-        neon: '#7ef9ff',
-        ember: '#ff6b35'
+        // Material Design 3 heritage token system
+        'background':               '#161311',
+        'surface':                  '#161311',
+        'surface-dim':              '#161311',
+        'surface-bright':           '#3c3836',
+        'surface-container-lowest': '#100e0c',
+        'surface-container-low':    '#1e1b19',
+        'surface-container':        '#221f1d',
+        'surface-container-high':   '#2d2927',
+        'surface-container-highest':'#383432',
+        'surface-variant':          '#383432',
+        'on-surface':               '#e9e1dd',
+        'on-surface-variant':       '#d9c2b9',
+        'inverse-surface':          '#e9e1dd',
+        'inverse-on-surface':       '#33302d',
+        'primary':                  '#ffb598',
+        'primary-fixed':            '#ffdbce',
+        'primary-fixed-dim':        '#ffb598',
+        'primary-container':        '#964520',
+        'on-primary':               '#591d00',
+        'on-primary-fixed':         '#370f00',
+        'on-primary-fixed-variant': '#7a300b',
+        'on-primary-container':     '#ffcab6',
+        'inverse-primary':          '#984721',
+        'secondary':                '#d8c2b8',
+        'secondary-fixed':          '#f5ded4',
+        'secondary-fixed-dim':      '#d8c2b8',
+        'secondary-container':      '#53433c',
+        'on-secondary':             '#3b2d27',
+        'on-secondary-fixed':       '#251913',
+        'on-secondary-fixed-variant':'#53433c',
+        'on-secondary-container':   '#c6b1a7',
+        'tertiary':                 '#f7bb7e',
+        'tertiary-fixed':           '#ffdcbd',
+        'tertiary-fixed-dim':       '#f7bb7e',
+        'tertiary-container':       '#805320',
+        'on-tertiary':              '#492900',
+        'on-tertiary-fixed':        '#2c1600',
+        'on-tertiary-fixed-variant':'#663d0b',
+        'on-tertiary-container':    '#ffcd9d',
+        'error':                    '#ffb4ab',
+        'error-container':          '#93000a',
+        'on-error':                 '#690005',
+        'on-error-container':       '#ffdad6',
+        'outline':                  '#a18c85',
+        'outline-variant':          '#53433d',
+        'surface-tint':             '#ffb598',
+      },
+      fontFamily: {
+        headline: ['var(--font-newsreader)', 'Georgia', 'serif'],
+        body:     ['var(--font-manrope)', 'system-ui', 'sans-serif'],
+        label:    ['var(--font-manrope)', 'system-ui', 'sans-serif'],
+      },
+      borderRadius: {
+        // Heritage sharp corners — use explicitly where needed
+        sharp:    '0.125rem',
+        'sharp-lg': '0.25rem',
+        'sharp-xl': '0.5rem',
+        'sharp-full': '0.75rem',
       },
       boxShadow: {
-        glow: '0 0 30px rgba(126,249,255,0.25)'
+        glow:    '0 0 30px rgba(255,181,152,0.20)',
+        'glow-md':'0 4px 24px rgba(255,181,152,0.28)',
       },
-      backdropBlur: {
-        xs: '2px'
-      }
-    }
+    },
   },
-  plugins: [require('tailwindcss-animate')]
+  plugins: [require('tailwindcss-animate')],
 };
 
 export default config;

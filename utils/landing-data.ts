@@ -12,18 +12,6 @@ export type CommunityTrack = {
   accent: string;
 };
 
-export type CreatorStep = {
-  title: string;
-  description: string;
-  kicker: string;
-};
-
-export type Testimonial = {
-  quote: string;
-  name: string;
-  role: string;
-};
-
 export const demoEvents: LandingEventCard[] = [
   {
     title: 'Morning Run Club',
@@ -77,64 +65,3 @@ export const communityTracks: CommunityTrack[] = [
     accent: '#5e7f96'
   }
 ];
-
-export const creatorSteps: CreatorStep[] = [
-  {
-    kicker: 'Step 01',
-    title: 'Create a local invitation',
-    description: 'Give the moment a title, a visual tone, and a reason people should care.'
-  },
-  {
-    kicker: 'Step 02',
-    title: 'Upload the banner',
-    description: 'Shape the first impression with imagery that feels human and immediate.'
-  },
-  {
-    kicker: 'Step 03',
-    title: 'Share the location',
-    description: 'Pin the event exactly where people should orient themselves.'
-  },
-  {
-    kicker: 'Step 04',
-    title: 'Watch the neighborhood respond',
-    description: 'RSVPs, word of mouth, and repeat hosts turn one event into a community loop.'
-  }
-];
-
-export const socialStats = [
-  { value: '18k+', label: 'people rediscovering local life' },
-  { value: '420+', label: 'hosts putting moments on the map' },
-  { value: '7', label: 'cities already building neighborhood rituals' },
-  { value: '2.4k+', label: 'activities shared across communities' }
-] as const;
-
-export const testimonials: Testimonial[] = [
-  {
-    quote: 'I hosted one tiny sketch meetup and ended up meeting half the creative block around me.',
-    name: 'Megha P.',
-    role: 'Organizer, terrace art circles'
-  },
-  {
-    quote: 'It feels less like a social app and more like the neighborhood finally started talking.',
-    name: 'Arjun S.',
-    role: 'Runner, morning club host'
-  },
-  {
-    quote: 'People came for one coding session and then started hosting their own skillshares.',
-    name: 'Nabila R.',
-    role: 'Community builder'
-  }
-] as const;
-
-export const growthNodes = [
-  { id: 'host', label: '1 host', x: '8%', y: '44%' },
-  { id: 'join-a', label: '5 join', x: '24%', y: '22%' },
-  { id: 'join-b', label: '5 join', x: '24%', y: '66%' },
-  { id: 'skillshare', label: 'workshop', x: '46%', y: '16%' },
-  { id: 'run-club', label: 'run club', x: '50%', y: '52%' },
-  { id: 'art-night', label: 'art night', x: '44%', y: '80%' },
-  { id: 'circle-a', label: 'community', x: '73%', y: '10%' },
-  { id: 'circle-b', label: 'community', x: '81%', y: '36%' },
-  { id: 'circle-c', label: 'community', x: '78%', y: '66%' },
-  { id: 'circle-d', label: 'community', x: '70%', y: '88%' }
-] as const;

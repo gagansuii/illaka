@@ -5,9 +5,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  shadowDatabaseUrl= env("SHADOW_DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
 }
 
 enum Role {
@@ -70,9 +70,11 @@ model Event {
   capacity    Int
   organizerId   String
   isPaid        Boolean       @default(false)
+  ticketPrice   Int?
   engagementScore Int         @default(0)
-  shareToken    String?        @unique
-  eventType     EventType?     @default(PHYSICAL)
+  paymentQrUrl  String?
+  shareToken    String?       @unique
+  eventType     EventType?    @default(PHYSICAL)
   onlineLink    String?
   linkShareMode LinkShareMode?
   paymentQrUrl  String?
@@ -90,10 +92,13 @@ model Event {
   @@index([location], type: Gist)
   @@index([organizerId])
   @@index([visibility])
+  @@index([startTime])
+  @@index([engagementScore])
 }
 
 model RSVP {
   id        String   @id @default(uuid())
+  ticketId  String   @default(uuid()) @unique
   userId    String
   eventId   String
   createdAt DateTime @default(now())
@@ -102,6 +107,8 @@ model RSVP {
   event Event @relation(fields: [eventId], references: [id])
 
   @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
 }
 
 model Like {
@@ -114,6 +121,8 @@ model Like {
   event Event @relation(fields: [eventId], references: [id])
 
   @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
 }
 
 model Share {
@@ -124,6 +133,9 @@ model Share {
 
   user  User  @relation(fields: [userId], references: [id])
   event Event @relation(fields: [eventId], references: [id])
+
+  @@index([userId])
+  @@index([eventId])
 }
 
 model Attendance {
@@ -136,6 +148,8 @@ model Attendance {
   event Event @relation(fields: [eventId], references: [id])
 
   @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
 }
 
 model Subscription {
@@ -148,6 +162,8 @@ model Subscription {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model PasswordResetToken {
@@ -159,6 +175,8 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model Payment {
@@ -175,6 +193,11 @@ model Payment {
 
   user  User   @relation(fields: [userId], references: [id])
   event Event? @relation(fields: [eventId], references: [id])
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([providerRef])
+  @@index([status])
 }
 
 model ReminderLog {

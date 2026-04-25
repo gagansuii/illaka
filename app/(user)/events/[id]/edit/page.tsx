@@ -5,10 +5,12 @@ import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { useRouteTransition } from '@/components/RouteTransitionProvider';
 
 export default function EditEventPage() {
   const params = useParams<{ id: string }>();
   const eventId = params.id;
+  const { navigate } = useRouteTransition();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState<'PUBLIC' | 'PRIVATE'>('PUBLIC');
@@ -68,7 +70,7 @@ export default function EditEventPage() {
       setError(data?.error ?? 'Failed to update event');
       return;
     }
-    window.location.href = `/events/${eventId}`;
+    navigate(`/events/${eventId}`);
   }
 
   if (loading) {

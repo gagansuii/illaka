@@ -2,95 +2,162 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Overview
+
+**ILAKA** is a location-based community events platform built with Next.js 16+, TypeScript, Prisma (PostgreSQL + PostGIS), and NextAuth. Key features: event discovery by geolocation, AI-powered semantic search, Razorpay payments, Cloudinary media uploads, and engagement scoring.
+
 ## Commands
 
 ```bash
-npm run dev          # Start dev server (uses dev-guard.mjs to clear stale locks)
-npm run build        # Production build
-npm run lint         # ESLint — zero warnings allowed (max-warnings: 0)
-npm run prisma:generate   # Regenerate Prisma client after schema changes
-npm run prisma:migrate    # Create and apply new migrations (dev)
-npm run prisma:deploy     # Apply pending migrations (production)
-npm run audit:media       # Audit orphaned Cloudinary media files
-```
+# Development
+npm run dev              # starts dev server (via scripts/dev-guard.mjs)
+npm run dev:webpack      # dev server with Webpack bundler instead of Turbopack
 
-Docker full-stack (Postgres + Redis + app):
-```bash
-docker-compose up --build
-```
+# Build & production
+npm run build
+npm run start
 
+# Linting (zero warnings enforced)
+npm run lint
+
+# Prisma
+npm run prisma:generate  # regenerate Prisma client after schema changes
+npm run prisma:migrate   # create and apply a new migration (dev)
+npm run prisma:deploy    # apply migrations in production
+
+# Utilities
+npm run audit:media      # audit orphaned Cloudinary media
+```
+## Product Philosophy
+
+ILAKA is a **relevance-first event discovery platform** with an optional map view.
+
+Core principles:
+- The default experience is a **scrollable feed of the most relevant nearby events**
+- Events should be ranked by:
+  - proximity
+  - engagementScore
+  - semantic relevance (AI search)
+- Users should discover good events instantly without needing to interact with a map
+
+Map is a **secondary exploration mode**, not the primary interface.
+
+Avoid:
+- Forcing map interactions for discovery
+- Empty or low-signal feeds
+- Feature bloat
+## Feed UX Rules
+
+- Default screen = scrollable event feed
+- Show highest relevance events at the top
+- Each event card should be:
+  - visually clean
+  - quick to scan (title, distance, time, category)
+- Prioritize fast loading and smooth scrolling
+
+Map View:
+- Optional toggle (e.g., "Map View")
+- Used for spatial exploration, not primary discovery
+- Should sync with feed results (same dataset)
+
+Avoid:
+- Switching context unexpectedly between feed and map
+- Showing different data between feed and map
+
+## Event Ranking Guidelines
+
+Default feed ranking should balance:
+- proximity (strong weight)
+- engagementScore
+- recency (upcoming events prioritized)
+- AI semantic relevance (when search is used)
+
+Never:
+- show far-away events above nearby relevant ones
+- show low-quality events at the top
+
+If data is sparse:
+- expand radius gradually instead of lowering quality
+
+## Decision Guidelines
+
+When generating code or features:
+
+- Choose the simplest working solution
+- Prefer MVP implementations over scalable abstractions
+- Avoid adding new dependencies unless necessary
+- If multiple approaches exist, pick the one with:
+  - fewer moving parts
+  - better performance on mobile
+- Do not introduce new features unless explicitly asked
 ## Architecture
 
-Single Next.js 16 App Router application with PostgreSQL + PostGIS for geospatial event discovery.
+### Directory Structure
+The app lives in `app/app/` (the Next.js app root). Notable directories:
+- `(admin)/` — admin-only route group
+- `(auth)/` — login/register pages
+- `(user)/` — authenticated user pages (events, profile)
+- `api/` — App Router route handlers: `events/`, `ai-search/`, `auth/`, `geo/`, `payments/`, `upload/`, `users/`
+- `components/` — shared React components (`MapScreen`, `SwipeDeck`, `PaymentButton`, etc.)
+- `sections/` — landing page sections
+- `lib/` — server-side utilities (see below)
+- `prisma/` — Prisma schema and migrations
+- `three/` — Three.js scene files
 
-### Request path
+## AI & Search Constraints
 
-Browser → Next.js server (App Router + API routes) → PostgreSQL (Prisma ORM) + optional Redis → external services (OpenAI, Pinecone, Razorpay, Cloudinary)
+- AI search must always respect geolocation constraints
+- Do not return results outside user radius
+- Prioritize relevance + proximity over semantic similarity alone
+- Cache aggressively to reduce API costs
+### Routing & Middleware
+`proxy.ts` handles authentication redirects — Next.js 16+ uses this filename instead of `middleware.ts`. It exports `proxy` (the handler) and `config` (the matcher). It protects `/admin/*`, `/profile`, and `/events/new`, redirecting unauthenticated users to `/login`. Do NOT create a `middleware.ts` alongside it — Next.js 16 will throw a conflict error.
 
-### Directory layout
-
-| Path | Purpose |
-|------|---------|
-| `app/(auth)/` | Login and register pages |
-| `app/(user)/` | Main user-facing pages: discover, events, profile |
-| `app/(admin)/` | Admin dashboard |
-| `app/api/` | REST API routes |
-| `components/` | React components; `components/ui/` holds Radix UI primitives |
-| `components/landing/` | Landing page section components |
-| `lib/` | Server-side singletons and utilities (see below) |
-| `sections/` | Additional landing page sections |
-| `three/` | Three.js 3D canvas components |
-| `prisma/` | Schema and migrations |
-| `scripts/` | Dev and maintenance scripts |
-
-### Key `lib/` modules
-
-- `lib/prisma.ts` — Prisma client singleton
-- `lib/auth.ts` — NextAuth config (JWT, credentials provider, 30-day session)
-- `lib/config.ts` — Validates all environment variables at startup
-- `lib/ai.ts` — OpenAI + Pinecone client initialization
-- `lib/engagement.ts` — Engagement score formula: RSVP×3 + Like×1 + Share×5 + Attendance×10
-- `lib/events-cache.ts` — In-memory dual-layer cache (fresh 15s, stale 60s, background refresh)
-- `lib/geo.ts` — IP geolocation with circuit breaker pattern; falls back between ipinfo.io and ip-api.com
-- `lib/rate-limit.ts` — Rate limiting backed by Redis; falls back to LRU cache when Redis is absent
-- `lib/media.ts` — Cloudinary uploads and image sanitization
-- `lib/razorpay.ts` — Razorpay payment client
+### Authentication
+`lib/auth.ts` configures NextAuth with a Credentials provider (email + bcrypt password). JWTs store `id` and `role` (USER | ORGANIZER | ADMIN). `NEXTAUTH_SECRET` is required in production.
 
 ### Database
+PostgreSQL with PostGIS extension. The `Event` model has a `location geography` column (PostGIS `Unsupported` type) with a GiST index for geospatial queries. **PostGIS must be enabled** before running migrations:
+```sql
+CREATE EXTENSION IF NOT EXISTS postgis;
+```
+Prisma client is a singleton in `lib/prisma.ts`.
 
-PostgreSQL 15 with PostGIS. Prisma is used for most queries; raw SQL via `prisma.$queryRaw` / `prisma.$executeRaw` is used for PostGIS geography operations (nearby event radius queries use a GIST index on the `location` geography column).
+### AI Search
+`api/ai-search/route.ts` uses OpenAI `text-embedding-3-small` (1536-dim) to embed queries, queries a Pinecone index (`ilaka-events`, cosine metric), then post-filters by geospatial radius. Results are ranked by a weighted blend of Pinecone score (70%) and `engagementScore` (30%). Results are cached in-memory via `lib/ai-cache.ts`.
 
-**Models:** User · Event · RSVP · Like · Share · Attendance · Subscription · Payment
+### Engagement Scoring
+`lib/engagement.ts` computes `engagementScore` via a single atomic SQL `UPDATE` (not multiple COUNT queries). Weights: RSVP×3, Like×1, Share×5, Attendance×10.
 
-Roles: `USER | ORGANIZER | ADMIN`
+### Rate Limiting
+`lib/rate-limit.ts` uses Redis (via `REDIS_URL`) when available; falls back silently to an in-memory LRU cache. Redis failures auto-disable Redis and fall back without crashing.
 
-Requires two databases: `ilaka_events` (main) + `ilaka_shadow` (Prisma shadow DB for safe migrations).
+### Geolocation
+`lib/geo.ts` resolves IP to coordinates using ipinfo.io (preferred) then ip-api.com as fallback. Both providers have circuit breakers (3 failures → 60s open).
 
-### Geospatial queries
+### Environment Variables
+`lib/config.ts` provides `getEnv()` / `getEnvOptional()` / `getEnvNumber()` — use these for all env access on the server; they throw with clear messages on missing required vars.
 
-Events have both `latitude`/`longitude` float columns and a PostGIS `geography` column with a GIST index. Radius searches query by `ST_DWithin`. After any schema change to the Event model involving the geography column, ensure the GIST index is recreated in the migration SQL.
+Required vars (see `.env.example`):
+- `DATABASE_URL`, `SHADOW_DATABASE_URL` — PostgreSQL connection strings
+- `NEXTAUTH_SECRET` — required in production
+- `OPENAI_API_KEY`, `PINECONE_API_KEY`, `PINECONE_INDEX` — optional; AI search disabled if absent
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`
+- `REDIS_URL` — optional; in-memory fallback used when absent
+- `IPINFO_TOKEN` — optional; ip-api.com fallback used when absent
 
-### Optional services and graceful degradation
+### Caching (in-memory, server-side)
+- `lib/events-cache.ts` — geo-bucketed events cache (100m radius buckets, max 500 entries)
+- `lib/ai-cache.ts` — AI query result cache
 
-| Service | Fallback when absent |
-|---------|---------------------|
-| Redis | LRU in-memory cache |
-| OpenAI | AI search disabled |
-| Pinecone | Vector search disabled |
-| Razorpay | Payments disabled |
-| Cloudinary | Image upload disabled |
-| IPInfo | Tries ip-api.com; then skips geolocation |
+### Payments
+Razorpay integration: `api/payments/initiate/` creates orders, `api/payments/webhook/` verifies HMAC signatures and records `Payment` rows.
 
-`lib/config.ts` validates required env vars at startup and surfaces which optional services are active.
+### API Pattern
+All route handlers: validate input with `zod`, call `rateLimit()` early, use `getServerSession(authOptions)` for auth checks, return `NextResponse.json()`.
 
-## Key configuration
-
-- **Path alias:** `@/*` maps to the project root
-- **Tailwind custom tokens:** `ink` (dark bg), `pearl` (light bg), `neon` (cyan accent), `ember` (orange accent), `glass` (frosted rgba)
-- **`reactStrictMode: false`** in `next.config.mjs` (intentional — avoids double-render issues with Three.js and map components)
-- **Server Action body limit:** 2 MB (for image uploads)
-- **Zod** is used for all API input validation
-
-## Environment setup
-
-Copy `.env.example` to `.env.local`. Only `DATABASE_URL`, `SHADOW_DATABASE_URL`, `NEXTAUTH_URL`, and `NEXTAUTH_SECRET` are required to run locally. All other variables enable optional features.
+## Key Constraints
+- `reactStrictMode` is disabled in `next.config.mjs`
+- Server Actions body size limit: 2MB
+- Remote images allowed only from `res.cloudinary.com` and OpenStreetMap tile servers

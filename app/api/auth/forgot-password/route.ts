@@ -3,39 +3,14 @@ import { prisma } from '@/lib/prisma';
 import { rateLimit } from '@/lib/rate-limit';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
-import nodemailer from 'nodemailer';
+import { sendPasswordResetEmail } from '@/lib/mailer';
 
 const schema = z.object({ email: z.string().email() });
 
-async function sendResetEmail(to: string, resetUrl: string) {
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
-
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    // In dev/no-SMTP environments, log the link so it can be used manually
-    console.log(`[Password Reset] Link for ${to}: ${resetUrl}`);
-    return;
-  }
-
-  const transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT ?? 587),
-    secure: Number(SMTP_PORT) === 465,
-    auth: { user: SMTP_USER, pass: SMTP_PASS }
-  });
-
-  await transporter.sendMail({
-    from: `"Ilaaka" <${SMTP_USER}>`,
-    to,
-    subject: 'Reset your Ilaaka password',
-    text: `Click the link below to reset your password. It expires in 1 hour.\n\n${resetUrl}\n\nIf you didn't request this, ignore this email.`,
-    html: `<p>Click the link below to reset your password. It expires in 1 hour.</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>If you didn't request this, ignore this email.</p>`
-  });
-}
-
 export async function POST(req: Request) {
-  const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
-  if (!(await rateLimit(`forgot-password:${ip}`, 3))) {
-    return NextResponse.json({ ok: true }); // silent — don't reveal rate limit to enumeration
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  if (!(await rateLimit(`forgot-password:${ip}`, 5))) {
+    return NextResponse.json({ ok: true }); // silently throttle to avoid timing leaks
   }
 
   let body: unknown;
@@ -71,9 +46,9 @@ export async function POST(req: Request) {
   const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
   try {
-    await sendResetEmail(email, resetUrl);
+    await sendPasswordResetEmail(email, resetUrl);
   } catch (err) {
-    console.error('Failed to send reset email:', err);
+    console.error('[forgot-password] Failed to send reset email:', err);
   }
 
   return NextResponse.json({ ok: true });

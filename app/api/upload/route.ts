@@ -1,33 +1,21 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import { join } from 'path';
+import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from 'crypto';
 import { rateLimit } from '@/lib/rate-limit';
 
 const ALLOWED_FOLDERS = new Set(['ilaka/banners', 'ilaka/badges', 'ilaka/payment-qr']);
-// QR uploads are restricted to organizers and admins — regular users have no reason
-// to upload payment QR codes and allowing it opens a phishing vector.
 const ORGANIZER_ONLY_FOLDERS = new Set(['ilaka/payment-qr']);
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-const MIN_FILE_SIZE = 100; // reject suspiciously empty files
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MIN_FILE_SIZE = 100;
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-const MIME_TO_EXT: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'image/gif': 'gif'
-};
 
-// Magic byte signatures for each allowed image type.
-// Validates the actual file content, not the browser-reported MIME type.
 const MAGIC_BYTES: Array<{ mime: string; bytes: number[]; offset?: number }> = [
   { mime: 'image/jpeg', bytes: [0xff, 0xd8, 0xff] },
   { mime: 'image/png',  bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] },
-  { mime: 'image/webp', bytes: [0x52, 0x49, 0x46, 0x46], offset: 0 }, // RIFF header; additional check below
-  { mime: 'image/gif',  bytes: [0x47, 0x49, 0x46, 0x38] }, // GIF8
+  { mime: 'image/webp', bytes: [0x52, 0x49, 0x46, 0x46], offset: 0 },
+  { mime: 'image/gif',  bytes: [0x47, 0x49, 0x46, 0x38] },
 ];
 
 function detectMimeFromBytes(buf: Buffer): string | null {
@@ -36,7 +24,6 @@ function detectMimeFromBytes(buf: Buffer): string | null {
     const slice = buf.slice(start, start + sig.bytes.length);
     if (sig.bytes.every((b, i) => slice[i] === b)) {
       if (sig.mime === 'image/webp') {
-        // WebP: bytes 8-11 must be "WEBP"
         const webp = buf.slice(8, 12).toString('ascii');
         if (webp !== 'WEBP') continue;
       }
@@ -46,16 +33,36 @@ function detectMimeFromBytes(buf: Buffer): string | null {
   return null;
 }
 
+function isCloudinaryConfigured() {
+  return !!(
+    process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET
+  );
+}
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Per-user upload rate limit: 10 uploads per hour
+  if (!isCloudinaryConfigured()) {
+    return NextResponse.json(
+      { error: 'Image uploads are not configured. Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET to your environment variables.' },
+      { status: 503 }
+    );
+  }
+
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+
   const rateLimitKey = `upload:${session.user.id}`;
-  const allowed = await rateLimit(rateLimitKey, 10);
-  if (!allowed) {
+  if (!(await rateLimit(rateLimitKey, 10))) {
     return NextResponse.json({ error: 'Too many uploads. Please wait before trying again.' }, { status: 429 });
   }
+
 
   let formData: FormData;
   try {
@@ -100,20 +107,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'File content does not match an allowed image type.' }, { status: 415 });
   }
 
-  // Use the magic-byte-detected MIME for the extension, not the client-provided one.
-  const ext = MIME_TO_EXT[detectedMime] ?? 'jpg';
-  const filename = `${randomUUID()}.${ext}`;
-  const uploadDir = join(process.cwd(), 'public', 'uploads', folder);
-
   try {
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-    await writeFile(join(uploadDir, filename), buffer);
+    const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { folder, public_id: randomUUID(), resource_type: 'image', overwrite: false },
+        (error, res) => {
+          if (error || !res) reject(error ?? new Error('Upload failed'));
+          else resolve(res as { secure_url: string });
+        }
+      ).end(buffer);
+    });
+
+    return NextResponse.json({ url: result.secure_url });
   } catch (err) {
-    console.error('File write failed:', err);
+    console.error('Cloudinary upload failed:', err);
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
-
-  return NextResponse.json({ url: `/uploads/${folder}/${filename}` });
 }
