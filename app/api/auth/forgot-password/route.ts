@@ -3,10 +3,16 @@ import { prisma } from '@/lib/prisma';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import { sendPasswordResetEmail } from '@/lib/mailer';
+import { rateLimit } from '@/lib/rate-limit';
 
 const schema = z.object({ email: z.string().email() });
 
 export async function POST(req: Request) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  if (!(await rateLimit(`forgot-password:${ip}`, 5))) {
+    return NextResponse.json({ ok: true }); // silently throttle to avoid timing leaks
+  }
+
   let body: unknown;
   try {
     body = await req.json();

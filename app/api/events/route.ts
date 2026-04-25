@@ -165,6 +165,10 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  if (!(await rateLimit(`events:create:${session.user.id}`, 10))) {
+    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+  }
+
   let body: unknown;
   try {
     body = await req.json();

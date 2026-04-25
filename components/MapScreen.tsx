@@ -87,13 +87,13 @@ export function MapScreen() {
 
   // Merge user's own events into the feed (deduplicated) so private/all events always show
   const mergedEvents = useMemo(() => {
-    const seen = new Set<string>();
+    const seen = new Set(events.map((e) => e.id));
     const combined = [...events];
     for (const e of myEvents) {
-      if (!seen.has(e.id) && !combined.find((x) => x.id === e.id)) {
+      if (!seen.has(e.id)) {
+        seen.add(e.id);
         combined.unshift(e as EventSummary);
       }
-      seen.add(e.id);
     }
     return combined;
   }, [events, myEvents]);

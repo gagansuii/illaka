@@ -78,7 +78,15 @@ export async function POST(req: Request) {
   const ids = results.matches.map((m) => m.id);
   let events;
   try {
-    events = await prisma.event.findMany({ where: { id: { in: ids }, visibility: 'PUBLIC' } });
+    events = await prisma.event.findMany({
+      where: { id: { in: ids }, visibility: 'PUBLIC' },
+      select: {
+        id: true, title: true, description: true, bannerUrl: true, badgeIcon: true,
+        latitude: true, longitude: true, startTime: true, endTime: true,
+        visibility: true, capacity: true, organizerId: true, isPaid: true,
+        ticketPrice: true, engagementScore: true, eventType: true,
+      }
+    });
   } catch (err) {
     console.error('AI search DB query failed:', err);
     return NextResponse.json({ error: 'Database error' }, { status: 500 });

@@ -57,11 +57,10 @@ export default function AdminPage() {
       const evData = await evRes.json();
       const usData = await usRes.json();
       setEvents(evData.events ?? []);
-      const us: AdminUser[] = usData.users ?? [];
-      setUsers(us);
+      setUsers(usData.users ?? []);
       setStats({
-        userCount: us.length,
-        eventCount: evData.events?.length ?? 0,
+        userCount: usData.total ?? usData.users?.length ?? 0,
+        eventCount: evData.total ?? evData.events?.length ?? 0,
         revenue: 0
       });
     } finally {
