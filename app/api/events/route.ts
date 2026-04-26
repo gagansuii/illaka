@@ -200,31 +200,15 @@ export async function POST(req: Request) {
 
   let inserted: any;
   try {
-    // Keep the raw SQL for the PostGIS geography column; paymentQrUrl is
-    // updated separately below to avoid null-handling issues in raw queries.
+    // Full insert with all columns (requires migration 20260425095841 to have run)
     inserted = await prisma.$queryRaw<any>`
       INSERT INTO "Event" (
-        "id",
-        "title",
-        "description",
-        "bannerUrl",
-        "badgeIcon",
-        "latitude",
-        "longitude",
-        "location",
-        "startTime",
-        "endTime",
-        "visibility",
-        "capacity",
-        "organizerId",
-        "isPaid",
-        "engagementScore",
-        "eventType",
-        "onlineLink",
-        "linkShareMode",
-        "paymentQrUrl",
-        "createdAt",
-        "updatedAt"
+        "id", "title", "description", "bannerUrl", "badgeIcon",
+        "latitude", "longitude", "location",
+        "startTime", "endTime", "visibility", "capacity",
+        "organizerId", "isPaid", "engagementScore",
+        "eventType", "onlineLink", "linkShareMode", "paymentQrUrl",
+        "createdAt", "updatedAt"
       ) VALUES (
         ${eventId},
         ${data.title},
@@ -248,12 +232,56 @@ export async function POST(req: Request) {
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
       )
-      RETURNING "id", "title", "description", "bannerUrl", "badgeIcon", "latitude", "longitude", "startTime", "endTime", "visibility", "capacity", "organizerId", "isPaid", "engagementScore", "eventType", "onlineLink", "linkShareMode", "paymentQrUrl", "createdAt", "updatedAt"
+      RETURNING "id", "title", "description", "bannerUrl", "badgeIcon", "latitude", "longitude",
+                "startTime", "endTime", "visibility", "capacity", "organizerId", "isPaid",
+                "engagementScore", "eventType", "onlineLink", "linkShareMode", "paymentQrUrl",
+                "createdAt", "updatedAt"
     `;
-  } catch (err: any) {
-    const msg = err?.message ?? String(err);
-    console.error('Event creation failed:', msg, err);
-    return NextResponse.json({ error: `Event creation failed: ${msg}` }, { status: 500 });
+  } catch (fullErr: any) {
+    // Fallback: migration may not have run yet — insert without the newer columns
+    if (fullErr?.code === '42703' || /column.*does not exist/i.test(fullErr?.message ?? '')) {
+      console.warn('Newer columns missing, falling back to base insert. Run prisma migrate deploy.');
+      try {
+        inserted = await prisma.$queryRaw<any>`
+          INSERT INTO "Event" (
+            "id", "title", "description", "bannerUrl", "badgeIcon",
+            "latitude", "longitude", "location",
+            "startTime", "endTime", "visibility", "capacity",
+            "organizerId", "isPaid", "engagementScore",
+            "createdAt", "updatedAt"
+          ) VALUES (
+            ${eventId},
+            ${data.title},
+            ${data.description},
+            ${data.bannerUrl},
+            ${data.badgeIcon},
+            ${data.latitude},
+            ${data.longitude},
+            ST_SetSRID(ST_MakePoint(${data.longitude}, ${data.latitude}), 4326)::geography,
+            ${startTime},
+            ${endTime},
+            ${data.visibility}::"Visibility",
+            ${data.capacity},
+            ${session.user.id},
+            ${data.isPaid},
+            0,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP
+          )
+          RETURNING "id", "title", "description", "bannerUrl", "badgeIcon", "latitude", "longitude",
+                    "startTime", "endTime", "visibility", "capacity", "organizerId", "isPaid",
+                    "engagementScore", "createdAt", "updatedAt"
+        `;
+      } catch (fallbackErr: any) {
+        const msg = fallbackErr?.message ?? String(fallbackErr);
+        console.error('Event creation fallback also failed:', msg);
+        return NextResponse.json({ error: `Event creation failed: ${msg}` }, { status: 500 });
+      }
+    } else {
+      const msg = fullErr?.message ?? String(fullErr);
+      console.error('Event creation failed:', msg, fullErr);
+      return NextResponse.json({ error: `Event creation failed: ${msg}` }, { status: 500 });
+    }
   }
 
   const event = inserted[0];
