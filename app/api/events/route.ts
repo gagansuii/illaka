@@ -20,8 +20,8 @@ import {
 } from '@/lib/events-cache';
 
 const createSchema = z.object({
-  title: z.string().min(3).max(200),
-  description: z.string().min(10).max(5000),
+  title: z.string().min(3).max(200).trim(),
+  description: z.string().min(10).max(5000).trim(),
   bannerUrl: z.string().min(1),
   badgeIcon: z.string().min(1),
   latitude: z.number().min(-90).max(90),
@@ -35,7 +35,8 @@ const createSchema = z.object({
   paymentQrUrl: z.string().optional(),
   eventType: z.enum(['PHYSICAL', 'ONLINE']).optional(),
   onlineLink: z.string().url().optional().or(z.literal('')),
-  linkShareMode: z.enum(['IMMEDIATE', 'BEFORE_EVENT']).optional()
+  linkShareMode: z.enum(['IMMEDIATE', 'BEFORE_EVENT']).optional(),
+  paymentQrUrl: z.string().optional()
 }).refine((d) => new Date(d.endTime) > new Date(d.startTime), {
   message: 'endTime must be after startTime',
   path: ['endTime']
@@ -85,6 +86,7 @@ async function fetchEventsFromDb(lat: number, lng: number, radius: number) {
       "engagementScore"
     FROM "Event"
     WHERE "visibility" = 'PUBLIC'
+      AND "endTime" >= NOW()
       AND ST_DWithin(
         location,
         ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
@@ -195,6 +197,7 @@ export async function POST(req: Request) {
   const eventType = data.eventType ?? 'PHYSICAL';
   const onlineLink = data.onlineLink ?? null;
   const linkShareMode = data.linkShareMode ?? null;
+  const paymentQrUrl = data.paymentQrUrl ?? null;
 
   let inserted: any;
   try {
@@ -220,6 +223,7 @@ export async function POST(req: Request) {
         "eventType",
         "onlineLink",
         "linkShareMode",
+        "paymentQrUrl",
         "createdAt",
         "updatedAt"
       ) VALUES (
@@ -241,10 +245,11 @@ export async function POST(req: Request) {
         ${eventType}::"EventType",
         ${onlineLink},
         ${linkShareMode}::"LinkShareMode",
+        ${paymentQrUrl},
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
       )
-      RETURNING "id", "title", "description", "bannerUrl", "badgeIcon", "latitude", "longitude", "startTime", "endTime", "visibility", "capacity", "organizerId", "isPaid", "engagementScore", "eventType", "onlineLink", "linkShareMode", "createdAt", "updatedAt"
+      RETURNING "id", "title", "description", "bannerUrl", "badgeIcon", "latitude", "longitude", "startTime", "endTime", "visibility", "capacity", "organizerId", "isPaid", "engagementScore", "eventType", "onlineLink", "linkShareMode", "paymentQrUrl", "createdAt", "updatedAt"
     `;
   } catch (err: any) {
     const msg = err?.message ?? String(err);

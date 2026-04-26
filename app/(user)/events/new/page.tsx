@@ -1,38 +1,56 @@
 'use client';
 
+import React, { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useState } from 'react';
-import { CalendarClock, Globe, ImagePlus, Link2, LocateFixed, Lock, MapPin, Sparkles, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Globe, ImagePlus, Link2, LocateFixed, Lock, MapPin } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
-import { Textarea } from '@/components/ui/textarea';
-import { useRouteTransition } from '@/components/RouteTransitionProvider';
 import { cn } from '@/lib/utils';
 import { EVENT_CATEGORY_OPTIONS, type EventCategoryKey, formatEventDay, formatEventRange } from '@/lib/event-style';
+import { ResilientImage } from '@/components/ResilientImage';
 
 const MapView = dynamic(
   () => import('@/components/MapView').then((module) => module.MapView),
   { ssr: false }
 );
 
-const DEFAULT_PREVIEW_START = '2026-03-16T11:30:00.000Z';
-const DEFAULT_PREVIEW_END = '2026-03-16T13:00:00.000Z';
+const INPUT: React.CSSProperties = {
+  width: '100%', padding: '11px 12px', boxSizing: 'border-box',
+  border: '1.5px solid var(--ink)', background: 'var(--paper-2)',
+  fontFamily: 'var(--font-mono), monospace', fontSize: 12,
+  color: 'var(--ink)', outline: 'none', borderRadius: 0,
+};
 
-function UploadDropzone({
-  id,
-  title,
-  description,
-  ready,
-  loading,
-  onFileSelect
-}: {
-  id: string;
-  title: string;
-  description: string;
-  ready: boolean;
-  loading: boolean;
+const TEXTAREA: React.CSSProperties = {
+  ...INPUT, resize: 'vertical', minHeight: 96,
+};
+
+function Sep({ label }: { label: string }) {
+  return (
+    <div className="illaka-sep" style={{ margin: '20px 0 14px' }}>
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label style={{ display: 'block', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--ink-soft)', marginBottom: 6 }}>
+      {children}
+    </label>
+  );
+}
+
+function PaperCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div className="flyer-card-sm" style={{ padding: 16, ...style }}>
+      {children}
+    </div>
+  );
+}
+
+function UploadZone({ id, label, hint, ready, loading, onFileSelect }: {
+  id: string; label: string; hint: string;
+  ready: boolean; loading: boolean;
   onFileSelect: (file: File) => Promise<void>;
 }) {
   const [dragging, setDragging] = useState(false);
@@ -44,43 +62,62 @@ function UploadDropzone({
   }
 
   return (
-    <div className={cn('studio-dropzone', (ready || dragging) && 'is-ready')}>
+    <div style={{
+      border: `1.5px dashed ${ready ? 'var(--sage)' : 'var(--ink)'}`,
+      background: ready ? 'rgba(108,125,87,0.08)' : dragging ? 'rgba(35,28,21,0.04)' : 'var(--paper-2)',
+      padding: 16, textAlign: 'center', position: 'relative',
+      transition: 'all 150ms ease',
+    }}>
       <input
-        id={id}
-        type="file"
-        accept="image/*"
-        className="sr-only"
-        onChange={(event) => void handleFiles(event.target.files)}
+        id={id} type="file" accept="image/*"
+        style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
+        onChange={e => void handleFiles(e.target.files)}
       />
-      <label
-        htmlFor={id}
-        className="block cursor-pointer"
-        onDragOver={(event) => {
-          event.preventDefault();
-          setDragging(true);
-        }}
+      <label htmlFor={id}
+        onDragOver={e => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
-        onDrop={(event) => {
-          event.preventDefault();
-          setDragging(false);
-          void handleFiles(event.dataTransfer.files);
-        }}
+        onDrop={e => { e.preventDefault(); setDragging(false); void handleFiles(e.dataTransfer.files); }}
+        style={{ display: 'block', cursor: 'pointer' }}
       >
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(255,255,255,0.68)] text-[var(--accent)] shadow-[0_10px_28px_rgba(17,24,39,0.1)]">
-          <ImagePlus className="h-5 w-5" />
+        <div style={{
+          width: 36, height: 36, margin: '0 auto 10px',
+          border: `1.5px solid ${ready ? 'var(--sage)' : 'var(--ink)'}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: ready ? 'var(--sage)' : 'var(--ink-soft)',
+        }}>
+          {ready ? '✓' : <ImagePlus size={16} />}
         </div>
-        <p className="mt-4 text-sm font-semibold">{loading ? 'Uploading...' : title}</p>
-        <p className="mt-2 text-sm leading-6 text-muted">{description}</p>
-        <p className="mt-4 text-xs font-semibold uppercase tracking-[0.22em]" style={{ color: ready ? 'var(--accent-strong)' : 'var(--muted)' }}>
-          {ready ? 'Ready to publish' : 'Drag or click'}
-        </p>
+        <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.16em', color: ready ? 'var(--sage)' : 'var(--ink)' }}>
+          {loading ? 'UPLOADING…' : ready ? 'READY' : label}
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, color: 'var(--ink-soft)', marginTop: 4, letterSpacing: '0.1em' }}>
+          {hint}
+        </div>
       </label>
     </div>
   );
 }
 
+function ToggleChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: '8px 14px', border: '1.5px solid var(--ink)',
+        background: active ? 'var(--ink)' : 'var(--paper-2)',
+        color: active ? 'var(--cream)' : 'var(--ink)',
+        fontFamily: 'var(--font-mono), monospace', fontSize: 10,
+        textTransform: 'uppercase', letterSpacing: '0.16em', cursor: 'pointer',
+        transition: 'all 120ms ease',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function CreateEventPage() {
-  const { navigate } = useRouteTransition();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -90,13 +127,11 @@ export default function CreateEventPage() {
   const [capacity, setCapacity] = useState(20);
   const [visibility, setVisibility] = useState<'PUBLIC' | 'PRIVATE'>('PUBLIC');
   const [isPaid, setIsPaid] = useState(false);
-  const [ticketPrice, setTicketPrice] = useState('');
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [bannerUrl, setBannerUrl] = useState('');
   const [badgeIcon, setBadgeIcon] = useState('');
   const [categoryKey, setCategoryKey] = useState<EventCategoryKey>('community');
-  const [paymentQrUrl, setPaymentQrUrl] = useState('');
   const [eventType, setEventType] = useState<'PHYSICAL' | 'ONLINE'>('PHYSICAL');
   const [onlineLink, setOnlineLink] = useState('');
   const [linkShareMode, setLinkShareMode] = useState<'IMMEDIATE' | 'BEFORE_EVENT'>('IMMEDIATE');
@@ -104,53 +139,35 @@ export default function CreateEventPage() {
   const [error, setError] = useState('');
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [uploadingBadge, setUploadingBadge] = useState(false);
-  const [uploadingQr, setUploadingQr] = useState(false);
+  const [paymentQrUrl, setPaymentQrUrl] = useState('');
+  const [uploadingPaymentQr, setUploadingPaymentQr] = useState(false);
 
-  // Auto-detect location on mount so the map isn't stuck on a default city
   useEffect(() => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLatitude(pos.coords.latitude);
-        setLongitude(pos.coords.longitude);
-      },
-      () => null, // Silent fail — user can set manually
+      (pos) => { setLatitude(pos.coords.latitude); setLongitude(pos.coords.longitude); },
+      () => null,
       { timeout: 8000 }
     );
   }, []);
 
-  const selectedTheme = EVENT_CATEGORY_OPTIONS.find((option) => option.key === categoryKey) ?? EVENT_CATEGORY_OPTIONS[0];
+  const selectedTheme = EVENT_CATEGORY_OPTIONS.find(o => o.key === categoryKey) ?? EVENT_CATEGORY_OPTIONS[0];
   const mapCenter = latitude !== null && longitude !== null ? [latitude, longitude] as [number, number] : null;
   const previewTitle = title || `New ${selectedTheme.label.toLowerCase()} gathering`;
   const previewDescription = description || selectedTheme.previewLine;
-  const startTime = startDate && startTimeVal ? `${startDate}T${startTimeVal}` : '';
-  const endTime = endDate && endTimeVal ? `${endDate}T${endTimeVal}` : '';
-  const previewStart = startTime || DEFAULT_PREVIEW_START;
-  const previewEnd = endTime || DEFAULT_PREVIEW_END;
+  const startTime = startDate && startTimeVal ? `${startDate}T${startTimeVal}:00+05:30` : '';
+  const endTime = endDate && endTimeVal ? `${endDate}T${endTimeVal}:00+05:30` : '';
+  const previewFallbackStart = useMemo(() => { const d = new Date(); d.setMinutes(0,0,0); d.setHours(d.getHours()+1); return d.toISOString(); }, []);
+  const previewFallbackEnd = useMemo(() => { const d = new Date(); d.setMinutes(0,0,0); d.setHours(d.getHours()+2); return d.toISOString(); }, []);
+  const previewStart = startTime || previewFallbackStart;
+  const previewEnd = endTime || previewFallbackEnd;
 
-  // Reuse the live discovery map here so location picking feels native to the product.
   const previewEvent = useMemo(() => {
-    if (latitude === null || longitude === null) return [];
-
-    return [
-      {
-        id: 'draft-preview',
-        title: previewTitle,
-        description: previewDescription,
-        bannerUrl,
-        badgeIcon,
-        latitude,
-        longitude,
-        startTime: previewStart,
-        endTime: previewEnd,
-        visibility,
-        capacity,
-        organizerId: 'draft',
-        isPaid,
-        engagementScore: Math.max(12, Math.round(capacity * 0.6))
-      }
-    ];
-  }, [badgeIcon, bannerUrl, capacity, endTime, isPaid, latitude, longitude, previewDescription, previewEnd, previewStart, previewTitle, visibility]);
+    if (eventType === 'PHYSICAL' && (latitude === null || longitude === null)) return [];
+    const lat = latitude ?? 0;
+    const lng = longitude ?? 0;
+    return [{ id: 'draft-preview', title: previewTitle, description: previewDescription, bannerUrl, badgeIcon, latitude: lat, longitude: lng, startTime: previewStart, endTime: previewEnd, visibility, capacity, organizerId: 'draft', isPaid, engagementScore: Math.max(12, Math.round(capacity * 0.6)) }];
+  }, [badgeIcon, bannerUrl, capacity, eventType, isPaid, latitude, longitude, previewDescription, previewEnd, previewStart, previewTitle, visibility]);
 
   async function upload(file: File, folder: string) {
     const form = new FormData();
@@ -158,584 +175,441 @@ export default function CreateEventPage() {
     form.append('folder', folder);
     const res = await fetch('/api/upload', { method: 'POST', body: form });
     let data: any = null;
-    try {
-      data = await res.json();
-    } catch {
-      data = null;
-    }
-    if (!res.ok || !data?.url) {
-      throw new Error(data?.error ?? 'Upload failed');
-    }
+    try { data = await res.json(); } catch { data = null; }
+    if (!res.ok || !data?.url) throw new Error(data?.error ?? 'Upload failed');
     return data.url as string;
   }
 
   async function handleBannerUpload(file: File) {
-    setError('');
-    setUploadingBanner(true);
-    try {
-      const url = await upload(file, 'ilaka/banners');
-      setBannerUrl(url);
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : 'Banner upload failed');
-    } finally {
-      setUploadingBanner(false);
-    }
+    setError(''); setUploadingBanner(true);
+    try { setBannerUrl(await upload(file, 'ilaka/banners')); }
+    catch (err) { setError(err instanceof Error ? err.message : 'Banner upload failed'); }
+    finally { setUploadingBanner(false); }
   }
 
   async function handleBadgeUpload(file: File) {
-    setError('');
-    setUploadingBadge(true);
-    try {
-      const url = await upload(file, 'ilaka/badges');
-      setBadgeIcon(url);
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : 'Badge upload failed');
-    } finally {
-      setUploadingBadge(false);
-    }
+    setError(''); setUploadingBadge(true);
+    try { setBadgeIcon(await upload(file, 'ilaka/badges')); }
+    catch (err) { setError(err instanceof Error ? err.message : 'Badge upload failed'); }
+    finally { setUploadingBadge(false); }
   }
 
-  async function handleQrUpload(file: File) {
-    setError('');
-    setUploadingQr(true);
-    try {
-      const url = await upload(file, 'illaka/qr-codes');
-      setPaymentQrUrl(url);
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : 'QR code upload failed');
-    } finally {
-      setUploadingQr(false);
-    }
+  async function handlePaymentQrUpload(file: File) {
+    setError(''); setUploadingPaymentQr(true);
+    try { setPaymentQrUrl(await upload(file, 'ilaka/payment-qr')); }
+    catch (err) { setError(err instanceof Error ? err.message : 'QR upload failed'); }
+    finally { setUploadingPaymentQr(false); }
   }
 
   async function useMyLocation() {
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser.');
-      return;
-    }
-
+    if (!navigator.geolocation) { setError('Geolocation not supported.'); return; }
     setError('');
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLatitude(position.coords.latitude);
-        setLongitude(position.coords.longitude);
-      },
-      (locationError) => {
-        setError(`Unable to fetch location: ${locationError.message}`);
-      },
+      pos => { setLatitude(pos.coords.latitude); setLongitude(pos.coords.longitude); },
+      err => { setError(`Location error: ${err.message}`); },
       { timeout: 10000 }
     );
   }
 
-  // datetime-local gives YYYY-MM-DDTHH:MM with no timezone — treat as IST (UTC+5:30)
   function toISTIso(localDt: string): string {
     if (!localDt) return localDt;
-    return new Date(`${localDt}:00+05:30`).toISOString();
+    return new Date(localDt).toISOString();
   }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError('');
-
-    if (latitude === null || longitude === null) {
+    if (eventType === 'PHYSICAL' && (latitude === null || longitude === null)) {
       setError('Please place the event on the map or use your current location.');
       return;
     }
-
     if (!bannerUrl || !badgeIcon) {
       setError('Please upload both a banner image and a badge icon.');
       return;
     }
-
-    if (isPaid && !paymentQrUrl) {
-      setError('Please upload a payment QR code for paid events.');
-      return;
-    }
-
-    if (isPaid && ticketPrice && (isNaN(Number(ticketPrice)) || Number(ticketPrice) <= 0)) {
-      setError('Please enter a valid ticket price.');
-      return;
-    }
-
     if (startTime && endTime && new Date(endTime) <= new Date(startTime)) {
       setError('End time must be after start time.');
       return;
     }
-
-    const startIso = toISTIso(startTime);
-    const endIso = toISTIso(endTime);
-
     setLoading(true);
     const res = await fetch('/api/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title,
-        description,
-        startTime: startIso,
-        endTime: endIso,
-        capacity,
-        visibility,
-        isPaid,
-        ticketPrice: isPaid && ticketPrice ? Math.round(Number(ticketPrice) * 100) : undefined,
-        latitude,
-        longitude,
-        bannerUrl,
-        badgeIcon,
-        paymentQrUrl: paymentQrUrl || undefined,
-        eventType,
+        title, description,
+        startTime: toISTIso(startTime),
+        endTime: toISTIso(endTime),
+        capacity, visibility, isPaid, latitude, longitude,
+        bannerUrl, badgeIcon, eventType,
         onlineLink: eventType === 'ONLINE' ? onlineLink : undefined,
-        linkShareMode: eventType === 'ONLINE' ? linkShareMode : undefined
-      })
+        linkShareMode: eventType === 'ONLINE' ? linkShareMode : undefined,
+        paymentQrUrl: isPaid && paymentQrUrl ? paymentQrUrl : undefined,
+      }),
     });
     setLoading(false);
-
-    if (res.ok) {
-      navigate('/');
-      return;
-    }
-
+    if (res.ok) { window.location.href = '/'; return; }
     let data: any = null;
-    try {
-      data = await res.json();
-    } catch {
-      data = null;
-    }
+    try { data = await res.json(); } catch { data = null; }
     setError(data?.error ?? 'Failed to create event.');
   }
 
   return (
-    <div className="mx-auto flex max-w-[1440px] flex-col gap-8 px-4 pb-24 pt-6 sm:px-6 lg:px-8">
-      <section className="section-shell relative overflow-hidden p-6 sm:p-7 lg:p-8">
-        <div className="absolute inset-x-0 top-0 h-36 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.42),transparent_72%)]" />
-        <div className="relative max-w-3xl space-y-4">
-          <p className="eyebrow">
-            <Sparkles className="h-3.5 w-3.5" />
-            Host studio
-          </p>
-          <h1 className="font-[family:var(--font-fraunces)] text-4xl leading-[0.95] sm:text-5xl lg:text-[3.8rem]">
-            Shape a neighborhood invite that feels worth showing up for.
-          </h1>
-          <p className="max-w-2xl text-sm leading-7 text-muted sm:text-base">
-            The creation flow keeps the same publishing logic, but now gives you a live banner, a map-led location step, and visual cues for how the event will feel in Illaka.
-          </p>
-        </div>
-      </section>
+    <div style={{
+      maxWidth: 680, margin: '0 auto', padding: '0 16px 100px',
+      fontFamily: 'var(--font-mono), ui-monospace, monospace',
+      color: 'var(--ink)',
+    }}>
+      {/* Masthead */}
+      <div style={{ padding: '18px 0 0', borderBottom: '1.5px solid var(--ink)', marginBottom: 0, paddingBottom: 14 }}>
+        <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.24em', color: 'var(--ink-soft)' }}>HOST STUDIO · ILLAKA</div>
+        <h1 style={{
+          fontFamily: 'var(--font-fraunces), serif', fontWeight: 600,
+          fontSize: 'clamp(32px, 8vw, 48px)', lineHeight: 0.95, letterSpacing: '-0.025em', marginTop: 6,
+        }}>
+          pin something{' '}
+          <span style={{ fontFamily: 'var(--font-serif), serif', fontStyle: 'italic', color: 'var(--terra)' }}>worth showing up for.</span>
+        </h1>
+      </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_420px]">
-        <section className="space-y-6">
-          <Card className="surface-card-strong overflow-hidden p-0">
-            <div className="relative min-h-[360px] overflow-hidden">
-              {bannerUrl ? (
-                <img src={bannerUrl} alt={previewTitle} className="absolute inset-0 h-full w-full object-cover" />
-              ) : (
-                <div
-                  className="absolute inset-0"
-                  style={{ background: `linear-gradient(135deg, ${selectedTheme.accentStrong} 0%, ${selectedTheme.accent} 100%)` }}
-                />
-              )}
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,24,39,0.18)_0%,rgba(17,24,39,0.42)_38%,rgba(17,24,39,0.88)_100%)]" />
-              <div className="relative flex min-h-[360px] flex-col justify-between p-6 text-white sm:p-8">
-                <div className="flex flex-wrap gap-2">
-                  <span className="rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white">
-                    {selectedTheme.label}
-                  </span>
-                  <span className="rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white">
-                    {visibility === 'PUBLIC' ? 'Public listing' : 'Private invite'}
-                  </span>
-                </div>
-
-                <div className="space-y-4">
-                  <h2 className="max-w-2xl font-[family:var(--font-fraunces)] text-4xl leading-[0.95] sm:text-5xl">
-                    {previewTitle}
-                  </h2>
-                  <p className="max-w-2xl text-sm leading-7 text-white/95 sm:text-base">{previewDescription}</p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="info-pill border-white/25 bg-white/20 text-white">
-                      <CalendarClock className="h-4 w-4 text-white" />
-                      {formatEventDay(previewStart)} / {formatEventRange(previewStart, previewEnd)}
-                    </span>
-                    <span className="info-pill border-white/25 bg-white/20 text-white">
-                      <Users className="h-4 w-4 text-white" />
-                      Capacity {capacity}
-                    </span>
-                    <span className="info-pill border-white/25 bg-white/20 text-white">
-                      <MapPin className="h-4 w-4 text-white" />
-                      {latitude !== null && longitude !== null ? 'Pinned on the map' : 'Choose a location'}
-                    </span>
-                  </div>
-                </div>
+      <form onSubmit={handleSubmit}>
+        {/* — STEP 1: THE STORY — */}
+        <Sep label="① the story" />
+        <PaperCard>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <FieldLabel>EVENT NAME</FieldLabel>
+              <input
+                style={INPUT} required
+                placeholder="Give the gathering a name"
+                value={title} onChange={e => setTitle(e.target.value)}
+              />
+            </div>
+            <div>
+              <FieldLabel>WHAT'S THE STORY?</FieldLabel>
+              <textarea
+                style={TEXTAREA}
+                placeholder="Describe the mood, the activity, and why someone should show up"
+                value={description} onChange={e => setDescription(e.target.value)}
+              />
+            </div>
+            <div>
+              <FieldLabel>PICK THE VIBE</FieldLabel>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
+                {EVENT_CATEGORY_OPTIONS.map(cat => (
+                  <button
+                    key={cat.key} type="button"
+                    onClick={() => setCategoryKey(cat.key)}
+                    style={{
+                      padding: '6px 12px',
+                      border: `1.5px solid ${categoryKey === cat.key ? 'var(--terra)' : 'var(--ink)'}`,
+                      background: categoryKey === cat.key ? cat.accentSoft : 'transparent',
+                      color: categoryKey === cat.key ? cat.accentStrong : 'var(--ink)',
+                      fontFamily: 'var(--font-mono), monospace', fontSize: 9,
+                      textTransform: 'uppercase', letterSpacing: '0.16em', cursor: 'pointer',
+                      transition: 'all 120ms ease',
+                    }}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
               </div>
             </div>
-          </Card>
+          </div>
+        </PaperCard>
 
-          <Card className="section-shell space-y-5 p-0 overflow-hidden">
-            <div className="flex items-center justify-between px-5 pt-5 sm:px-6 sm:pt-6">
+        {/* — STEP 2: PLACE & TIME — */}
+        <Sep label="② place & time" />
+        <PaperCard>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Event type */}
+            <div>
+              <FieldLabel>FORMAT</FieldLabel>
+              <div style={{ display: 'flex', gap: 0, border: '1.5px solid var(--ink)' }}>
+                <ToggleChip active={eventType === 'PHYSICAL'} onClick={() => setEventType('PHYSICAL')}>
+                  <MapPin size={10} style={{ display: 'inline', marginRight: 4 }} />IN-PERSON
+                </ToggleChip>
+                <ToggleChip active={eventType === 'ONLINE'} onClick={() => setEventType('ONLINE')}>
+                  <Globe size={10} style={{ display: 'inline', marginRight: 4 }} />ONLINE
+                </ToggleChip>
+              </div>
+            </div>
+
+            {/* Dates */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <div>
-                <p className="eyebrow">
-                  <MapPin className="h-3.5 w-3.5" />
-                  Location picker
-                </p>
-                <h2 className="mt-3 text-2xl font-semibold">Place it exactly where people should orient themselves.</h2>
+                <FieldLabel>START DATE</FieldLabel>
+                <input type="date" style={INPUT} value={startDate} onChange={e => setStartDate(e.target.value)} />
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={useMyLocation}>
-                <LocateFixed className="h-4 w-4" />
-                Use my location
-              </Button>
-            </div>
-
-            <div className="relative h-[340px] overflow-hidden border-y border-[var(--line)]">
-              {mapCenter ? (
-                <MapView
-                  events={previewEvent}
-                  center={mapCenter}
-                  radius={2200}
-                  previewedEventId={previewEvent[0]?.id}
-                  onSelectLocation={(coords) => {
-                    setLatitude(coords[0]);
-                    setLongitude(coords[1]);
-                  }}
-                />
-              ) : (
-                <div className="flex h-full flex-col items-center justify-center gap-4 bg-[rgba(255,255,255,0.34)] dark:bg-[rgba(15,23,42,0.22)]">
-                  <MapPin className="h-10 w-10 text-[var(--muted)]" />
-                  <div className="text-center">
-                    <p className="text-sm font-semibold">No location set yet</p>
-                    <p className="mt-1 text-sm text-muted">Use the button above or enter coordinates below to place your event on the map.</p>
-                  </div>
-                </div>
-              )}
-              <div className="pointer-events-none absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
-                <Card className="surface-card-strong max-w-sm rounded-[1.5rem] p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--secondary)]">Spatial memory</p>
-                  <p className="mt-2 text-sm leading-6 text-muted">
-                    Click the map to place the event. Keeping the map central here helps hosts think about discovery the same way attendees will.
-                  </p>
-                </Card>
+              <div>
+                <FieldLabel>START TIME</FieldLabel>
+                <input type="time" style={INPUT} value={startTimeVal} onChange={e => setStartTimeVal(e.target.value)} />
+              </div>
+              <div>
+                <FieldLabel>END DATE</FieldLabel>
+                <input type="date" style={INPUT} value={endDate} onChange={e => setEndDate(e.target.value)} />
+              </div>
+              <div>
+                <FieldLabel>END TIME</FieldLabel>
+                <input type="time" style={INPUT} value={endTimeVal} onChange={e => setEndTimeVal(e.target.value)} />
               </div>
             </div>
 
-            <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2 sm:px-6 sm:pb-6">
-              <Input
-                type="number"
-                step="0.0001"
-                placeholder="Latitude"
-                value={latitude ?? ''}
-                onChange={(event) => setLatitude(event.target.value === '' ? null : Number(event.target.value))}
-              />
-              <Input
-                type="number"
-                step="0.0001"
-                placeholder="Longitude"
-                value={longitude ?? ''}
-                onChange={(event) => setLongitude(event.target.value === '' ? null : Number(event.target.value))}
-              />
+            {/* Capacity */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <FieldLabel>CAPACITY</FieldLabel>
+                <span style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 18, color: 'var(--terra)' }}>{capacity}</span>
+              </div>
+              <Slider value={[capacity]} min={5} max={150} step={1} onValueChange={v => setCapacity(v[0] ?? capacity)} />
             </div>
-          </Card>
-        </section>
 
-        <aside>
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <Card className="surface-card-strong space-y-5">
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: selectedTheme.accentStrong }}>
-                  Event frame
-                </p>
-                <h2 className="text-2xl font-semibold">Start with tone, then tighten the details.</h2>
+            {/* Visibility */}
+            <div>
+              <FieldLabel>VISIBILITY</FieldLabel>
+              <div style={{ display: 'flex', gap: 0, border: '1.5px solid var(--ink)' }}>
+                <ToggleChip active={visibility === 'PUBLIC'} onClick={() => setVisibility('PUBLIC')}>PUBLIC</ToggleChip>
+                <ToggleChip active={visibility === 'PRIVATE'} onClick={() => setVisibility('PRIVATE')}>
+                  <Lock size={10} style={{ display: 'inline', marginRight: 4 }} />PRIVATE
+                </ToggleChip>
               </div>
+              <p style={{ fontSize: 9, color: 'var(--ink-soft)', marginTop: 6, letterSpacing: '0.1em' }}>
+                {visibility === 'PUBLIC' ? 'DISCOVERABLE IN THE MAP AND FEED' : 'VISIBLE ONLY TO PEOPLE YOU INVITE'}
+              </p>
+            </div>
 
-              <div className="space-y-3">
-                <Input placeholder="Give the event a name" value={title} onChange={(event) => setTitle(event.target.value)} />
-                <Textarea
-                  placeholder="Describe the mood, the activity, and why someone nearby should care."
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                />
+            {/* Paid toggle */}
+            <div>
+              <FieldLabel>PRICING</FieldLabel>
+              <div style={{ display: 'flex', gap: 0, border: '1.5px solid var(--ink)' }}>
+                <ToggleChip active={!isPaid} onClick={() => setIsPaid(false)}>FREE</ToggleChip>
+                <ToggleChip active={isPaid} onClick={() => setIsPaid(true)}>PAID</ToggleChip>
               </div>
+            </div>
 
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-[var(--text)]">Pick the vibe</p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {EVENT_CATEGORY_OPTIONS.map((category) => (
-                    <button
-                      key={category.key}
-                      type="button"
-                      onClick={() => setCategoryKey(category.key)}
-                      className={cn(
-                        'rounded-[1.4rem] border p-4 text-left transition-all duration-200 hover:-translate-y-0.5',
-                        categoryKey === category.key
-                          ? 'border-transparent shadow-[0_18px_40px_rgba(17,24,39,0.12)]'
-                          : 'border-[var(--line)] bg-[rgba(255,255,255,0.36)] dark:bg-[rgba(15,23,42,0.22)]'
-                      )}
-                      style={categoryKey === category.key ? { background: category.accentSoft } : undefined}
-                    >
-                      <p className="text-sm font-semibold" style={{ color: category.accentStrong }}>
-                        {category.label}
-                      </p>
-                      <p className="mt-1 text-sm leading-6 text-muted">{category.hint}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </Card>
-
-            <Card className="surface-card-strong space-y-5">
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: selectedTheme.accentStrong }}>
-                  Schedule and access
-                </p>
-                <h2 className="text-2xl font-semibold">Make the basics easy to trust at a glance.</h2>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-sm font-medium">Start</p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                  <Input type="time" value={startTimeVal} onChange={(e) => setStartTimeVal(e.target.value)} />
-                </div>
-              </div>
-              <div className="space-y-3">
-                <p className="text-sm font-medium">End</p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                  <Input type="time" value={endTimeVal} onChange={(e) => setEndTimeVal(e.target.value)} />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-muted">Capacity</span>
-                  <span className="font-semibold" style={{ color: selectedTheme.accentStrong }}>
-                    {capacity}
-                  </span>
-                </div>
-                <Slider value={[capacity]} min={5} max={150} step={1} onValueChange={(value) => setCapacity(value[0] ?? capacity)} />
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-sm font-medium">Event format</p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={() => setEventType('PHYSICAL')}
-                    className={cn(
-                      'rounded-[1.4rem] border p-4 text-left transition-all duration-200 hover:-translate-y-0.5',
-                      eventType === 'PHYSICAL'
-                        ? 'border-transparent shadow-[0_18px_40px_rgba(17,24,39,0.12)]'
-                        : 'border-[var(--line)] bg-[rgba(255,255,255,0.36)] dark:bg-[rgba(15,23,42,0.22)]'
-                    )}
-                    style={eventType === 'PHYSICAL' ? { background: selectedTheme.accentSoft } : undefined}
-                  >
-                    <p className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
-                      <MapPin className="h-4 w-4" />
-                      In-person
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-muted">People show up at a physical location.</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEventType('ONLINE')}
-                    className={cn(
-                      'rounded-[1.4rem] border p-4 text-left transition-all duration-200 hover:-translate-y-0.5',
-                      eventType === 'ONLINE'
-                        ? 'border-transparent shadow-[0_18px_40px_rgba(17,24,39,0.12)]'
-                        : 'border-[var(--line)] bg-[rgba(255,255,255,0.36)] dark:bg-[rgba(15,23,42,0.22)]'
-                    )}
-                    style={eventType === 'ONLINE' ? { background: selectedTheme.accentSoft } : undefined}
-                  >
-                    <p className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
-                      <Globe className="h-4 w-4" />
-                      Online
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-muted">People join via a link from anywhere.</p>
-                  </button>
-                </div>
-
-                {eventType === 'ONLINE' && (
-                  <div className="space-y-3 rounded-[1.4rem] border border-[var(--line)] bg-[rgba(255,255,255,0.36)] p-4 dark:bg-[rgba(15,23,42,0.22)]">
-                    <Input
-                      type="url"
-                      placeholder="Meeting link (Zoom, Meet, etc.)"
-                      value={onlineLink}
-                      onChange={(e) => setOnlineLink(e.target.value)}
+            {/* Online link */}
+            {eventType === 'ONLINE' && (
+              <div style={{ border: '1.5px solid var(--ink)', padding: 12, display: 'flex', flexDirection: 'column', gap: 10, background: 'rgba(35,28,21,0.03)' }}>
+                <div>
+                  <FieldLabel>MEETING LINK</FieldLabel>
+                  <div style={{ position: 'relative' }}>
+                    <Link2 size={12} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)' }} />
+                    <input
+                      type="url" style={{ ...INPUT, paddingLeft: 28 }}
+                      placeholder="https://meet.google.com/..."
+                      value={onlineLink} onChange={e => setOnlineLink(e.target.value)}
                     />
-                    <p className="text-sm font-medium">When to share the link</p>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <button
-                        type="button"
-                        onClick={() => setLinkShareMode('IMMEDIATE')}
-                        className={cn(
-                          'rounded-[1.2rem] border p-3 text-left transition-all',
-                          linkShareMode === 'IMMEDIATE'
-                            ? 'border-transparent shadow-sm'
-                            : 'border-[var(--line)]'
-                        )}
-                        style={linkShareMode === 'IMMEDIATE' ? { background: selectedTheme.accentSoft } : undefined}
-                      >
-                        <p className="text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
-                          <Link2 className="mb-1 h-4 w-4" />
-                          Share now
-                        </p>
-                        <p className="mt-1 text-xs leading-5 text-muted">Visible to attendees immediately after RSVP.</p>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setLinkShareMode('BEFORE_EVENT')}
-                        className={cn(
-                          'rounded-[1.2rem] border p-3 text-left transition-all',
-                          linkShareMode === 'BEFORE_EVENT'
-                            ? 'border-transparent shadow-sm'
-                            : 'border-[var(--line)]'
-                        )}
-                        style={linkShareMode === 'BEFORE_EVENT' ? { background: selectedTheme.accentSoft } : undefined}
-                      >
-                        <p className="text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
-                          <CalendarClock className="mb-1 h-4 w-4" />
-                          6 hrs before
-                        </p>
-                        <p className="mt-1 text-xs leading-5 text-muted">You'll get a reminder to share 6 hours before start.</p>
-                      </button>
-                    </div>
                   </div>
-                )}
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => setVisibility('PUBLIC')}
-                  className={cn(
-                    'rounded-[1.4rem] border p-4 text-left transition-all duration-200 hover:-translate-y-0.5',
-                    visibility === 'PUBLIC'
-                      ? 'border-transparent shadow-[0_18px_40px_rgba(17,24,39,0.12)]'
-                      : 'border-[var(--line)] bg-[rgba(255,255,255,0.36)] dark:bg-[rgba(15,23,42,0.22)]'
-                  )}
-                  style={visibility === 'PUBLIC' ? { background: selectedTheme.accentSoft } : undefined}
-                >
-                  <p className="text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
-                    Public
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-muted">Discoverable in the neighborhood map and search.</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVisibility('PRIVATE')}
-                  className={cn(
-                    'rounded-[1.4rem] border p-4 text-left transition-all duration-200 hover:-translate-y-0.5',
-                    visibility === 'PRIVATE'
-                      ? 'border-transparent shadow-[0_18px_40px_rgba(17,24,39,0.12)]'
-                      : 'border-[var(--line)] bg-[rgba(255,255,255,0.36)] dark:bg-[rgba(15,23,42,0.22)]'
-                  )}
-                  style={visibility === 'PRIVATE' ? { background: selectedTheme.accentSoft } : undefined}
-                >
-                  <p className="inline-flex items-center gap-2 text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
-                    <Lock className="h-4 w-4" />
-                    Private
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-muted">Visible only to the people you intentionally share it with.</p>
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsPaid((current) => !current)}
-                className={cn(
-                  'w-full rounded-[1.4rem] border p-4 text-left transition-all duration-200 hover:-translate-y-0.5',
-                  isPaid
-                    ? 'border-transparent shadow-[0_18px_40px_rgba(17,24,39,0.12)]'
-                    : 'border-[var(--line)] bg-[rgba(255,255,255,0.36)] dark:bg-[rgba(15,23,42,0.22)]'
-                )}
-                style={isPaid ? { background: selectedTheme.accentSoft } : undefined}
-              >
-                <p className="text-sm font-semibold" style={{ color: selectedTheme.accentStrong }}>
-                  {isPaid ? 'Paid event' : 'Free event'}
-                </p>
-                <p className="mt-1 text-sm leading-6 text-muted">
-                  Toggle pricing behavior without changing the rest of the creation flow.
-                </p>
-              </button>
-
-              {isPaid && (
-                <div className="rounded-[1.4rem] border border-amber-200 bg-amber-50 dark:bg-amber-900/20 p-4 space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400">
-                    Ticket price (₹)
-                  </label>
-                  <Input
-                    type="number"
-                    min="1"
-                    step="1"
-                    placeholder="e.g. 200"
-                    value={ticketPrice}
-                    onChange={(e) => setTicketPrice(e.target.value)}
-                    className="bg-white dark:bg-amber-950/20"
-                  />
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
-                    Enter the amount attendees need to pay (in rupees). A payment QR code upload is required below.
-                  </p>
-                </div>
-              )}
-            </Card>
-
-            <Card className="surface-card-strong space-y-5">
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color: selectedTheme.accentStrong }}>
-                  Media kit
-                </p>
-                <h2 className="text-2xl font-semibold">Give the event a face people will remember.</h2>
-              </div>
-
-              <div className="grid gap-4">
-                <UploadDropzone
-                  id="banner-upload"
-                  title="Upload hero banner"
-                  description="A wide image for the event card, detail page, and the live preview above."
-                  ready={Boolean(bannerUrl)}
-                  loading={uploadingBanner}
-                  onFileSelect={handleBannerUpload}
-                />
-                <UploadDropzone
-                  id="badge-upload"
-                  title="Upload badge icon"
-                  description="A tighter visual for markers, quick recognition, and compact surfaces."
-                  ready={Boolean(badgeIcon)}
-                  loading={uploadingBadge}
-                  onFileSelect={handleBadgeUpload}
-                />
-                {isPaid && (
-                  <UploadDropzone
-                    id="qr-upload"
-                    title="Upload payment QR code"
-                    description="Your UPI or bank QR code so attendees can pay at the door. Stored securely."
-                    ready={Boolean(paymentQrUrl)}
-                    loading={uploadingQr}
-                    onFileSelect={handleQrUpload}
-                  />
-                )}
-              </div>
-            </Card>
-
-            <Card className="surface-card-strong space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="rounded-full p-2" style={{ background: selectedTheme.accentSoft, color: selectedTheme.accentStrong }}>
-                  <Sparkles className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold">Before you publish</p>
-                  <p className="mt-1 text-sm leading-6 text-muted">
-                    Good event creation is mostly clarity: what it is, when it happens, and where people should show up.
-                  </p>
+                  <FieldLabel>SHARE LINK</FieldLabel>
+                  <div style={{ display: 'flex', gap: 0, border: '1.5px solid var(--ink)' }}>
+                    <ToggleChip active={linkShareMode === 'IMMEDIATE'} onClick={() => setLinkShareMode('IMMEDIATE')}>IMMEDIATELY</ToggleChip>
+                    <ToggleChip active={linkShareMode === 'BEFORE_EVENT'} onClick={() => setLinkShareMode('BEFORE_EVENT')}>1 HR BEFORE</ToggleChip>
+                  </div>
+                </div>
+                <p style={{ fontSize: 9, color: 'var(--ink-soft)', letterSpacing: '0.1em' }}>
+                  ATTENDEES GET A REMINDER 1 DAY AND 1 HOUR BEFORE.
+                </p>
+              </div>
+            )}
+
+            {/* Physical reminders note */}
+            {eventType === 'PHYSICAL' && (
+              <p style={{ fontSize: 9, color: 'var(--ink-soft)', letterSpacing: '0.1em', border: '1.5px dashed var(--ink-faint)', padding: '8px 10px' }}>
+                ATTENDEES WILL RECEIVE REMINDERS 6 HOURS AND 1 HOUR BEFORE.
+              </p>
+            )}
+          </div>
+        </PaperCard>
+
+        {/* Map picker — physical only */}
+        {eventType === 'PHYSICAL' && (
+          <>
+            <Sep label="② pin it on the map" />
+            <PaperCard style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--ink-soft)' }}>CLICK THE MAP TO PLACE THE EVENT</div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                    {latitude !== null && (
+                      <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 10, color: 'var(--sage)' }}>
+                        ◉ {latitude.toFixed(4)}, {longitude?.toFixed(4)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button" onClick={useMyLocation}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', border: '1.5px solid var(--ink)', background: 'var(--paper-card)', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--font-mono), monospace', textTransform: 'uppercase', letterSpacing: '0.16em', color: 'var(--ink)' }}
+                >
+                  <LocateFixed size={12} /> USE MINE
+                </button>
+              </div>
+              <div style={{ height: 300, borderTop: '1.5px solid var(--ink)', position: 'relative' }}>
+                {mapCenter ? (
+                  <MapView
+                    events={previewEvent}
+                    center={mapCenter}
+                    radius={2200}
+                    previewedEventId={previewEvent[0]?.id}
+                    onSelectLocation={coords => { setLatitude(coords[0]); setLongitude(coords[1]); }}
+                  />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, background: 'var(--paper-2)' }}>
+                    <MapPin size={28} color="var(--ink-faint)" />
+                    <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 10, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+                      ENABLE LOCATION OR ENTER BELOW
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div style={{ padding: '10px 14px', borderTop: '1.5px solid var(--ink)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div>
+                  <FieldLabel>LATITUDE</FieldLabel>
+                  <input type="number" step="0.0001" style={INPUT} placeholder="12.9716" value={latitude ?? ''} onChange={e => setLatitude(e.target.value === '' ? null : Number(e.target.value))} />
+                </div>
+                <div>
+                  <FieldLabel>LONGITUDE</FieldLabel>
+                  <input type="number" step="0.0001" style={INPUT} placeholder="77.5946" value={longitude ?? ''} onChange={e => setLongitude(e.target.value === '' ? null : Number(e.target.value))} />
                 </div>
               </div>
+            </PaperCard>
+          </>
+        )}
 
-              {error ? <p className="rounded-[1.2rem] bg-[rgba(220,38,38,0.08)] px-4 py-3 text-sm text-red-600">{error}</p> : null}
+        {/* — STEP 3: LOOK — */}
+        <Sep label="③ give it a look" />
+        <PaperCard>
+          {/* Live preview banner */}
+          {bannerUrl && (
+            <div style={{ height: 160, border: '1.5px solid var(--ink)', marginBottom: 14, overflow: 'hidden', position: 'relative' }}>
+              <ResilientImage
+                src={bannerUrl} alt={previewTitle}
+                className="h-full w-full object-cover"
+                fallback={<div style={{ height: '100%', background: 'var(--paper-2)' }} />}
+              />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(35,28,21,0.7) 0%, transparent 50%)' }} />
+              <div style={{ position: 'absolute', bottom: 10, left: 12, right: 12 }}>
+                <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 20, color: 'var(--cream)', lineHeight: 1.1 }}>{previewTitle}</div>
+                <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, color: 'rgba(255,246,228,0.7)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.16em' }}>
+                  {formatEventDay(previewStart)} · {formatEventRange(previewStart, previewEnd)}
+                </div>
+              </div>
+            </div>
+          )}
 
-              <Button type="submit" size="lg" disabled={loading || uploadingBanner || uploadingBadge || uploadingQr} className="w-full">
-                {loading ? 'Creating event...' : 'Publish event'}
-              </Button>
-            </Card>
-          </form>
-        </aside>
-      </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <FieldLabel>BANNER IMAGE</FieldLabel>
+              <UploadZone
+                id="banner-upload" label="UPLOAD BANNER"
+                hint="wide image for the event card and detail page"
+                ready={Boolean(bannerUrl)} loading={uploadingBanner}
+                onFileSelect={handleBannerUpload}
+              />
+            </div>
+            <div>
+              <FieldLabel>BADGE ICON</FieldLabel>
+              <UploadZone
+                id="badge-upload" label="UPLOAD BADGE ICON"
+                hint="tight visual for map markers and compact surfaces"
+                ready={Boolean(badgeIcon)} loading={uploadingBadge}
+                onFileSelect={handleBadgeUpload}
+              />
+            </div>
+            {isPaid && (
+              <div>
+                <FieldLabel>PAYMENT QR CODE</FieldLabel>
+                <UploadZone
+                  id="payment-qr-upload" label="UPLOAD PAYMENT QR"
+                  hint="GPay, PhonePe, or bank QR — shown to attendees"
+                  ready={Boolean(paymentQrUrl)} loading={uploadingPaymentQr}
+                  onFileSelect={handlePaymentQrUpload}
+                />
+              </div>
+            )}
+          </div>
+        </PaperCard>
+
+        {/* — STEP 4: PUBLISH — */}
+        <Sep label="④ preview & publish" />
+
+        {/* Preview flyer card */}
+        <div className="flyer-card tilt-l" style={{ padding: 14, marginBottom: 16, position: 'relative' }}>
+          <span className="tape" style={{ top: -10, left: '30%', width: 64, transform: 'rotate(-2deg)' }} />
+          <span className="stamp stamp-terra" style={{ position: 'absolute', top: 12, right: 12 }}>
+            {visibility === 'PUBLIC' ? 'PUBLIC' : 'PRIVATE'}
+          </span>
+          <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.18em', color: 'var(--ink-soft)', marginBottom: 6 }}>
+            {selectedTheme.label.toUpperCase()} · ILLAKA
+          </div>
+          <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 24, lineHeight: 1.05, letterSpacing: '-0.02em' }}>
+            {previewTitle}
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, color: 'var(--ink-soft)', marginTop: 8, textTransform: 'uppercase', letterSpacing: '0.16em' }}>
+            {formatEventDay(previewStart)} · {formatEventRange(previewStart, previewEnd)}
+          </div>
+          <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
+            <span style={{ fontSize: 9, fontFamily: 'var(--font-mono), monospace', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--ink-soft)' }}>
+              CAP {capacity}
+            </span>
+            <span style={{ fontSize: 9, fontFamily: 'var(--font-mono), monospace', textTransform: 'uppercase', letterSpacing: '0.14em', color: isPaid ? 'var(--mustard)' : 'var(--sage)' }}>
+              {isPaid ? 'PAID' : 'FREE'}
+            </span>
+            {eventType === 'ONLINE' && (
+              <span style={{ fontSize: 9, fontFamily: 'var(--font-mono), monospace', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--sky)' }}>
+                ONLINE
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Checklist */}
+        <PaperCard style={{ marginBottom: 16 }}>
+          {[
+            { label: 'Title & story', done: Boolean(title && description) },
+            { label: 'Vibe selected', done: Boolean(categoryKey) },
+            { label: 'Date & time set', done: Boolean(startDate && startTimeVal) },
+            { label: 'Location pinned', done: eventType === 'ONLINE' || (latitude !== null && longitude !== null) },
+            { label: 'Banner uploaded', done: Boolean(bannerUrl) },
+            { label: 'Badge uploaded', done: Boolean(badgeIcon) },
+            ...(isPaid ? [{ label: 'Payment QR uploaded', done: Boolean(paymentQrUrl) }] : []),
+          ].map(item => (
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0', borderBottom: '1px dashed rgba(35,28,21,0.12)' }}>
+              <span style={{ width: 18, height: 18, border: `1.5px solid ${item.done ? 'var(--sage)' : 'var(--ink-faint)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: item.done ? 'var(--sage)' : 'var(--ink-faint)', flexShrink: 0 }}>
+                {item.done ? '✓' : '·'}
+              </span>
+              <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.14em', color: item.done ? 'var(--ink)' : 'var(--ink-faint)' }}>
+                {item.label}
+              </span>
+            </div>
+          ))}
+        </PaperCard>
+
+        {error && (
+          <div style={{ padding: '10px 14px', background: 'rgba(200,85,54,0.1)', border: '1.5px solid var(--terra)', color: 'var(--terra)', fontFamily: 'var(--font-mono), monospace', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 14 }}>
+            {error}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading || uploadingBanner || uploadingBadge}
+          style={{
+            width: '100%', padding: '15px 20px',
+            background: (loading || uploadingBanner || uploadingBadge) ? 'var(--ink-faint)' : 'var(--terra)',
+            border: '1.5px solid var(--terra-deep)',
+            boxShadow: (loading || uploadingBanner || uploadingBadge) ? 'none' : '3px 3px 0 var(--terra-deep)',
+            color: 'var(--cream)',
+            fontFamily: 'var(--font-mono), monospace', fontSize: 12,
+            fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em',
+            cursor: (loading || uploadingBanner || uploadingBadge) ? 'default' : 'pointer',
+            transition: 'all 150ms ease',
+          }}
+        >
+          {loading ? 'PINNING TO THE WALL…' : 'PUBLISH EVENT → PIN IT UP'}
+        </button>
+      </form>
     </div>
   );
 }

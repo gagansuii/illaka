@@ -52,6 +52,7 @@ model User {
   subscriptions    Subscription[]
   payments         Payment[]
   passwordResets   PasswordResetToken[]
+  reminderLogs     ReminderLog[]
 }
 
 model Event {
@@ -76,6 +77,7 @@ model Event {
   eventType     EventType?    @default(PHYSICAL)
   onlineLink    String?
   linkShareMode LinkShareMode?
+  paymentQrUrl  String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -85,6 +87,7 @@ model Event {
   shares      Share[]
   attendance  Attendance[]
   payments    Payment[]
+  reminderLogs ReminderLog[]
 
   @@index([location], type: Gist)
   @@index([organizerId])
@@ -195,4 +198,17 @@ model Payment {
   @@index([eventId])
   @@index([providerRef])
   @@index([status])
+}
+
+model ReminderLog {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  type      String   // "6h" | "1h" | "1d"
+  sentAt    DateTime @default(now())
+
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId, type])
 }

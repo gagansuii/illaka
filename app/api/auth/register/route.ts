@@ -1,16 +1,27 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { rateLimit } from '@/lib/rate-limit';
 import { getDatabaseErrorDetails } from '@/lib/database-errors';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
 const schema = z.object({
-  name: z.string().min(2),
+  name: z.string().min(2).max(100).trim(),
   email: z.string().email(),
-  password: z.string().min(8)
+  password: z
+    .string()
+    .min(8)
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character')
 });
 
 export async function POST(req: Request) {
+  const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
+  if (!(await rateLimit(`register:${ip}`, 5))) {
+    return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 });
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -18,7 +29,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
   }
   const parsed = schema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.errors[0]?.message ?? 'Invalid payload' }, { status: 400 });
+  }
 
   const normalizedEmail = parsed.data.email.toLowerCase().trim();
 

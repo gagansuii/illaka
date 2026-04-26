@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { rateLimit } from '@/lib/rate-limit';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import { sendPasswordResetEmail } from '@/lib/mailer';
-import { rateLimit } from '@/lib/rate-limit';
 
 const schema = z.object({ email: z.string().email() });
 

@@ -1,40 +1,62 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
-export default function GlobalError({
-  error,
-  reset
-}: {
+type ErrorProps = {
   error: Error & { digest?: string };
   reset: () => void;
-}) {
+};
+
+export default function Error({ error, reset }: ErrorProps) {
   useEffect(() => {
-    console.error('[GlobalError]', error);
+    console.error(error);
   }, [error]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-4 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-100 dark:bg-red-900/20">
-        <svg className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--surface)]">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-[var(--accent)]"
+          aria-hidden="true"
+        >
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
       </div>
-      <div>
-        <h1 className="text-2xl font-semibold">Something went wrong</h1>
-        <p className="mt-2 text-sm text-muted">
-          {error.message || 'An unexpected error occurred. Please try again.'}
-        </p>
-        {error.digest && (
-          <p className="mt-1 text-xs text-muted/60 font-mono">Digest: {error.digest}</p>
-        )}
-      </div>
-      <div className="flex gap-3">
-        <Button onClick={reset} variant="outline">Try again</Button>
-        <Button asChild>
-          <a href="/discover">Back to feed</a>
-        </Button>
+
+      <h1 className="font-[family:var(--font-fraunces)] text-3xl font-semibold leading-tight sm:text-4xl">
+        Something went wrong.
+      </h1>
+
+      <p className="mt-4 max-w-md text-base leading-7 text-[var(--muted)]">
+        An unexpected error occurred. Try again or go back to safety.
+      </p>
+
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={reset}
+          className="inline-flex h-12 items-center justify-center rounded-full bg-[var(--accent)] px-7 text-sm font-semibold text-white transition-opacity hover:opacity-88 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
+        >
+          Try again
+        </button>
+        <Link
+          href="/"
+          className="inline-flex h-12 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--surface)] px-7 text-sm font-semibold text-[var(--text)] transition-colors hover:bg-[var(--surface-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
+        >
+          Go home
+        </Link>
       </div>
     </div>
   );

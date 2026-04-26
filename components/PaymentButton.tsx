@@ -13,12 +13,14 @@ export function PaymentButton({
   label,
   reason,
   amount,
-  eventId
+  eventId,
+  eventTitle
 }: {
   label: string;
   reason: 'subscription' | 'hosting_fee' | 'promotion';
   amount: number;
   eventId?: string;
+  eventTitle?: string;
 }) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
@@ -36,6 +38,7 @@ export function PaymentButton({
 
   async function handlePay() {
     setError('');
+
     const res = await fetch('/api/payments/initiate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -67,7 +70,7 @@ export function PaymentButton({
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
       <Button onClick={handlePay} disabled={!ready}>
         {label}
       </Button>

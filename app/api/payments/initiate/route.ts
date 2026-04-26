@@ -95,5 +95,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 
-  return NextResponse.json({ orderId: order.id, keyId: getEnv('RAZORPAY_KEY_ID'), amount });
+  const upiVpa = process.env.RAZORPAY_UPI_VPA ?? null;
+  return NextResponse.json({ orderId: order.id, keyId: getEnv('RAZORPAY_KEY_ID'), amount, upiVpa });
 }

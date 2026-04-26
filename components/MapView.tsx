@@ -7,7 +7,6 @@ import L from 'leaflet';
 import type { EventSummary } from '@/lib/types';
 import { getEventTheme } from '@/lib/event-style';
 
-const defaultCenter: [number, number] = [28.6139, 77.209];
 
 function makeMarkerIcon(event: EventSummary, active: boolean) {
   const theme = getEventTheme(event);
@@ -64,7 +63,7 @@ export function MapView({
   onSelectLocation
 }: {
   events: EventSummary[];
-  center: [number, number] | null;
+  center: [number, number];
   radius: number;
   previewedEventId?: string | null;
   onPreviewEvent?: (event: EventSummary) => void;
@@ -79,8 +78,6 @@ export function MapView({
       shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
     });
   }, []);
-
-  const mapCenter = center ?? defaultCenter;
 
   const defaultMarkerIcons = useMemo(() => {
     const iconMap = new Map<string, L.DivIcon>();
@@ -100,14 +97,14 @@ export function MapView({
 
   return (
     <MapContainer
-      center={mapCenter}
+      center={center}
       zoom={13}
       zoomControl={true}
       scrollWheelZoom
       doubleClickZoom
       className="h-full w-full"
     >
-      <RecenterMap center={mapCenter} />
+      <RecenterMap center={center} />
       {onSelectLocation ? <MapClickHandler onSelectLocation={onSelectLocation} /> : null}
       <TileLayer
         attribution="&copy; OpenStreetMap contributors &copy; CARTO"

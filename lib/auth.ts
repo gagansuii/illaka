@@ -2,18 +2,11 @@ import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import { getEnv } from './config';
 
-type Nullable = string | undefined;
-let authSecret: Nullable;
-try {
-  authSecret = getEnv('NEXTAUTH_SECRET');
-} catch {
-  authSecret = process.env.NODE_ENV === 'production' ? undefined : 'dev-secret';
-}
+const authSecret = process.env.NEXTAUTH_SECRET;
 
-const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60; // 30 days
-const SESSION_SHORT_AGE_SECONDS = 24 * 60 * 60;    // 24 hours (no Remember Me)
+const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+const SESSION_SHORT_AGE_SECONDS = 24 * 60 * 60;
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt', maxAge: SESSION_MAX_AGE_SECONDS },

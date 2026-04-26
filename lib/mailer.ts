@@ -8,6 +8,14 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+export async function sendReminderEmail(to: string, subject: string, html: string): Promise<void> {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
+    console.warn(`[mailer] Email not configured — skipping reminder to ${to}`);
+    return;
+  }
+  await transporter.sendMail({ from: `"ILAKA" <${process.env.EMAIL_USER}>`, to, subject, html });
+}
+
 export interface TicketEmailData {
   to: string;
   userName: string;
