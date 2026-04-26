@@ -60,23 +60,54 @@
   --secondary-soft:  rgba(15, 118, 110, 0.12);
 }
 
-/* Dark alias keeps existing dark-mode classes working */
+/* Dark mode — full illaka design system override */
 .dark {
   color-scheme: dark;
-  --bg: #0e141b;
-  --bg-deep: #090d13;
-  --surface: rgba(18, 24, 33, 0.72);
-  --surface-strong: rgba(22, 29, 39, 0.9);
-  --line: rgba(226, 232, 240, 0.12);
-  --text: #f7efe4;
-  --muted: rgba(247, 239, 228, 0.82);
-  --accent: #f29b72;
-  --accent-strong: #db6e4e;
-  --accent-soft: rgba(242, 155, 114, 0.14);
-  --gold: #f7bb7e;
-  --gold-soft: rgba(247, 187, 126, 0.12);
-  --secondary: #58d1c5;
-  --secondary-soft: rgba(88, 209, 197, 0.14);
+
+  /* Illaka earthy vars — dark palette */
+  --paper:      #1c1510;
+  --paper-2:    #231a12;
+  --paper-3:    #2b2018;
+  --paper-card: #261d14;
+  --ink:        #f0e6d3;
+  --ink-2:      #d6c9b2;
+  --ink-soft:   #a08e76;
+  --ink-faint:  #6b5a45;
+  --terra:      #d96848;
+  --terra-2:    #e8896a;
+  --terra-deep: #b04f32;
+  --sage:       #7d9168;
+  --sage-2:     #a8ba90;
+  --mustard:    #d4a73a;
+  --plum:       #8a6287;
+  --sky:        #6a8e9b;
+  --cream:      #2a1f14;
+
+  /* Legacy surface / text vars */
+  --bg: #1c1510;
+  --bg-deep: #120e09;
+  --surface: rgba(30, 22, 14, 0.80);
+  --surface-strong: rgba(36, 27, 18, 0.92);
+  --line: rgba(240, 230, 211, 0.10);
+  --text: #f0e6d3;
+  --muted: rgba(240, 230, 211, 0.70);
+  --accent: #d96848;
+  --accent-strong: #b04f32;
+  --accent-soft: rgba(217, 104, 72, 0.16);
+  --gold: #d4a73a;
+  --gold-soft: rgba(212, 167, 58, 0.14);
+  --secondary: #7d9168;
+  --secondary-soft: rgba(125, 145, 104, 0.16);
+}
+
+.dark body {
+  background: var(--paper);
+  background-image:
+    radial-gradient(circle at 15% 25%, rgba(240,220,190,0.02) 0, transparent 2px),
+    radial-gradient(circle at 70% 60%, rgba(240,220,190,0.015) 0, transparent 2px),
+    radial-gradient(circle at 85% 15%, rgba(217,104,72,0.04) 0, transparent 3px),
+    radial-gradient(circle at 25% 80%, rgba(125,145,104,0.03) 0, transparent 3px);
+  background-size: 90px 90px, 140px 140px, 220px 220px, 180px 180px;
 }
 
 html,
