@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { ArrowUpRight, Copy, Download, Globe, Link2, Lock, MapPin, Share2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowUpRight, Copy, Download, Globe, Link2, Lock, MapPin, Share2, Trash2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { PaymentButton } from '@/components/PaymentButton';
 import { ResilientImage } from '@/components/ResilientImage';
@@ -59,11 +60,15 @@ function Avatar({ letter, size = 32, bg = 'var(--terra)' }: { letter: string; si
 }
 
 export function EventDetailClient({ event }: { event: EventDetail }) {
+  const router = useRouter();
   const { data } = useSession();
   const [rsvpCount, setRsvpCount] = useState(event.rsvps?.length ?? 0);
   const [loading, setLoading] = useState(false);
   const [rsvpError, setRsvpError] = useState('');
   const [joined, setJoined] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const hostingThreshold = Number(process.env.NEXT_PUBLIC_HOSTING_FEE_THRESHOLD ?? 50);
   const hostingFee = Number(process.env.NEXT_PUBLIC_HOSTING_FEE_AMOUNT ?? 25000);
   const promotionPrice = Number(process.env.NEXT_PUBLIC_PROMOTION_PRICE ?? 15000);
@@ -110,6 +115,24 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
       }
     } catch { /* ignore */ } finally {
       setInviteLoading(false);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      const res = await fetch(`/api/events/${event.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => null);
+        setDeleteError(d?.error ?? 'Could not delete event.');
+        setDeleting(false);
+        return;
+      }
+      router.push('/profile');
+    } catch {
+      setDeleteError('Could not delete event.');
+      setDeleting(false);
     }
   }
 
@@ -425,6 +448,69 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
               )}
 
               <PaymentButton label="BOOST EVENT PROMOTION" reason="promotion" amount={promotionPrice} eventId={event.id} eventTitle={event.title} />
+
+              {/* Delete event */}
+              <div style={{ borderTop: '1px dashed var(--ink-faint)', paddingTop: 10, marginTop: 2 }}>
+                {!deleteConfirm ? (
+                  <button
+                    type="button"
+                    onClick={() => setDeleteConfirm(true)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '10px 14px', border: '1.5px solid var(--terra)',
+                      background: 'transparent', cursor: 'pointer',
+                      fontFamily: 'var(--font-mono), monospace', fontSize: 10,
+                      textTransform: 'uppercase', letterSpacing: '0.14em',
+                      color: 'var(--terra)', width: '100%',
+                    }}
+                  >
+                    <Trash2 size={14} />
+                    DELETE EVENT
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.16em', color: 'var(--terra)' }}>
+                      THIS CANNOT BE UNDONE. DELETE?
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={deleting}
+                        style={{
+                          flex: 1, padding: '9px 14px',
+                          background: 'var(--terra)', border: '1.5px solid var(--terra-deep)',
+                          boxShadow: '2px 2px 0 var(--terra-deep)',
+                          color: 'var(--cream)', cursor: deleting ? 'default' : 'pointer',
+                          fontFamily: 'var(--font-mono), monospace', fontSize: 10,
+                          fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em',
+                        }}
+                      >
+                        {deleting ? 'DELETING…' : 'YES, DELETE'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setDeleteConfirm(false); setDeleteError(''); }}
+                        style={{
+                          flex: 1, padding: '9px 14px',
+                          background: 'var(--paper-2)', border: '1.5px solid var(--ink)',
+                          cursor: 'pointer',
+                          fontFamily: 'var(--font-mono), monospace', fontSize: 10,
+                          textTransform: 'uppercase', letterSpacing: '0.14em',
+                          color: 'var(--ink)',
+                        }}
+                      >
+                        CANCEL
+                      </button>
+                    </div>
+                    {deleteError && (
+                      <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, color: 'var(--terra)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                        {deleteError}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </>
         )}

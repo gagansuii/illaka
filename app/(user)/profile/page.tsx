@@ -45,43 +45,111 @@ function Badge({ icon, label, color, earned }: { icon: string; label: string; co
   );
 }
 
-function EventRow({ event, isPast }: { event: MyEvent; isPast: boolean }) {
+function EventRow({ event, isPast, onDelete }: { event: MyEvent; isPast: boolean; onDelete: (id: string) => void }) {
   const start = new Date(event.startTime);
   const dateStr = start.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }).toUpperCase();
   const timeStr = start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase();
+  const [confirm, setConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm) { setConfirm(true); return; }
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/events/${event.id}`, { method: 'DELETE' });
+      if (res.ok) onDelete(event.id);
+    } finally {
+      setDeleting(false);
+      setConfirm(false);
+    }
+  }
 
   return (
-    <Link
-      href={`/events/${event.id}`}
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '10px 12px',
-        border: `1.5px solid ${isPast ? 'var(--ink-faint)' : 'var(--ink)'}`,
-        background: isPast ? 'transparent' : 'var(--paper-card)',
-        boxShadow: isPast ? 'none' : '2px 2px 0 var(--ink)',
-        textDecoration: 'none', color: 'var(--ink)',
-        opacity: isPast ? 0.55 : 1,
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 15, lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {event.title}
-        </div>
-        <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.16em', color: 'var(--ink-soft)', marginTop: 3 }}>
-          {dateStr} · {timeStr} · {event._count?.rsvps ?? 0}/{event.capacity} RSVPS
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'stretch' }}>
+        <Link
+          href={`/events/${event.id}`}
+          style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '10px 12px',
+            border: `1.5px solid ${isPast ? 'var(--ink-faint)' : 'var(--ink)'}`,
+            borderRight: 'none',
+            background: isPast ? 'transparent' : 'var(--paper-card)',
+            boxShadow: isPast ? 'none' : '2px 2px 0 var(--ink)',
+            textDecoration: 'none', color: 'var(--ink)',
+            opacity: isPast ? 0.55 : 1,
+            minWidth: 0,
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 15, lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {event.title}
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.16em', color: 'var(--ink-soft)', marginTop: 3 }}>
+              {dateStr} · {timeStr} · {event._count?.rsvps ?? 0}/{event.capacity} RSVPS
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 10 }}>
+            {event.visibility === 'PRIVATE' && (
+              <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 7, textTransform: 'uppercase', letterSpacing: '0.14em', border: '1px solid var(--ink-faint)', padding: '2px 6px', color: 'var(--ink-soft)' }}>PRIVATE</span>
+            )}
+            {isPast ? (
+              <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 7, textTransform: 'uppercase', letterSpacing: '0.14em', border: '1px solid var(--ink-faint)', padding: '2px 6px', color: 'var(--ink-faint)' }}>ENDED</span>
+            ) : (
+              <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 8, color: 'var(--ink-soft)' }}>→</span>
+            )}
+          </div>
+        </Link>
+
+        {/* Delete button */}
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleting}
+          title={confirm ? 'Click again to confirm delete' : 'Delete event'}
+          style={{
+            flexShrink: 0, width: 42,
+            border: `1.5px solid ${confirm ? 'var(--terra)' : isPast ? 'var(--ink-faint)' : 'var(--ink)'}`,
+            borderLeft: '1px solid var(--ink-faint)',
+            background: confirm ? 'rgba(200,85,54,0.12)' : 'transparent',
+            cursor: deleting ? 'default' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: confirm ? 'var(--terra)' : 'var(--ink-faint)',
+            transition: 'all 150ms',
+          }}
+          aria-label={confirm ? 'Confirm delete' : 'Delete event'}
+        >
+          {deleting ? (
+            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono), monospace' }}>…</span>
+          ) : confirm ? (
+            <span style={{ fontSize: 9, fontFamily: 'var(--font-mono), monospace', fontWeight: 700, color: 'var(--terra)' }}>✓?</span>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+            </svg>
+          )}
+        </button>
       </div>
-      <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 10 }}>
-        {event.visibility === 'PRIVATE' && (
-          <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 7, textTransform: 'uppercase', letterSpacing: '0.14em', border: '1px solid var(--ink-faint)', padding: '2px 6px', color: 'var(--ink-soft)' }}>PRIVATE</span>
-        )}
-        {isPast ? (
-          <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 7, textTransform: 'uppercase', letterSpacing: '0.14em', border: '1px solid var(--ink-faint)', padding: '2px 6px', color: 'var(--ink-faint)' }}>ENDED</span>
-        ) : (
-          <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 8, color: 'var(--ink-soft)' }}>→</span>
-        )}
-      </div>
-    </Link>
+
+      {/* Confirm banner (shown below row when confirm=true) */}
+      {confirm && !deleting && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '6px 12px',
+          background: 'rgba(200,85,54,0.08)', border: '1.5px solid var(--terra)', borderTop: 'none',
+          fontFamily: 'var(--font-mono), monospace', fontSize: 9,
+          textTransform: 'uppercase', letterSpacing: '0.14em',
+        }}>
+          <span style={{ color: 'var(--terra)' }}>DELETE "{event.title.slice(0, 28)}{event.title.length > 28 ? '…' : ''}"?</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" onClick={handleDelete} style={{ background: 'var(--terra)', border: 'none', color: 'var(--cream)', padding: '3px 10px', cursor: 'pointer', fontFamily: 'var(--font-mono), monospace', fontSize: 9, fontWeight: 700, letterSpacing: '0.12em' }}>YES</button>
+            <button type="button" onClick={(e) => { e.preventDefault(); setConfirm(false); }} style={{ background: 'transparent', border: '1px solid var(--ink-faint)', color: 'var(--ink-soft)', padding: '3px 10px', cursor: 'pointer', fontFamily: 'var(--font-mono), monospace', fontSize: 9, letterSpacing: '0.12em' }}>NO</button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -97,6 +165,11 @@ export default function ProfilePage() {
   const [pastEvents, setPastEvents] = useState<MyEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const canViewOrganizerDashboard = data?.user?.role === 'ORGANIZER' || data?.user?.role === 'ADMIN';
+
+  function handleEventDeleted(id: string) {
+    setUpcomingEvents(prev => prev.filter(e => e.id !== id));
+    setPastEvents(prev => prev.filter(e => e.id !== id));
+  }
 
   useEffect(() => {
     if (data?.user?.name) setName(data.user.name);
@@ -347,7 +420,7 @@ export default function ProfilePage() {
             </div>
           )}
           {upcomingEvents.map(ev => (
-            <EventRow key={ev.id} event={ev} isPast={false} />
+            <EventRow key={ev.id} event={ev} isPast={false} onDelete={handleEventDeleted} />
           ))}
           {pastEvents.length > 0 && (
             <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--ink-faint)', marginTop: 6, marginBottom: 2 }}>
@@ -355,7 +428,7 @@ export default function ProfilePage() {
             </div>
           )}
           {pastEvents.map(ev => (
-            <EventRow key={ev.id} event={ev} isPast={true} />
+            <EventRow key={ev.id} event={ev} isPast={true} onDelete={handleEventDeleted} />
           ))}
         </div>
       )}
