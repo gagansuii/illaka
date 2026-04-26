@@ -7,7 +7,7 @@
     "dev:turbo": "node scripts/dev-guard.mjs",
     "dev:webpack": "node scripts/dev-guard.mjs --webpack",
     "postinstall": "prisma generate",
-    "build": "prisma migrate deploy && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings 0",
     "prisma:generate": "prisma generate",
