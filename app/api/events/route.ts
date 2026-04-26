@@ -36,7 +36,6 @@ const createSchema = z.object({
   eventType: z.enum(['PHYSICAL', 'ONLINE']).optional(),
   onlineLink: z.string().url().optional().or(z.literal('')),
   linkShareMode: z.enum(['IMMEDIATE', 'BEFORE_EVENT']).optional(),
-  paymentQrUrl: z.string().optional()
 }).refine((d) => new Date(d.endTime) > new Date(d.startTime), {
   message: 'endTime must be after startTime',
   path: ['endTime']
