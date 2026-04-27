@@ -38,7 +38,7 @@ function Sep({ label }: { label: string }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '22px 0 14px' }}>
       <div style={{ width: 20, height: 1.5, background: 'var(--ink)', opacity: 0.2 }} />
       <svg width="9" height="9" viewBox="0 0 10 10"><path d="M5 0L6 4L10 5L6 6L5 10L4 6L0 5L4 4Z" fill="var(--terra)" /></svg>
-      <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.24em', color: 'var(--ink-soft)', whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.24em', color: 'var(--ink-soft)', whiteSpace: 'nowrap' }}>{label}</span>
       <svg width="9" height="9" viewBox="0 0 10 10"><path d="M5 0L6 4L10 5L6 6L5 10L4 6L0 5L4 4Z" fill="var(--terra)" /></svg>
       <div style={{ flex: 1, height: 1.5, background: 'var(--ink)', opacity: 0.1, borderTop: '1.5px dotted rgba(35,28,21,0.2)' }} />
     </div>
@@ -145,7 +145,7 @@ function FlyerCard({
         {/* Title */}
         <div style={{
           fontFamily: 'var(--font-fraunces), serif', fontWeight: 600,
-          fontSize: isLarge ? 22 : 14, lineHeight: 1.05,
+          fontSize: isLarge ? 24 : 15, lineHeight: 1.05,
           letterSpacing: '-0.02em', marginTop: 8,
           color: 'var(--ink)',
         }}>
@@ -154,7 +154,7 @@ function FlyerCard({
 
         {/* Meta */}
         <div style={{
-          fontFamily: 'var(--font-mono), monospace', fontSize: 8,
+          fontFamily: 'var(--font-mono), monospace', fontSize: 10,
           textTransform: 'uppercase', letterSpacing: '0.18em',
           color: 'var(--ink-soft)', marginTop: 4,
         }}>
@@ -165,17 +165,17 @@ function FlyerCard({
         {isLarge && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Avatar letter={initial} size={20} bg={AVATAR_BG[index % AVATAR_BG.length]} />
-              <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, color: 'var(--ink-soft)' }}>
+              <Avatar letter={initial} size={22} bg={AVATAR_BG[index % AVATAR_BG.length]} />
+              <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 10, color: 'var(--ink-soft)' }}>
                 {organizer.split(' ')[0]}
               </span>
             </div>
             <span style={{
               display: 'inline-flex', alignItems: 'center',
-              padding: '3px 9px', border: '1.4px solid var(--ink)',
+              padding: '4px 10px', border: '1.4px solid var(--ink)',
               borderRadius: 999, background: 'var(--ink)',
               color: 'var(--cream)', fontFamily: 'var(--font-mono), monospace',
-              fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.12em',
+              fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em',
             }}>
               {rsvpCount > 0 ? `${rsvpCount} GOING` : 'RSVP →'}
             </span>
@@ -215,10 +215,10 @@ export function EditorialWall({ events }: { events: any[] }) {
     }}>
       {/* ── Masthead ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 12 }}>
-        <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.22em', color: 'var(--ink-soft)' }}>
+        <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.22em', color: 'var(--ink-soft)' }}>
           {vol} · {dateStr}
         </span>
-        <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.18em', color: 'var(--terra)' }}>
+        <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.18em', color: 'var(--terra)' }}>
           ◉ YOUR HOOD
         </span>
       </div>
@@ -243,13 +243,40 @@ export function EditorialWall({ events }: { events: any[] }) {
       </h1>
 
       <p style={{
-        fontFamily: 'var(--font-mono), monospace', fontSize: 11,
-        color: 'var(--ink-soft)', marginTop: 12, lineHeight: 1.6,
+        fontFamily: 'var(--font-mono), monospace', fontSize: 13,
+        color: 'var(--ink-soft)', marginTop: 12, lineHeight: 1.65,
       }}>
         {events.length > 0
-          ? `${events.length} things happening in walking distance. pick one for tonight.`
-          : 'Discover what\'s happening in your neighbourhood. No algorithm, no ads.'}
+          ? `${events.length} things happening near you. RSVP in seconds, show up tonight.`
+          : 'Your neighbourhood\'s event feed. Find nearby gatherings, RSVP instantly, or host your own.'}
       </p>
+
+      {/* ── Feature strip ── */}
+      <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+        {[
+          { icon: '◎', label: 'Nearby first', sub: 'ranked by proximity' },
+          { icon: '⌕', label: 'AI search', sub: 'describe any vibe' },
+          { icon: '✦', label: 'Host & RSVP', sub: 'tickets included' },
+        ].map(({ icon, label, sub }) => (
+          <div key={label} style={{
+            flex: '1 1 0', minWidth: 90,
+            padding: '10px 12px',
+            border: '1.5px solid var(--ink)',
+            background: 'var(--paper-card)',
+            boxShadow: '2px 2px 0 var(--ink)',
+          }}>
+            <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 13, color: 'var(--terra)', marginBottom: 4 }}>
+              {icon}
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--ink)' }}>
+              {label}
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 10, color: 'var(--ink-soft)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              {sub}
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* CTA row */}
       <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
@@ -257,12 +284,12 @@ export function EditorialWall({ events }: { events: any[] }) {
           href="/discover"
           style={{
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '12px 18px',
+            padding: '13px 18px',
             background: 'var(--terra)',
             border: '1.5px solid var(--terra-deep)',
             boxShadow: '2px 2px 0 var(--terra-deep)',
             color: 'var(--cream)',
-            fontFamily: 'var(--font-mono), monospace', fontSize: 11,
+            fontFamily: 'var(--font-mono), monospace', fontSize: 12,
             fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.16em',
             textDecoration: 'none',
           }}
@@ -273,11 +300,11 @@ export function EditorialWall({ events }: { events: any[] }) {
           href="/discover"
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '12px 16px',
+            padding: '13px 16px',
             background: 'transparent',
             border: '1.5px solid var(--ink)',
             color: 'var(--ink)',
-            fontFamily: 'var(--font-mono), monospace', fontSize: 11,
+            fontFamily: 'var(--font-mono), monospace', fontSize: 12,
             fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.16em',
             textDecoration: 'none',
           }}
@@ -324,7 +351,7 @@ export function EditorialWall({ events }: { events: any[] }) {
                   size={50}
                   bg={AVATAR_BG[i % AVATAR_BG.length]}
                 />
-                <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--ink-soft)', textAlign: 'center' }}>
+                <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--ink-soft)', textAlign: 'center' }}>
                   {host.name.split(' ')[0]}
                 </span>
               </div>
@@ -346,22 +373,22 @@ export function EditorialWall({ events }: { events: any[] }) {
             }}
           >
             <span style={{ position: 'absolute', top: -10, left: 20, width: 58, height: 18, background: 'rgba(212,167,58,0.45)', borderLeft: '1px dashed rgba(35,28,21,.25)', borderRight: '1px dashed rgba(35,28,21,.25)', transform: 'rotate(-5deg)', zIndex: 2 }} />
-            <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 28, lineHeight: 1 }}>
+            <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 30, lineHeight: 1 }}>
               Be the first to<br />
               <span style={{ fontFamily: 'var(--font-serif), serif', fontStyle: 'italic', color: 'var(--terra)' }}>pin something.</span>
             </div>
-            <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 10, color: 'var(--ink-soft)', marginTop: 10, lineHeight: 1.6 }}>
+            <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 12, color: 'var(--ink-soft)', marginTop: 10, lineHeight: 1.6 }}>
               HOST AN EVENT AND WATCH YOUR HOOD COME ALIVE.
             </p>
             <Link
               href="/events/new"
               style={{
                 display: 'inline-flex', alignItems: 'center', marginTop: 14,
-                padding: '11px 18px',
+                padding: '12px 18px',
                 background: 'var(--terra)', border: '1.5px solid var(--terra-deep)',
                 boxShadow: '2px 2px 0 var(--terra-deep)',
                 color: 'var(--cream)', textDecoration: 'none',
-                fontFamily: 'var(--font-mono), monospace', fontSize: 11,
+                fontFamily: 'var(--font-mono), monospace', fontSize: 12,
                 fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.16em',
               }}
             >
@@ -379,7 +406,7 @@ export function EditorialWall({ events }: { events: any[] }) {
             {/* Hand note */}
             <div style={{
               fontFamily: 'var(--font-caveat), cursive', fontWeight: 600,
-              fontSize: 18, color: 'var(--terra)',
+              fontSize: 20, color: 'var(--terra)',
               transform: 'rotate(-3deg)', marginBottom: 8, display: 'inline-block',
             }}>
               ↙ your gathering, your rules
@@ -388,11 +415,11 @@ export function EditorialWall({ events }: { events: any[] }) {
               href="/events/new"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '13px 18px',
+                padding: '14px 18px',
                 background: 'var(--ink)', border: '1.5px solid var(--ink)',
                 boxShadow: '2px 2px 0 var(--ink-2)',
                 color: 'var(--cream)', textDecoration: 'none',
-                fontFamily: 'var(--font-mono), monospace', fontSize: 11,
+                fontFamily: 'var(--font-mono), monospace', fontSize: 12,
                 fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.18em',
               }}
             >
