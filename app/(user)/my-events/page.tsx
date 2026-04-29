@@ -124,11 +124,12 @@ function EventCard({ event }: { event: MyEvent }) {
         </div>
 
         <p className="text-sm text-ink/60 dark:text-white/60 mt-1">
-          {start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+          {start.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata' })}
           {' · '}
-          {start.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+          {start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })}
           {' – '}
-          {end.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+          {end.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })}
+          {' IST'}
         </p>
 
         <div className="flex items-center gap-4 mt-3">

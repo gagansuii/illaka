@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ResilientImage } from '@/components/ResilientImage';
 import { formatEventDay, formatEventRange } from '@/lib/event-style';
 
@@ -69,13 +69,16 @@ function FlyerCard({
   const organizer = event.organizer?.name || 'Local host';
   const initial = organizer[0]?.toUpperCase() || 'L';
   const rsvpCount = event.rsvps?.length ?? 0;
-  const isTonight = (() => {
+  const [isTonight, setIsTonight] = useState(false);
+  const tonightChecked = useRef(false);
+  useEffect(() => {
+    if (tonightChecked.current) return;
+    tonightChecked.current = true;
     try {
-      const d = new Date(event.startTime);
-      const now = new Date();
-      return d.toDateString() === now.toDateString();
-    } catch { return false; }
-  })();
+      const fmt = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+      setIsTonight(fmt(new Date(event.startTime)) === fmt(new Date()));
+    } catch { /* ignore */ }
+  }, [event.startTime]);
 
   return (
     <Link href={`/events/${event.id}`} style={{ textDecoration: 'none', display: 'block', width: '100%' }}>

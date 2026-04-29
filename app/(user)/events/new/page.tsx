@@ -124,6 +124,7 @@ export default function CreateEventPage() {
   const [startTimeVal, setStartTimeVal] = useState('');
   const [endDate, setEndDate] = useState('');
   const [endTimeVal, setEndTimeVal] = useState('');
+  const [minDate, setMinDate] = useState('');
   const [capacity, setCapacity] = useState(20);
   const [visibility, setVisibility] = useState<'PUBLIC' | 'PRIVATE'>('PUBLIC');
   const [isPaid, setIsPaid] = useState(false);
@@ -151,18 +152,40 @@ export default function CreateEventPage() {
     );
   }, []);
 
+  // Set sensible IST defaults for date/time so preview never shows "random" current time
+  useEffect(() => {
+    const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    setMinDate(todayIST);
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowIST = tomorrow.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+
+    const nowH = parseInt(
+      new Date().toLocaleTimeString('en-IN', { hour: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' }),
+      10
+    );
+    const startH = (nowH + 1) % 24;
+    const endH = (nowH + 3) % 24;
+    const pad = (n: number) => String(n).padStart(2, '0');
+
+    setStartDate(tomorrowIST);
+    setEndDate(tomorrowIST);
+    setStartTimeVal(`${pad(startH)}:00`);
+    setEndTimeVal(`${pad(endH)}:00`);
+  }, []);
+
   const selectedTheme = EVENT_CATEGORY_OPTIONS.find(o => o.key === categoryKey) ?? EVENT_CATEGORY_OPTIONS[0];
   const mapCenter = latitude !== null && longitude !== null ? [latitude, longitude] as [number, number] : null;
   const previewTitle = title || `New ${selectedTheme.label.toLowerCase()} gathering`;
   const previewDescription = description || selectedTheme.previewLine;
   const startTime = startDate && startTimeVal ? `${startDate}T${startTimeVal}:00+05:30` : '';
   const endTime = endDate && endTimeVal ? `${endDate}T${endTimeVal}:00+05:30` : '';
-  const previewFallbackStart = useMemo(() => { const d = new Date(); d.setMinutes(0,0,0); d.setHours(d.getHours()+1); return d.toISOString(); }, []);
-  const previewFallbackEnd = useMemo(() => { const d = new Date(); d.setMinutes(0,0,0); d.setHours(d.getHours()+2); return d.toISOString(); }, []);
-  const previewStart = startTime || previewFallbackStart;
-  const previewEnd = endTime || previewFallbackEnd;
+  const previewStart = startTime;
+  const previewEnd = endTime;
 
   const previewEvent = useMemo(() => {
+    if (!previewStart) return [];
     if (eventType === 'PHYSICAL' && (latitude === null || longitude === null)) return [];
     const lat = latitude ?? 0;
     const lng = longitude ?? 0;
@@ -223,12 +246,20 @@ export default function CreateEventPage() {
       setError('Please place the event on the map or use your current location.');
       return;
     }
+    if (!startDate || !startTimeVal || !endDate || !endTimeVal) {
+      setError('Please set a start date, start time, end date, and end time (IST).');
+      return;
+    }
     if (!bannerUrl || !badgeIcon) {
       setError('Please upload both a banner image and a badge icon.');
       return;
     }
-    if (startTime && endTime && new Date(endTime) <= new Date(startTime)) {
+    if (new Date(endTime) <= new Date(startTime)) {
       setError('End time must be after start time.');
+      return;
+    }
+    if (new Date(startTime) <= new Date()) {
+      setError('Start time must be in the future.');
       return;
     }
     setLoading(true);
@@ -335,23 +366,28 @@ export default function CreateEventPage() {
             </div>
 
             {/* Dates */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <div>
-                <FieldLabel>START DATE</FieldLabel>
-                <input type="date" style={INPUT} value={startDate} onChange={e => setStartDate(e.target.value)} />
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div>
+                  <FieldLabel>START DATE</FieldLabel>
+                  <input type="date" style={INPUT} required min={minDate} value={startDate} onChange={e => setStartDate(e.target.value)} />
+                </div>
+                <div>
+                  <FieldLabel>START TIME (IST)</FieldLabel>
+                  <input type="time" style={INPUT} required value={startTimeVal} onChange={e => setStartTimeVal(e.target.value)} />
+                </div>
+                <div>
+                  <FieldLabel>END DATE</FieldLabel>
+                  <input type="date" style={INPUT} required min={startDate || minDate} value={endDate} onChange={e => setEndDate(e.target.value)} />
+                </div>
+                <div>
+                  <FieldLabel>END TIME (IST)</FieldLabel>
+                  <input type="time" style={INPUT} required value={endTimeVal} onChange={e => setEndTimeVal(e.target.value)} />
+                </div>
               </div>
-              <div>
-                <FieldLabel>START TIME</FieldLabel>
-                <input type="time" style={INPUT} value={startTimeVal} onChange={e => setStartTimeVal(e.target.value)} />
-              </div>
-              <div>
-                <FieldLabel>END DATE</FieldLabel>
-                <input type="date" style={INPUT} value={endDate} onChange={e => setEndDate(e.target.value)} />
-              </div>
-              <div>
-                <FieldLabel>END TIME</FieldLabel>
-                <input type="time" style={INPUT} value={endTimeVal} onChange={e => setEndTimeVal(e.target.value)} />
-              </div>
+              <p style={{ fontSize: 9, color: 'var(--ink-soft)', marginTop: 5, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                ALL TIMES ARE INDIA STANDARD TIME (IST · UTC+5:30)
+              </p>
             </div>
 
             {/* Capacity */}
@@ -492,7 +528,7 @@ export default function CreateEventPage() {
               <div style={{ position: 'absolute', bottom: 10, left: 12, right: 12 }}>
                 <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 20, color: 'var(--cream)', lineHeight: 1.1 }}>{previewTitle}</div>
                 <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, color: 'rgba(255,246,228,0.7)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.16em' }}>
-                  {formatEventDay(previewStart)} · {formatEventRange(previewStart, previewEnd)}
+                  {previewStart ? `${formatEventDay(previewStart)} · ${formatEventRange(previewStart, previewEnd || undefined)}` : 'DATE & TIME TBD'}
                 </div>
               </div>
             </div>
@@ -547,7 +583,7 @@ export default function CreateEventPage() {
             {previewTitle}
           </div>
           <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, color: 'var(--ink-soft)', marginTop: 8, textTransform: 'uppercase', letterSpacing: '0.16em' }}>
-            {formatEventDay(previewStart)} · {formatEventRange(previewStart, previewEnd)}
+            {previewStart ? `${formatEventDay(previewStart)} · ${formatEventRange(previewStart, previewEnd || undefined)}` : 'DATE & TIME TBD'}
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
             <span style={{ fontSize: 9, fontFamily: 'var(--font-mono), monospace', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--ink-soft)' }}>
