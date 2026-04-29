@@ -62,6 +62,14 @@ export function getDatabaseErrorDetails(
     };
   }
 
+  // P2024 = connection pool timed out (common in serverless)
+  if (code === 'P2024' || message.includes('Timed out fetching a new connection')) {
+    return {
+      message: 'The server is under load — please try again in a moment.',
+      status: 503
+    };
+  }
+
   return {
     message: fallbackMessage,
     status: 500

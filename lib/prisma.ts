@@ -5,11 +5,23 @@ import { getEnv } from './config';
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 let prismaClient: PrismaClient | undefined;
 
+function buildDatabaseUrl(base: string): string {
+  // In serverless environments each Lambda keeps its own connection pool.
+  // Cap it at 5 connections per instance to avoid exhausting the DB limit.
+  if (process.env.NODE_ENV !== 'production') return base;
+  if (base.includes('connection_limit=') || base.includes('pgbouncer=')) return base;
+  const sep = base.includes('?') ? '&' : '?';
+  return `${base}${sep}connection_limit=5&pool_timeout=10`;
+}
+
 function createPrismaClient() {
-  getEnv('DATABASE_URL');
+  const rawUrl = getEnv('DATABASE_URL');
 
   return new PrismaClient({
-    log: ['error', 'warn']
+    log: ['error', 'warn'],
+    datasources: {
+      db: { url: buildDatabaseUrl(rawUrl) }
+    }
   });
 }
 

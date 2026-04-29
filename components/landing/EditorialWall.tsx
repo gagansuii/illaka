@@ -190,7 +190,7 @@ function FlyerCard({
 }
 
 /* ─── Editorial Wall ─── */
-export function EditorialWall({ events }: { events: any[] }) {
+export function EditorialWall({ events, loadError }: { events: any[]; loadError?: boolean }) {
   const [dateStr, setDateStr] = useState('');
   const [vol, setVol] = useState('VOL. I');
 
@@ -363,8 +363,40 @@ export function EditorialWall({ events }: { events: any[] }) {
         </>
       )}
 
+      {/* ── Connection error state ── */}
+      {loadError && (
+        <>
+          <Sep label="having trouble" />
+          <div style={{
+            border: '1.5px solid var(--terra)', background: 'rgba(200,85,54,0.06)',
+            padding: '18px 20px',
+          }}>
+            <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 22, lineHeight: 1.1, color: 'var(--terra)' }}>
+              Can't reach the feed right now.
+            </div>
+            <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 10, color: 'var(--ink-soft)', marginTop: 8, lineHeight: 1.65, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+              There was a problem connecting to the database. The page will retry automatically — or tap below to refresh.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              style={{
+                marginTop: 14, padding: '10px 18px',
+                background: 'var(--terra)', border: '1.5px solid var(--terra-deep)',
+                boxShadow: '2px 2px 0 var(--terra-deep)',
+                color: 'var(--cream)', cursor: 'pointer',
+                fontFamily: 'var(--font-mono), monospace', fontSize: 10,
+                fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.16em',
+              }}
+            >
+              REFRESH →
+            </button>
+          </div>
+        </>
+      )}
+
       {/* ── Empty state ── */}
-      {events.length === 0 && (
+      {events.length === 0 && !loadError && (
         <>
           <Sep label="the wall is quiet" />
           <div
