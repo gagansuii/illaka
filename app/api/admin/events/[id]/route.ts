@@ -13,7 +13,15 @@ export async function DELETE(_: Request, { params }: RouteContext) {
   if (session?.user?.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   try {
-    await prisma.event.delete({ where: { id } });
+    await prisma.$transaction([
+      prisma.reminderLog.deleteMany({ where: { eventId: id } }),
+      prisma.attendance.deleteMany({ where: { eventId: id } }),
+      prisma.share.deleteMany({ where: { eventId: id } }),
+      prisma.like.deleteMany({ where: { eventId: id } }),
+      prisma.rSVP.deleteMany({ where: { eventId: id } }),
+      prisma.payment.updateMany({ where: { eventId: id }, data: { eventId: null } }),
+      prisma.event.delete({ where: { id } }),
+    ]);
     clearEventsCache();
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
