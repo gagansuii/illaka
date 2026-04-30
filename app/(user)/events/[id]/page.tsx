@@ -47,19 +47,45 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
   const { id } = await params;
   const { token } = await searchParams;
 
-  let event: Awaited<ReturnType<typeof prisma.event.findUnique>> & {
+  type EventRow = {
+    id: string; title: string; description: string; bannerUrl: string; badgeIcon: string;
+    latitude: number; longitude: number; startTime: Date; endTime: Date;
+    visibility: 'PUBLIC' | 'PRIVATE'; capacity: number; organizerId: string;
+    isPaid: boolean; engagementScore: number; createdAt: Date; updatedAt: Date;
+    shareToken: string | null; eventType: 'PHYSICAL' | 'ONLINE' | null;
+    onlineLink: string | null; linkShareMode: 'IMMEDIATE' | 'BEFORE_EVENT' | null;
+    paymentQrUrl: string | null; ticketPrice: number | null;
     organizer: { id: string; name: string } | null;
     rsvps: { id: string }[];
-  } | null = null;
+  };
+
+  let event: EventRow | null = null;
+
+  const BASE_SELECT = {
+    id: true, title: true, description: true, bannerUrl: true, badgeIcon: true,
+    latitude: true, longitude: true, startTime: true, endTime: true,
+    visibility: true, capacity: true, organizerId: true, isPaid: true,
+    engagementScore: true, createdAt: true, updatedAt: true,
+    organizer: { select: { id: true, name: true } },
+    rsvps: { select: { id: true } },
+  } as const;
 
   try {
-    event = await prisma.event.findUnique({
-      where: { id },
-      include: {
-        organizer: { select: { id: true, name: true } },
-        rsvps: { select: { id: true } },
-      },
-    });
+    try {
+      const row = await prisma.event.findUnique({
+        where: { id },
+        select: { ...BASE_SELECT, shareToken: true, eventType: true, onlineLink: true, linkShareMode: true, paymentQrUrl: true, ticketPrice: true },
+      });
+      event = row as EventRow | null;
+    } catch {
+      try {
+        const row = await prisma.event.findUnique({ where: { id }, select: { ...BASE_SELECT, paymentQrUrl: true } });
+        event = row ? { ...row, shareToken: null, eventType: null, onlineLink: null, linkShareMode: null, ticketPrice: null } as EventRow : null;
+      } catch {
+        const row = await prisma.event.findUnique({ where: { id }, select: BASE_SELECT });
+        event = row ? { ...row, shareToken: null, eventType: null, onlineLink: null, linkShareMode: null, paymentQrUrl: null, ticketPrice: null } as EventRow : null;
+      }
+    }
   } catch (err) {
     console.error('Event fetch error:', err);
     return (
