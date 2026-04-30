@@ -179,6 +179,9 @@ export default function RegisterPage() {
                 placeholder="••••••••"
                 style={inputStyle}
               />
+              <span style={{ fontSize: 9, color: 'var(--ink-soft)', letterSpacing: '0.08em', lineHeight: 1.5 }}>
+                Min 8 chars · one uppercase · one number · one special character
+              </span>
             </div>
 
             {error && (
