@@ -7,6 +7,7 @@ import { recalcEngagementScore } from '@/lib/engagement';
 import { clearEventsCache } from '@/lib/events-cache';
 import { sendTicketEmail } from '@/lib/mailer';
 import { randomUUID } from 'crypto';
+import { getDatabaseErrorDetails } from '@/lib/database-errors';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -44,7 +45,8 @@ export async function POST(_: Request, { params }: RouteContext) {
     }
   } catch (err) {
     console.error('Event fetch failed:', err);
-    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    const details = getDatabaseErrorDetails(err);
+    return NextResponse.json({ error: details.message }, { status: details.status });
   }
 
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });

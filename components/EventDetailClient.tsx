@@ -124,14 +124,13 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
     try {
       const res = await fetch(`/api/events/${event.id}`, { method: 'DELETE' });
       if (!res.ok) {
-        const d = await res.json().catch(() => null);
-        setDeleteError(d?.error ?? 'Could not delete event.');
+        setDeleteError('Could not delete event. Please try again.');
         setDeleting(false);
         return;
       }
       router.push('/profile');
     } catch {
-      setDeleteError('Could not delete event.');
+      setDeleteError('Could not delete event. Please try again.');
       setDeleting(false);
     }
   }
@@ -149,7 +148,10 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
         try { data = await res.json(); } catch { data = null; }
         setJoined(false);
         setRsvpCount((c: number) => Math.max(c - 1, 0));
-        setRsvpError(data?.error ?? 'Could not RSVP. Please try again.');
+        const knownMsg = data?.error === 'Event is full' ? 'This event is full.'
+          : data?.error === 'Already RSVPed' ? "You're already registered."
+          : 'Could not RSVP. Please try again.';
+        setRsvpError(knownMsg);
       }
     } catch {
       setJoined(false);
