@@ -17,6 +17,7 @@ export async function register() {
     // ── Event columns ──────────────────────────────────────────────────────
     await run(`ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "ticketPrice"   INTEGER`);
     await run(`ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "paymentQrUrl"  TEXT`);
+    await run(`ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "address"       TEXT`);
     await run(`ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "shareToken"    TEXT`);
     await run(`ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "eventType"     "EventType" DEFAULT 'PHYSICAL'`);
     await run(`ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "onlineLink"    TEXT`);

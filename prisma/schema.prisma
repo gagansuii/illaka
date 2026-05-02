@@ -73,6 +73,7 @@ model Event {
   ticketPrice   Int?
   engagementScore Int         @default(0)
   paymentQrUrl  String?
+  address       String?
   shareToken    String?       @unique
   eventType     EventType?    @default(PHYSICAL)
   onlineLink    String?

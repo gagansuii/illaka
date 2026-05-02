@@ -136,6 +136,7 @@ export default function CreateEventPage() {
   const [eventType, setEventType] = useState<'PHYSICAL' | 'ONLINE'>('PHYSICAL');
   const [onlineLink, setOnlineLink] = useState('');
   const [linkShareMode, setLinkShareMode] = useState<'IMMEDIATE' | 'BEFORE_EVENT'>('IMMEDIATE');
+  const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [uploadingBanner, setUploadingBanner] = useState(false);
@@ -272,6 +273,7 @@ export default function CreateEventPage() {
         endTime: toISTIso(endTime),
         capacity, visibility, isPaid, latitude, longitude,
         bannerUrl, badgeIcon, eventType,
+        address: eventType === 'PHYSICAL' && address.trim() ? address.trim() : undefined,
         onlineLink: eventType === 'ONLINE' ? onlineLink : undefined,
         linkShareMode: eventType === 'ONLINE' ? linkShareMode : undefined,
         paymentQrUrl: isPaid && paymentQrUrl ? paymentQrUrl : undefined,
@@ -499,14 +501,26 @@ export default function CreateEventPage() {
                   </div>
                 )}
               </div>
-              <div style={{ padding: '10px 14px', borderTop: '1.5px solid var(--ink)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div style={{ padding: '10px 14px', borderTop: '1.5px solid var(--ink)', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div>
-                  <FieldLabel>LATITUDE</FieldLabel>
-                  <input type="number" step="0.0001" style={INPUT} placeholder="12.9716" value={latitude ?? ''} onChange={e => setLatitude(e.target.value === '' ? null : Number(e.target.value))} />
+                  <FieldLabel>VENUE ADDRESS</FieldLabel>
+                  <input
+                    style={INPUT}
+                    placeholder="e.g. 12 MG Road, Indiranagar, Bengaluru"
+                    value={address}
+                    onChange={e => setAddress(e.target.value)}
+                    maxLength={300}
+                  />
                 </div>
-                <div>
-                  <FieldLabel>LONGITUDE</FieldLabel>
-                  <input type="number" step="0.0001" style={INPUT} placeholder="77.5946" value={longitude ?? ''} onChange={e => setLongitude(e.target.value === '' ? null : Number(e.target.value))} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div>
+                    <FieldLabel>LATITUDE</FieldLabel>
+                    <input type="number" step="0.0001" style={INPUT} placeholder="12.9716" value={latitude ?? ''} onChange={e => setLatitude(e.target.value === '' ? null : Number(e.target.value))} />
+                  </div>
+                  <div>
+                    <FieldLabel>LONGITUDE</FieldLabel>
+                    <input type="number" step="0.0001" style={INPUT} placeholder="77.5946" value={longitude ?? ''} onChange={e => setLongitude(e.target.value === '' ? null : Number(e.target.value))} />
+                  </div>
                 </div>
               </div>
             </PaperCard>

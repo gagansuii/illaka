@@ -33,6 +33,7 @@ const createSchema = z.object({
   isPaid: z.boolean(),
   ticketPrice: z.number().int().positive().optional(),
   paymentQrUrl: z.string().optional(),
+  address: z.string().max(300).trim().optional(),
   eventType: z.enum(['PHYSICAL', 'ONLINE']).optional(),
   onlineLink: z.string().url().optional().or(z.literal('')),
   linkShareMode: z.enum(['IMMEDIATE', 'BEFORE_EVENT']).optional(),
@@ -197,6 +198,7 @@ export async function POST(req: Request) {
   const onlineLink = data.onlineLink ?? null;
   const linkShareMode = data.linkShareMode ?? null;
   const paymentQrUrl = data.paymentQrUrl ?? null;
+  const address = data.address ?? null;
 
   let inserted: any;
   try {
@@ -207,7 +209,7 @@ export async function POST(req: Request) {
         "latitude", "longitude", "location",
         "startTime", "endTime", "visibility", "capacity",
         "organizerId", "isPaid", "engagementScore",
-        "eventType", "onlineLink", "linkShareMode", "paymentQrUrl",
+        "eventType", "onlineLink", "linkShareMode", "paymentQrUrl", "address",
         "createdAt", "updatedAt"
       ) VALUES (
         ${eventId},
@@ -229,13 +231,14 @@ export async function POST(req: Request) {
         ${onlineLink},
         ${linkShareMode}::"LinkShareMode",
         ${paymentQrUrl},
+        ${address},
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
       )
       RETURNING "id", "title", "description", "bannerUrl", "badgeIcon", "latitude", "longitude",
                 "startTime", "endTime", "visibility", "capacity", "organizerId", "isPaid",
                 "engagementScore", "eventType", "onlineLink", "linkShareMode", "paymentQrUrl",
-                "createdAt", "updatedAt"
+                "address", "createdAt", "updatedAt"
     `;
   } catch (fullErr: any) {
     // Fallback: migration may not have run yet — insert without the newer columns
