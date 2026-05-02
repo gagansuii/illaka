@@ -137,7 +137,8 @@ export function RouteTransitionProvider({ children }: { children: React.ReactNod
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(245,237,226,0.74)] px-4 backdrop-blur-xl dark:bg-[rgba(9,13,19,0.74)]"
+            style={{ willChange: 'opacity' }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(245,237,226,0.88)] px-4 dark:bg-[rgba(9,13,19,0.88)]"
           >
             <motion.div
               initial={{ opacity: 0, y: 18, scale: 0.98 }}

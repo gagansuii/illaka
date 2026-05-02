@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import type { EventSummary } from '@/lib/types';
 import { Card } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { formatEventDay, formatEventRange } from '@/lib/event-style';
 
 const SWIPE_THRESHOLD = 120;
 
-function SwipeCard({
+const SwipeCard = memo(function SwipeCard({
   event,
   onDismiss,
   zIndex,
@@ -29,7 +29,7 @@ function SwipeCard({
   return (
     <motion.div
       className="absolute inset-x-0 top-0"
-      style={{ x, rotate, opacity, scale, zIndex, top: stackIndex * 14 }}
+      style={{ x, rotate, opacity, scale, zIndex, translateY: stackIndex * 14 }}
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
       whileTap={{ cursor: 'grabbing' }}
@@ -93,10 +93,11 @@ function SwipeCard({
       </Card>
     </motion.div>
   );
-}
+});
 
 export function SwipeDeck({ events, loading }: { events: EventSummary[]; loading: boolean }) {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const dismiss = useCallback((id: string) => setDismissedIds(prev => new Set(prev).add(id)), []);
 
   if (loading) {
     return <Card className="h-[19rem] animate-pulse rounded-[1.9rem] bg-[rgba(255,255,255,0.4)] dark:bg-[rgba(15,23,42,0.32)]" />;
@@ -127,7 +128,7 @@ export function SwipeDeck({ events, loading }: { events: EventSummary[]; loading
           event={event}
           zIndex={10 - index}
           stackIndex={index}
-          onDismiss={() => setDismissedIds((prev) => new Set(prev).add(event.id))}
+          onDismiss={() => dismiss(event.id)}
         />
       ))}
       <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full bg-[rgba(15,23,42,0.48)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/80">

@@ -32,7 +32,7 @@ function distanceMeters([lat1, lng1]: [number, number], [lat2, lng2]: [number, n
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
-function FlyerEventCard({ event, onPreview, onOpen, active }: {
+const FlyerEventCard = React.memo(function FlyerEventCard({ event, onPreview, onOpen, active }: {
   event: EventSummary;
   onPreview: (e: EventSummary) => void;
   onOpen: (e: EventSummary) => void;
@@ -86,7 +86,7 @@ function FlyerEventCard({ event, onPreview, onOpen, active }: {
       </div>
     </button>
   );
-}
+});
 
 export function MapScreen() {
   const { status } = useSession();
@@ -192,7 +192,7 @@ export function MapScreen() {
 
   useEffect(() => {
     if (query) return;
-    const id = window.setInterval(() => setPromptIndex(c => (c + 1) % SEARCH_PROMPTS.length), 2600);
+    const id = window.setInterval(() => setPromptIndex(c => (c + 1) % SEARCH_PROMPTS.length), 4000);
     return () => window.clearInterval(id);
   }, [query]);
 
@@ -219,8 +219,8 @@ export function MapScreen() {
     } finally { setLoading(false); }
   }
 
-  function previewEvent(event: EventSummary) { setPreviewedEventId(event.id); }
-  function openDrawer(event: EventSummary) { setPreviewedEventId(event.id); setDrawerEvent(event); setDrawerOpen(true); }
+  const previewEvent = useCallback((event: EventSummary) => { setPreviewedEventId(event.id); }, []);
+  const openDrawer = useCallback((event: EventSummary) => { setPreviewedEventId(event.id); setDrawerEvent(event); setDrawerOpen(true); }, []);
 
   const inputStyle: React.CSSProperties = {
     flex: 1, padding: '12px 14px 12px 38px',

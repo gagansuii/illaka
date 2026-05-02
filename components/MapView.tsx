@@ -87,13 +87,11 @@ export function MapView({
     return iconMap;
   }, [events]);
 
-  const activeMarkerIcons = useMemo(() => {
-    const iconMap = new Map<string, L.DivIcon>();
-    for (const event of events) {
-      iconMap.set(event.id, makeMarkerIcon(event, true));
-    }
-    return iconMap;
-  }, [events]);
+  // Only build the active icon for the one previewed event, not all events.
+  const activeMarkerIcon = useMemo(() => {
+    const event = events.find(e => e.id === previewedEventId);
+    return event ? makeMarkerIcon(event, true) : null;
+  }, [events, previewedEventId]);
 
   return (
     <MapContainer
@@ -120,13 +118,10 @@ export function MapView({
         <Marker
           key={event.id}
           position={[event.latitude, event.longitude]}
-          icon={event.id === previewedEventId ? activeMarkerIcons.get(event.id) : defaultMarkerIcons.get(event.id)}
+          icon={event.id === previewedEventId ? (activeMarkerIcon ?? defaultMarkerIcons.get(event.id)) : defaultMarkerIcons.get(event.id)}
           eventHandlers={{
             mouseover: () => onPreviewEvent?.(event),
-            click: () => {
-              onPreviewEvent?.(event);
-              onOpenEvent?.(event);
-            }
+            click: () => { onPreviewEvent?.(event); onOpenEvent?.(event); }
           }}
         />
       ))}
