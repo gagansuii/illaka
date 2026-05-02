@@ -2,10 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { EditorialWall } from '@/components/landing/EditorialWall';
 import { sanitizeEventMedia } from '@/lib/media';
 
-// ISR: revalidate every 30 s so ended events disappear quickly but the
-// home page does NOT hammer the DB on every single request (force-dynamic
-// exhausts the connection pool in serverless environments).
-export const revalidate = 30;
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   let events: any[] = [];
