@@ -1,15 +1,22 @@
 import type { MetadataRoute } from 'next';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXTAUTH_URL ?? 'https://ilaka.app';
 
-  const events = await prisma.event.findMany({
-    where: { visibility: 'PUBLIC' },
-    select: { id: true, updatedAt: true },
-    orderBy: { updatedAt: 'desc' },
-    take: 1000
-  });
+  let events: { id: string; updatedAt: Date }[] = [];
+  try {
+    events = await prisma.event.findMany({
+      where: { visibility: 'PUBLIC' },
+      select: { id: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+      take: 1000,
+    });
+  } catch {
+    // DB unavailable — return static routes only
+  }
 
   const eventUrls: MetadataRoute.Sitemap = events.map((e) => ({
     url: `${base}/events/${e.id}`,
