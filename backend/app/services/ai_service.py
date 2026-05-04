@@ -62,7 +62,6 @@ async def semantic_search(
                 "organizer_id": event.organizer_id,
                 "is_paid": event.is_paid,
                 "ticket_price": event.ticket_price,
-                "address": event.address,
                 "engagement_score": event.engagement_score,
                 "event_type": event.event_type.value,
                 "_score": final_score,

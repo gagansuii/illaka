@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -81,6 +80,13 @@ async def list_all_users(
         "page": page,
         "page_size": 50,
     }
+
+
+class _UpdateRoleBody:
+    pass
+
+
+from pydantic import BaseModel
 
 
 class UpdateRoleRequest(BaseModel):

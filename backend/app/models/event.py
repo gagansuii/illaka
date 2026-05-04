@@ -71,9 +71,6 @@ class Event(Base, TimestampMixin):
     # Engagement
     engagement_score: Mapped[int] = mapped_column(Integer, default=0, nullable=False, index=True)
 
-    # Venue address (human-readable, for physical events)
-    address: Mapped[str | None] = mapped_column(String(500), nullable=True)
-
     # Sharing
     share_token: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
 

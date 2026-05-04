@@ -17,7 +17,6 @@ class CreateEventRequest(BaseModel):
     is_paid: bool = False
     ticket_price: float | None = None
     payment_qr_url: str | None = None
-    address: str | None = None
     event_type: str = "PHYSICAL"
     online_link: str | None = None
     link_share_mode: str = "INVITE_ONLY"
@@ -72,7 +71,6 @@ class UpdateEventRequest(BaseModel):
     is_paid: bool | None = None
     ticket_price: float | None = None
     payment_qr_url: str | None = None
-    address: str | None = None
     event_type: str | None = None
     online_link: str | None = None
     link_share_mode: str | None = None
@@ -94,7 +92,6 @@ class EventResponse(BaseModel):
     is_paid: bool
     ticket_price: float | None = None
     payment_qr_url: str | None = None
-    address: str | None = None
     engagement_score: int
     share_token: str | None = None
     event_type: str

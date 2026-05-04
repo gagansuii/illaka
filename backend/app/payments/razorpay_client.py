@@ -1,11 +1,9 @@
 """
 Razorpay compatibility layer — preserved during the Stripe migration transition.
 """
-import asyncio
 import hashlib
 import hmac
 import logging
-from functools import partial
 
 import razorpay
 
@@ -24,13 +22,15 @@ def _get_client() -> razorpay.Client:
 
 
 async def create_order(amount_paise: int, currency: str = "INR") -> dict:
-    """Creates a Razorpay order. Runs SDK call in executor to avoid blocking."""
+    """Creates a Razorpay order. Returns {id, amount, currency}."""
     client = _get_client()
-    payload = {"amount": amount_paise, "currency": currency, "payment_capture": 1}
     try:
-        loop = asyncio.get_event_loop()
-        order = await loop.run_in_executor(
-            None, partial(client.order.create, payload)
+        order = client.order.create(
+            {
+                "amount": amount_paise,
+                "currency": currency,
+                "payment_capture": 1,
+            }
         )
         return {
             "order_id": order["id"],
