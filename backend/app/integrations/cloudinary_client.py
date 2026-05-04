@@ -1,4 +1,6 @@
+import asyncio
 import uuid
+from functools import partial
 from typing import Any
 
 import cloudinary
@@ -66,12 +68,15 @@ async def upload_file(
     public_id = f"{folder}/{uuid.uuid4()}"
 
     try:
-        result: dict[str, Any] = cloudinary.uploader.upload(
+        loop = asyncio.get_event_loop()
+        upload_fn = partial(
+            cloudinary.uploader.upload,
             data,
             public_id=public_id,
             resource_type="image",
             overwrite=False,
         )
+        result: dict[str, Any] = await loop.run_in_executor(None, upload_fn)
         return result["secure_url"]
     except Exception as exc:
         raise ServiceUnavailableError(f"Upload failed: {exc}") from exc

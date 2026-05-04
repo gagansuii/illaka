@@ -34,7 +34,7 @@ razorpay==1.4.2
 
 # AI
 openai==1.58.1
-pinecone-client==5.0.1
+pinecone==5.0.1
 
 # PDF + QR
 reportlab==4.2.5
