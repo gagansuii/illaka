@@ -1,8 +1,8 @@
-# Illaka 2.0 — Architecture
+# ILAKA — Architecture
 
 ## Overview
 
-Illaka is a hyperlocal event discovery platform. Users find events happening near them on a live map, RSVP, and pay organisers. Organisers create events (physical or online), manage attendance, and get paid. A single Next.js 16 App Router application serves the entire product — frontend, backend API, and background jobs all live in one repo.
+ILAKA is a hyperlocal event discovery platform. Users find events near them, RSVP, receive digital tickets, and pay organisers. Organisers create events (physical or online), manage attendance, and get paid. A single Next.js 16 App Router application serves the entire product — frontend, backend API, and background jobs all live in one repo.
 
 ---
 
@@ -32,55 +32,89 @@ Next.js 16 App Router  (Vercel / Node.js)
 
 ```
 app/
-  (auth)/             Login, register, forgot/reset password
-  (user)/             Main user-facing pages
-    page.tsx          Landing / home
-    discover/         Map + event discovery (MapScreen)
-    events/[id]/      Event detail page
-    events/new/       Event creation form
-    profile/          User profile
-  (admin)/admin/      Admin dashboard
-  api/                All REST API routes (see API section)
+  (auth)/                   Login, register, forgot/reset password
+  (user)/                   Main user-facing pages
+    page.tsx                Landing / home
+    layout.tsx              Shared user layout (TopNav, BottomNav)
+    discover/               Map + event feed discovery (MapScreen)
+    events/[id]/            Event detail, edit
+    events/new/             Event creation form
+    my-events/              Organiser's own events list
+    profile/                User profile
+    tickets/[rsvpId]/       Digital ticket view/download
+  organizer/
+    dashboard/              Organiser metrics dashboard
+  (admin)/admin/            Admin dashboard (role-gated)
+  api/                      All REST API routes (see API section)
+  error.tsx                 Route-level error boundary
+  global-error.tsx          Root error fallback
+  not-found.tsx             404 page
+  robots.ts                 robots.txt generation
+  sitemap.ts                Sitemap generation (public events)
 
 components/
-  ui/                 Radix UI primitives (Button, Card, Input, Slider…)
-  MapScreen.tsx       Discover page — map, search, event cards
-  MapView.tsx         Leaflet map renderer (SSR-disabled)
-  EventDetailClient.tsx  Full event detail view
-  EventPreviewDrawer.tsx Quick-view drawer
-  PaymentButton.tsx   Razorpay checkout trigger
-  SwipeDeck.tsx       Mobile swipe card deck
-  ResilientImage.tsx  Image with fallback
+  ui/                       Radix UI primitives (Button, Card, Input, Slider, Textarea, Dialog, Label)
+  landing/                  Landing page components (EditorialWall, LandingExperience, SectionHeading)
+  AuthProvider.tsx          NextAuth SessionProvider wrapper
+  BottomNav.tsx             Mobile bottom navigation bar
+  TopNav.tsx                Desktop / top navigation bar
+  CoffeeRouteLoader.tsx     Route transition loading indicator
+  EventDetailClient.tsx     Full event detail view
+  EventPreviewDrawer.tsx    Quick-view drawer
+  MapScreen.tsx             Discover page — feed, map toggle, search, event cards
+  MapView.tsx               Leaflet map renderer (SSR-disabled)
+  OrganizerDashboard.tsx    Organiser stats/management dashboard
+  PaymentButton.tsx         Razorpay checkout trigger
+  ResilientImage.tsx        Image with fallback
+  RouteTransitionProvider.tsx Framer Motion page transitions
+  SmokeLayer.tsx            Decorative smoke/blur overlay
+  SwipeDeck.tsx             Mobile swipe card deck
+  ThemeProvider.tsx         Dark/light theme context
+  ThemeToggle.tsx           Theme toggle button
 
 lib/
-  prisma.ts           Prisma client singleton
-  auth.ts             NextAuth config (JWT, credentials, 30-day session)
-  config.ts           Env var validation + getEnvOptional helper
-  useGeolocation.ts   Client hook: browser GPS → IP fallback → unavailable
-  geo.ts              Server-side IP geolocation (ipinfo.io → ip-api.com, circuit breaker)
-  engagement.ts       Engagement score formula (atomic SQL UPDATE)
-  events-cache.ts     Dual-layer in-memory cache (fresh 15 s, stale 60 s, background refresh)
-  rate-limit.ts       Rate limiting (Redis → LRU fallback)
-  media.ts            Local upload sanitization + Cloudinary utilities
-  mailer.ts           nodemailer wrapper (SMTP, gracefully skips if unconfigured)
-  ai.ts               OpenAI + Pinecone client initialization
-  razorpay.ts         Razorpay client singleton
-  event-style.ts      Theme engine, formatters (IST/en-IN), category options
+  ai.ts                     OpenAI + Pinecone client initialisation
+  auth.ts                   NextAuth config (JWT, credentials, 30-day session)
+  config.ts                 Env var validation: getEnv / getEnvOptional / getEnvNumber
+  database-errors.ts        Maps Prisma/DB errors to user-facing messages
+  engagement.ts             Engagement score formula (atomic SQL UPDATE)
+  events-cache.ts           Dual-layer in-memory cache (fresh 15 s, stale 60 s, background refresh)
+  event-style.ts            Theme engine, formatters (IST/en-IN), category options
+  geo.ts                    Server-side IP geolocation (ipinfo.io → ip-api.com, circuit breaker)
+  mailer.ts                 nodemailer wrapper (SMTP, gracefully skips if unconfigured)
+  media.ts                  Local upload sanitisation + Cloudinary utilities
+  prisma.ts                 Prisma client singleton
+  rate-limit.ts             Rate limiting (Redis → LRU fallback)
+  razorpay.ts               Razorpay client singleton
+  types.ts                  Shared TypeScript types (EventSummary, etc.)
+  useGeolocation.ts         Client hook: browser GPS → IP fallback → unavailable
+  utils.ts                  Utility helpers (cn for class merging)
 
 prisma/
-  schema.prisma       Single source of truth for all models
-  migrations/         Applied migration SQL files
+  schema.prisma             Single source of truth for all models
+  migrations/               Applied migration SQL files
 
-scripts/              Dev and maintenance utilities
-three/                Three.js 3D canvas components (landing page)
-sections/             Landing page section components
+scripts/
+  dev-guard.mjs             Dev server guard script
+  audit-orphaned-media.js   Cloudinary media audit utility
+  generate_architecture_pdf.py  Architecture diagram generator
+
+sections/                   Landing page section components
+  CommunitySection.tsx
+  DiscoverySection.tsx
+  FeaturedEventSection.tsx
+  HeroSection.tsx
+  InteractiveMapSection.tsx
+
+three/                      Three.js 3D canvas components (landing page)
+animations/                 Animation data/configuration files
 ```
 
 ---
 
 ## Frontend
 
-### Rendering strategy
+### Rendering Strategy
 
 | Route | Strategy | Why |
 |---|---|---|
@@ -89,6 +123,7 @@ sections/             Landing page section components
 | Event detail (`/events/[id]`) | Server Component fetches data, passes to client component | SEO for event pages |
 | Event creation (`/events/new`) | Full client component | Complex form state |
 | Auth pages | Client components | Form interactions |
+| Organizer dashboard | Client component | Dashboard mutations |
 | Admin | Client component | Dashboard mutations |
 
 `reactStrictMode: false` in `next.config.mjs` — intentional, avoids double-mount issues with Leaflet and Three.js.
@@ -111,7 +146,7 @@ Component mounts
 
 Map tile provider: CartoDB Light (`basemaps.cartocdn.com`).
 
-### Engagement score
+### Engagement Score
 
 Computed in a single atomic SQL UPDATE whenever a social action occurs:
 
@@ -119,9 +154,9 @@ Computed in a single atomic SQL UPDATE whenever a social action occurs:
 score = RSVP × 3  +  Like × 1  +  Share × 5  +  Attendance × 10
 ```
 
-Events are ordered by `engagementScore DESC` on the discover map.
+Events are ordered by `engagementScore DESC` on the discover feed and map.
 
-### Design tokens (Tailwind)
+### Design Tokens (Tailwind)
 
 | Token | Value | Use |
 |---|---|---|
@@ -138,39 +173,48 @@ CSS variables: `--secondary`, `--accent`, `--muted`, `--surface`, `--surface-str
 ## API Routes
 
 ```
-POST  /api/auth/register            Create account (bcrypt password)
-POST  /api/auth/forgot-password     Send reset token email
-POST  /api/auth/reset-password      Consume token, update password
-GET   /api/auth/[...nextauth]       NextAuth.js handler (sign in/out, session)
+POST  /api/auth/register              Create account (bcrypt password)
+POST  /api/auth/forgot-password       Send reset token email
+POST  /api/auth/reset-password        Consume token, update password
+GET   /api/auth/[...nextauth]         NextAuth.js handler (sign in/out, session)
 
-GET   /api/events                   Nearby events (PostGIS radius query, cached)
-POST  /api/events                   Create event (auth required, Pinecone indexed)
-GET   /api/events/[id]              Single event detail
-PATCH /api/events/[id]              Edit event (organiser only)
-POST  /api/events/[id]/rsvp         Toggle RSVP
-POST  /api/events/[id]/share        Record share, recalc engagement
-GET   /api/events/[id]/invite       Generate/return private share token
+GET   /api/events                     Nearby events (PostGIS radius query, cached)
+POST  /api/events                     Create event (auth required, Pinecone indexed)
+GET   /api/events/[id]                Single event detail
+PATCH /api/events/[id]                Edit event (organiser only)
+POST  /api/events/[id]/rsvp           Toggle RSVP (generates ticketId)
+POST  /api/events/[id]/share          Record share, recalc engagement
+GET   /api/events/[id]/invite         Generate/return private share token
+GET   /api/events/mine                Organiser's own events list
 
-POST  /api/ai-search                Semantic search via OpenAI + Pinecone
+GET   /api/tickets/[rsvpId]           Fetch ticket data by RSVP ID (auth required)
 
-GET   /api/geo/ip                   IP-based geolocation (ipinfo → ip-api fallback)
+POST  /api/ai-search                  Semantic search via OpenAI + Pinecone
 
-POST  /api/payments/initiate        Create Razorpay order
-POST  /api/payments/webhook         Razorpay HMAC-verified webhook → update Payment row
+GET   /api/geo/ip                     IP-based geolocation (ipinfo → ip-api fallback)
 
-POST  /api/upload                   Upload image to local public/uploads/ (auth required)
-                                    Allowed folders: ilaka/banners, ilaka/badges, ilaka/payment-qr
+GET   /api/health                     DB connectivity health check
+                                      Secured with HEALTH_SECRET or CRON_SECRET
 
-POST  /api/users/location           Persist user lat/lng/radius (throttled, auth required)
-GET   /api/users/profile            Fetch own profile
-PATCH /api/users/profile            Update name / avatar
+POST  /api/payments/initiate          Create Razorpay order
+POST  /api/payments/webhook           Razorpay HMAC-verified webhook → update Payment row
 
-GET   /api/cron/reminders           Hourly cron: send reminder emails for upcoming events
-                                    Secured with Authorization: Bearer <CRON_SECRET>
+POST  /api/upload                     Upload image to Cloudinary or local public/uploads/
+                                      Allowed folders: ilaka/banners, ilaka/badges, ilaka/payment-qr, ilaka/avatars
 
-PATCH /api/admin/events/[id]        Admin: edit any event
-DELETE /api/admin/events/[id]       Admin: delete event
-PATCH /api/admin/users/[id]         Admin: change role / ban
+POST  /api/users/location             Persist user lat/lng/radius (throttled, auth required)
+GET   /api/users/profile              Fetch own profile
+PATCH /api/users/profile              Update name / avatar
+GET   /api/users/my-events            Organiser's own events (auth required)
+GET   /api/users/members              Members/attendees list
+
+GET   /api/cron/reminders             Cron: send reminder emails for upcoming events
+GET   /api/cron/cleanup-events        Cron: delete or archive expired events
+                                      Both secured with Authorization: Bearer <CRON_SECRET>
+
+PATCH /api/admin/events/[id]          Admin: edit any event
+DELETE /api/admin/events/[id]         Admin: delete event
+PATCH /api/admin/users/[id]           Admin: change role / ban
 ```
 
 ---
@@ -179,12 +223,12 @@ PATCH /api/admin/users/[id]         Admin: change role / ban
 
 ### Engine
 
-PostgreSQL 15 with the PostGIS extension. Two databases are required:
+PostgreSQL 15 with the PostGIS extension. Prisma uses two connection strings:
 
-| Database | Purpose |
+| Variable | Purpose |
 |---|---|
-| `ilaka_events` | Main application data |
-| `ilaka_shadow` | Prisma shadow DB (safe migration diffing) |
+| `DATABASE_URL` | Pooled connection for runtime queries |
+| `DIRECT_URL` | Direct connection for Prisma migrations |
 
 ### Models
 
@@ -194,6 +238,7 @@ Stores credentials and location preference. Roles: `USER | ORGANIZER | ADMIN`.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID | Primary key |
+| `name` | String | Display name |
 | `email` | String | Unique |
 | `password` | String | bcrypt hash |
 | `role` | Enum | USER / ORGANIZER / ADMIN |
@@ -210,31 +255,45 @@ Core entity. Holds both scalar coordinates (for simple queries) and a PostGIS `g
 | `id` | UUID | Primary key |
 | `latitude / longitude` | Float | Scalar copy |
 | `location` | geography | PostGIS column, GIST-indexed |
+| `address` | String? | Human-readable venue address |
 | `eventType` | Enum? | PHYSICAL / ONLINE |
 | `onlineLink` | String? | Meeting URL (Zoom, Meet, Discord…) |
 | `linkShareMode` | Enum? | IMMEDIATE / BEFORE_EVENT |
 | `isPaid` | Boolean | Toggles payment QR display |
+| `ticketPrice` | Int? | Ticket price in paise |
 | `paymentQrUrl` | String? | Organiser-uploaded payment QR image |
 | `engagementScore` | Int | Computed: RSVP×3 + Like×1 + Share×5 + Attendance×10 |
 | `shareToken` | String? | Unique token for private invite links |
 | `visibility` | Enum | PUBLIC / PRIVATE |
 
-Indexes: `GIST(location)`, `organizerId`, `visibility`.
+Indexes: `GIST(location)`, `organizerId`, `visibility`, `startTime`, `engagementScore`.
 
-#### `RSVP` / `Like` / `Share` / `Attendance`
-Join tables between `User` and `Event`. Each has a composite unique constraint on `(userId, eventId)` except `Share` (a user can share multiple times). Writing to any of these triggers a re-computation of `engagementScore`.
+#### `RSVP`
+Join table between `User` and `Event`. Each RSVP generates a unique `ticketId` used to retrieve the digital ticket.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `ticketId` | UUID | Unique ticket identifier for `/tickets/[rsvpId]` |
+| `userId` | String | FK to User |
+| `eventId` | String | FK to Event |
+
+Composite unique: `(userId, eventId)`.
+
+#### `Like` / `Share` / `Attendance`
+Join tables between `User` and `Event`. Each writing to any of these triggers re-computation of `engagementScore`.
 
 #### `Subscription`
-Tracks a user's active plan (status, plan name, start/end dates). Not yet wired to feature gates.
+Tracks a user's active plan (status, plan name, start/end dates).
 
 #### `Payment`
-Razorpay payment record. `reason` field values: `hosting_fee | promotion | subscription`. Webhook sets `status` to `paid` / `failed`.
+Razorpay payment record. `reason` values: `hosting_fee | promotion | subscription`. Webhook sets `status` to `paid` / `failed`.
 
 #### `PasswordResetToken`
 Short-lived token for the forgot-password flow. Has `expiresAt` and `used` flag to prevent replay.
 
 #### `ReminderLog`
-Deduplication log for reminder emails. Unique on `(eventId, userId, type)` — prevents sending the same reminder twice if the cron fires late or is retried.
+Deduplication log for reminder emails. Unique on `(eventId, userId, type)` — prevents duplicate reminders.
 
 | `type` | When sent | Event types |
 |---|---|---|
@@ -242,7 +301,7 @@ Deduplication log for reminder emails. Unique on `(eventId, userId, type)` — p
 | `1h` | 1 hour before start | PHYSICAL + ONLINE |
 | `1d` | 24 hours before start | ONLINE only |
 
-### Geospatial queries
+### Geospatial Queries
 
 Radius search uses PostGIS `ST_DWithin` against the `geography` column:
 
@@ -258,12 +317,12 @@ ORDER BY "engagementScore" DESC
 LIMIT 200
 ```
 
-The GIST index on `location` makes this sub-millisecond for typical city-scale queries. The ORM (Prisma) cannot express PostGIS operations natively, so these queries use `prisma.$queryRaw`.
+The GIST index on `location` makes this sub-millisecond for typical city-scale queries. Prisma cannot express PostGIS operations natively, so these queries use `prisma.$queryRaw`.
 
 ### ER Diagram (simplified)
 
 ```
-User ──< RSVP >── Event
+User ──< RSVP (+ ticketId) >── Event
 User ──< Like >── Event
 User ──< Share >── Event
 User ──< Attendance >── Event
@@ -278,7 +337,7 @@ User ──< Event (organizer)
 
 ## Caching
 
-### In-memory events cache (`lib/events-cache.ts`)
+### In-memory Events Cache (`lib/events-cache.ts`)
 
 A dual-layer stale-while-revalidate cache for the `/api/events` endpoint. Keyed on `(lat, lng, radius)` rounded to 3 decimal places.
 
@@ -288,9 +347,28 @@ A dual-layer stale-while-revalidate cache for the `/api/events` endpoint. Keyed 
 | 15 – 75 s (stale) | Return cached data + trigger background refresh |
 | > 75 s (expired) | Block and await fresh DB fetch |
 
-### Rate limiting (`lib/rate-limit.ts`)
+### AI Cache (`lib/ai-cache.ts`)
 
-Sliding-window rate limiter. Uses Redis when available; falls back to an in-process LRU cache when Redis is absent. Applied to the events query endpoint to prevent scraping.
+In-memory cache for AI search results, keyed on query + location. Reduces OpenAI/Pinecone API calls for repeated queries.
+
+### Rate Limiting (`lib/rate-limit.ts`)
+
+Sliding-window rate limiter. Uses Redis when available; falls back to an in-process LRU cache when Redis is absent.
+
+---
+
+## Security
+
+Security headers are set in `next.config.mjs` for all routes:
+
+| Header | Value |
+|---|---|
+| `Content-Security-Policy` | Scoped policy (Razorpay, Cloudinary, CartoDB tiles, OpenAI, Pinecone) |
+| `X-Frame-Options` | `DENY` |
+| `X-Content-Type-Options` | `nosniff` |
+| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | Camera/microphone off; geolocation and payment self-only |
 
 ---
 
@@ -299,42 +377,46 @@ Sliding-window rate limiter. Uses Redis when available; falls back to an in-proc
 | Service | Env vars required | Fallback |
 |---|---|---|
 | Redis | `REDIS_URL` | In-process LRU cache |
-| OpenAI | `OPENAI_API_KEY` | AI search endpoint returns empty results |
-| Pinecone | `PINECONE_API_KEY`, `PINECONE_INDEX` | Vector search disabled; text search only |
+| OpenAI | `OPENAI_API_KEY` | AI search returns empty results |
+| Pinecone | `PINECONE_API_KEY`, `PINECONE_INDEX` | Vector search disabled |
 | Razorpay | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | Payment buttons hidden |
 | Cloudinary | `CLOUDINARY_*` | Local file upload to `public/uploads/` |
 | IPInfo | `IPINFO_TOKEN` | Falls back to ip-api.com; then geolocation skipped |
-| SMTP | `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` | Reminder emails skipped with console warning |
-| Cron secret | `CRON_SECRET` | Cron endpoint open (not recommended in production) |
-
-All validation and capability detection lives in `lib/config.ts`.
+| SMTP | `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` | Reminder emails skipped |
+| Cron secret | `CRON_SECRET` | Cron endpoints open in dev only |
+| Health secret | `HEALTH_SECRET` | Falls back to `CRON_SECRET`; open in dev only |
 
 ---
 
 ## Authentication
 
-NextAuth.js with a **credentials provider** (email + bcrypt password). Sessions are JWT-encoded with a **30-day expiry**. The `session.user.id` and `session.user.role` fields are added to the token via a custom `callbacks.jwt` handler.
+NextAuth.js with a **credentials provider** (email + bcrypt password). Sessions are JWT-encoded with a **30-day expiry**. `session.user.id` and `session.user.role` are added via a custom `callbacks.jwt` handler.
 
 Password reset flow: POST `/api/auth/forgot-password` → store `PasswordResetToken` → email link → POST `/api/auth/reset-password` with token → mark token used → update password hash.
+
+Route protection is handled by `proxy.ts` (Next.js 16+ replaces `middleware.ts`). Protected routes: `/admin/*`, `/profile`, `/events/new`.
 
 ---
 
 ## Background Jobs
 
-### Vercel Cron
+Two cron jobs configured in `vercel.json`:
 
-`vercel.json` configures one cron job:
+### Reminders (`/api/cron/reminders`)
+Schedule: `0 3 * * *` (3 AM daily)
 
-```json
-{ "path": "/api/cron/reminders", "schedule": "0 * * * *" }
-```
-
-Fires every hour. The handler:
 1. Finds events starting in each reminder window (with ±5 min buffer)
 2. Loads all RSVPs for those events
 3. Checks `ReminderLog` to skip already-sent reminders
 4. Sends emails via `lib/mailer.ts` (nodemailer)
 5. Writes a `ReminderLog` row on success
+
+### Cleanup Events (`/api/cron/cleanup-events`)
+Schedule: `30 19 * * *` (7:30 PM daily)
+
+Removes or archives expired/stale events from the database.
+
+Both endpoints require `Authorization: Bearer <CRON_SECRET>`.
 
 ---
 
@@ -349,3 +431,5 @@ Fires every hour. The handler:
 **Why `reactStrictMode: false`?** Leaflet and Three.js both attach imperative handles to the DOM. React 18 strict mode double-invokes effects in development, which causes map tiles and 3D canvases to flicker or crash. Disabled intentionally.
 
 **Why `geography` instead of `geometry`?** `geography` uses WGS-84 (degrees) and computes distances in metres on a spherical earth without requiring a projection. `ST_DWithin` on a geography column with a GIST index is the simplest correct choice for "events within X metres of the user."
+
+**Why `DIRECT_URL` in addition to `DATABASE_URL`?** Connection poolers (PgBouncer, Neon's pooler) can break Prisma migrations that require advisory locks and multiple sequential statements. `DIRECT_URL` bypasses the pooler for migrations only.

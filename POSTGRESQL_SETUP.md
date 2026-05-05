@@ -65,12 +65,14 @@ Update your `.env.local` file with your PostgreSQL credentials:
 
 ```
 DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/ilaka_events?schema=public
-SHADOW_DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/ilaka_shadow?schema=public
+DIRECT_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/ilaka_events?schema=public
 NEXTAUTH_SECRET=dev-secret-key-change-in-production
 NEXTAUTH_URL=http://localhost:3000
 ```
 
 **Replace `YOUR_PASSWORD` with the password you set during PostgreSQL installation.**
+
+> Note: For a local setup, `DATABASE_URL` and `DIRECT_URL` can point to the same database. `DIRECT_URL` is used by Prisma for migrations (bypasses connection poolers like PgBouncer).
 
 ## Step 5: Enable PostGIS Extension
 

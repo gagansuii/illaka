@@ -1,4 +1,4 @@
-# Illaka — Production Readiness TODO
+# ILAKA — Production Readiness TODO
 
 Items are roughly ordered by impact. Strike through when done.
 
@@ -6,7 +6,7 @@ Items are roughly ordered by impact. Strike through when done.
 
 ## Critical — Security
 
-- [ ] **Security headers** — add CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy to `next.config.mjs`
+- [x] **Security headers** — CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, HSTS added to `next.config.mjs`
 - [ ] **Rate limit auth endpoints** — apply `rateLimit()` to `/api/auth/register`, `/api/auth/forgot-password`, `/api/auth/reset-password`, and `/api/auth/[...nextauth]` login attempts
 - [ ] **File upload hardening** — validate actual MIME type (not just extension), enforce 5 MB size limit, restrict to image/* only
 - [ ] **Password strength** — require at least one uppercase, one number, one special character (update Zod schema + UI feedback)
@@ -18,9 +18,9 @@ Items are roughly ordered by impact. Strike through when done.
 
 ## Critical — Reliability
 
-- [ ] **Error pages** — create `app/not-found.tsx` (404), `app/error.tsx` (route-level), `app/global-error.tsx` (root fallback)
-- [ ] **Loading skeletons** — add `app/(user)/discover/loading.tsx`, `app/(user)/events/[id]/loading.tsx`
-- [ ] **Health check endpoint** — `/api/health` returns DB connectivity status and version; used by uptime monitors and load balancers
+- [x] **Error pages** — `app/error.tsx` (route-level), `app/global-error.tsx` (root fallback), `app/not-found.tsx` (404) all implemented
+- [ ] **Loading skeletons** — add `app/(user)/discover/loading.tsx`, `app/(user)/events/[id]/loading.tsx` (event detail has one; discover missing)
+- [x] **Health check endpoint** — `/api/health` returns DB connectivity status; secured with `HEALTH_SECRET` or `CRON_SECRET`
 - [ ] **Prisma connection pooling** — configure `connection_limit` and `pool_timeout` in `DATABASE_URL` or PrismaClient options for production concurrency
 
 ---
@@ -29,8 +29,8 @@ Items are roughly ordered by impact. Strike through when done.
 
 - [ ] **Dynamic event metadata** — add `generateMetadata` to `app/(user)/events/[id]/page.tsx` with event title, description, image (OpenGraph + Twitter card)
 - [ ] **Root layout OpenGraph** — add `og:image`, `og:type`, `twitter:card` to root `app/layout.tsx` metadata
-- [ ] **robots.txt** — create `app/robots.ts` (allow public event pages, disallow admin/api)
-- [ ] **Sitemap** — create `app/sitemap.ts` listing public event pages and static routes
+- [x] **robots.txt** — `app/robots.ts` implemented (allows public event pages, disallows admin/api)
+- [x] **Sitemap** — `app/sitemap.ts` lists public event pages and static routes
 - [ ] **Canonical URLs** — add canonical link tag to event pages to prevent duplicate-content issues
 
 ---
@@ -48,7 +48,8 @@ Items are roughly ordered by impact. Strike through when done.
 
 ## Medium — Features
 
-- [ ] **Event editing** — verify `app/(user)/events/[id]/edit/page.tsx` is fully wired and handles `paymentQrUrl`, `eventType`, `onlineLink`; update the PUT API accordingly
+- [x] **Event editing** — `app/(user)/events/[id]/edit/` page implemented
+- [x] **Ticket system** — RSVPs generate a unique `ticketId`; `/tickets/[rsvpId]` page shows digital ticket; `/api/tickets/[rsvpId]` serves ticket data
 - [ ] **Attendance check-in** — organisers mark attendees as attended (QR scan or manual); updates engagement score
 - [ ] **User avatar upload** — profile page image upload using same `/api/upload` pattern (folder: `ilaka/avatars`)
 - [ ] **Event image in reminder email** — include event banner in the reminder email HTML for better engagement
@@ -80,7 +81,7 @@ Items are roughly ordered by impact. Strike through when done.
 ## Low — Developer Experience
 
 - [ ] **CI pipeline** — add GitHub Actions workflow: lint → type-check (`tsc --noEmit`) → build on every PR
-- [ ] **Environment example** — keep `.env.example` up to date with all current vars (`SMTP_*`, `CRON_SECRET`, `RAZORPAY_UPI_VPA`, etc.)
+- [ ] **Environment example** — keep `.env.example` up to date with all current vars (`SMTP_*`, `CRON_SECRET`, `HEALTH_SECRET`, `DIRECT_URL`, etc.)
 - [ ] **Migration script** — document the `prisma:deploy` + `prisma:generate` steps in a `scripts/deploy.sh` for production deploys
 - [ ] **Seed script** — create a `prisma/seed.ts` with realistic test data (users, events near a configurable city) for staging environment setup
 
