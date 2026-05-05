@@ -104,6 +104,7 @@ async def check_achievements(db: AsyncSession, user_id: str) -> list[str]:
     Run criteria checks and unlock any newly earned achievements.
     Returns list of newly unlocked achievement slugs.
     """
+    from app.models.attendance import Attendance
     from app.models.community.post import Post
     from app.models.community.follow import Follow
     from app.models.event import Event
@@ -111,9 +112,7 @@ async def check_achievements(db: AsyncSession, user_id: str) -> list[str]:
 
     # Gather stats
     attend_count = await db.scalar(
-        select(func.count()).where(
-            __import__("app.models.attendance", fromlist=["Attendance"]).Attendance.user_id == user_id
-        )
+        select(func.count()).where(Attendance.user_id == user_id)
     ) or 0
     host_count = await db.scalar(
         select(func.count()).where(Event.organizer_id == user_id)

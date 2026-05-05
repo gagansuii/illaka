@@ -15,6 +15,8 @@ from app.database.session import AsyncSessionLocal
 from app.middleware.logging import RequestLoggingMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.websockets.manager import manager
+# Celery app import registers all tasks at startup
+from app.workers.celery_app import celery_app as _celery  # noqa: F401
 
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
@@ -26,11 +28,40 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting %s v%s [%s]", settings.APP_NAME, settings.APP_VERSION, settings.ENVIRONMENT)
+    # Seed achievement catalogue on first boot (idempotent)
+    await _seed_achievements()
     # Start WebSocket Redis subscriber
     manager.start_subscriber()
     yield
     manager.stop_subscriber()
     logger.info("Shutdown complete")
+
+
+async def _seed_achievements() -> None:
+    """Upsert achievement catalogue rows — safe to run on every startup."""
+    from sqlalchemy import select
+    from app.database.session import AsyncSessionLocal
+    from app.models.gamification.achievement import Achievement, ACHIEVEMENT_CATALOGUE
+    from app.models.base import generate_uuid
+    from app.workers.gamification_tasks import _slug_to_criteria
+
+    async with AsyncSessionLocal() as db:
+        for entry in ACHIEVEMENT_CATALOGUE:
+            existing = (await db.execute(
+                select(Achievement).where(Achievement.slug == entry["slug"])
+            )).scalar_one_or_none()
+            if not existing:
+                db.add(Achievement(
+                    id=generate_uuid(),
+                    slug=entry["slug"],
+                    name=entry["name"],
+                    description=entry["description"],
+                    tier=entry["tier"],
+                    xp_reward=entry["xp_reward"],
+                    criteria=_slug_to_criteria(entry["slug"]),
+                ))
+        await db.commit()
+    logger.info("Achievement catalogue seeded")
 
 
 app = FastAPI(
@@ -62,21 +93,41 @@ app.include_router(v1_router)
 # ─── WebSocket endpoint ───────────────────────────────────────────────────────
 
 @app.websocket("/ws")
-async def websocket_endpoint(ws: WebSocket, token: str):
+async def websocket_endpoint(ws: WebSocket):
     """
     Authenticated WebSocket connection.
-    Query param: ?token=<jwt_access_token>
 
-    The client authenticates once via the token param.
-    After connection, the same WebSocket handles:
+    After connecting, the client MUST send a JSON auth message as the FIRST message:
+      {"action": "auth", "token": "<jwt_access_token>"}
+
+    The connection is closed with code 4001 if:
+      - The first message is not an auth message
+      - The token is invalid
+      - No message arrives within 10 seconds
+
+    After authentication, the WebSocket handles:
       - Chat messages (join_room / send_message)
       - Real-time notifications (pushed server → client)
       - Typing indicators
       - Read receipts
     """
-    # Authenticate
+    await ws.accept()
+    import asyncio, json as _json
+
+    # Wait up to 10s for the auth handshake
     try:
-        payload = verify_access_token(token)
+        raw = await asyncio.wait_for(ws.receive_text(), timeout=10.0)
+        msg = _json.loads(raw)
+    except (asyncio.TimeoutError, Exception):
+        await ws.close(code=4001, reason="Auth timeout")
+        return
+
+    if msg.get("action") != "auth" or not msg.get("token"):
+        await ws.close(code=4001, reason="Expected auth message")
+        return
+
+    try:
+        payload = verify_access_token(msg["token"])
         user_id: str | None = payload.get("sub")
         if not user_id:
             await ws.close(code=4001, reason="Invalid token")

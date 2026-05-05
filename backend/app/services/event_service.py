@@ -100,10 +100,20 @@ async def create_event(
     await db.refresh(event)
     await events_cache.clear()
 
-    # Best-effort AI indexing (non-blocking)
+    # Auto-create community hub and index in AI — both best-effort
     asyncio.create_task(_index_event_ai(event.id, event.title, event.description, lat, lng))
+    asyncio.create_task(_create_event_community(db, event.id, organizer_id))
 
     return _sanitize_event(event)
+
+
+async def _create_event_community(db: AsyncSession, event_id: str, organizer_id: str) -> None:
+    try:
+        from app.services.community_service import get_or_create_for_event
+        await get_or_create_for_event(db, event_id, organizer_id)
+        await db.commit()
+    except Exception:
+        pass  # Non-critical — community hub can be created later
 
 
 async def _index_event_ai(

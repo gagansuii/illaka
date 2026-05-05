@@ -3,6 +3,7 @@ Async email system via Gmail SMTP.
 Silently skips if EMAIL_USER / EMAIL_APP_PASSWORD are not configured.
 """
 import logging
+import smtplib
 from dataclasses import dataclass
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -110,6 +111,46 @@ async def send_reminder_email(
     </div>
     """
     return await _send(to, subject, html)
+
+
+def send_reminder_email_sync(
+    to: str,
+    user_name: str,
+    event_title: str,
+    event_date: str,
+    event_type: str,
+    online_link: str | None = None,
+) -> None:
+    """Synchronous reminder email for Celery workers (uses smtplib, not aiosmtplib)."""
+    if not settings.email_configured:
+        return
+
+    location_block = (
+        f'<p>Join online: <a href="{online_link}">{online_link}</a></p>'
+        if event_type == "ONLINE" and online_link
+        else "<p>See the event page for location details.</p>"
+    )
+    html = f"""
+    <div style="font-family:sans-serif;max-width:600px;margin:auto">
+      <h2 style="color:#6d28d9">Reminder: {event_title}</h2>
+      <p>Hi {user_name}, your event starts on <strong>{event_date}</strong></p>
+      {location_block}
+      <p style="color:#888;font-size:12px;margin-top:24px">
+        You received this because you RSVPed on Illaka.
+      </p>
+    </div>
+    """
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"Reminder: {event_title}"
+    msg["From"] = f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_USER}>"
+    msg["To"] = to
+    msg.attach(MIMEText(html, "html"))
+
+    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as conn:
+        conn.ehlo()
+        conn.starttls()
+        conn.login(settings.EMAIL_USER, settings.EMAIL_APP_PASSWORD)
+        conn.sendmail(settings.EMAIL_USER, to, msg.as_string())
 
 
 async def send_password_reset_email(to: str, reset_url: str) -> bool:

@@ -44,6 +44,9 @@ async def create_rsvp(
     from app.caching.events_cache import events_cache
     await events_cache.clear()
 
+    # Award XP for RSVPing (best-effort, non-blocking)
+    asyncio.create_task(_award_rsvp_xp(db, user_id, rsvp.id))
+
     # Non-blocking ticket email
     ticket_url = f"{ticket_base_url}/tickets/{rsvp.id}"
     email_data = TicketEmailData(
@@ -63,6 +66,16 @@ async def create_rsvp(
     asyncio.create_task(send_ticket_email(email_data))
 
     return {"ok": True, "rsvp_id": rsvp.id}
+
+
+async def _award_rsvp_xp(db: AsyncSession, user_id: str, rsvp_id: str) -> None:
+    try:
+        from app.services.gamification_service import award_xp
+        from app.models.gamification.xp_log import XPAction
+        await award_xp(db, user_id, XPAction.RSVP_EVENT, ref_id=rsvp_id)
+        await db.commit()
+    except Exception:
+        pass
 
 
 async def record_share(

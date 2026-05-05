@@ -2,10 +2,12 @@
 Community feed endpoints — posts, comments, reactions, bookmarks.
 """
 import asyncio
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user, get_current_user_optional
+from app.caching.redis_client import cache
+from app.core.exceptions import RateLimitError
 from app.database.session import get_db
 from app.models.user import User
 from app.models.community.reaction import ReactionType
@@ -48,9 +50,12 @@ async def get_feed(
 @router.post("/posts", response_model=PostResponse, status_code=201)
 async def create_post(
     data: PostCreate,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if not await cache.rate_limit(f"create_post:{current_user.id}", limit=10, window=60):
+        raise RateLimitError("Too many posts — slow down")
     post = await feed_service.create_post(db, author_id=current_user.id, data=data)
     asyncio.create_task(award_xp(db, current_user.id, XPAction.CREATE_POST, ref_id=post.id))
     asyncio.create_task(check_achievements(db, current_user.id))
@@ -132,9 +137,12 @@ async def get_saved_posts(
 async def add_comment(
     post_id: str,
     data: CommentCreate,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if not await cache.rate_limit(f"comment:{current_user.id}", limit=30, window=60):
+        raise RateLimitError("Too many comments — slow down")
     comment = await feed_service.add_comment(
         db, post_id, current_user.id, data.body, data.parent_id
     )
