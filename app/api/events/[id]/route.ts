@@ -1,106 +1,40 @@
 import { NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
-import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { z } from 'zod';
-import { sanitizeEventMedia } from '@/lib/media';
-import { clearEventsCache } from '@/lib/events-cache';
 import { getDatabaseErrorDetails } from '@/lib/database-errors';
+import { z } from 'zod';
+import { eventsService } from '@/src/modules/events/events.service';
+import { handleError } from '@/src/core/response';
 
 const updateSchema = z.object({
   title: z.string().min(3).max(200).optional(),
   description: z.string().min(10).max(5000).optional(),
-  visibility: z.enum(['PUBLIC', 'PRIVATE']).optional()
+  visibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),
 });
 
-// Safe select that works even when paymentQrUrl hasn't been migrated yet
-const SAFE_EVENT_SELECT = {
-  id: true,
-  title: true,
-  description: true,
-  bannerUrl: true,
-  badgeIcon: true,
-  latitude: true,
-  longitude: true,
-  startTime: true,
-  endTime: true,
-  visibility: true,
-  capacity: true,
-  organizerId: true,
-  isPaid: true,
-  engagementScore: true,
-  createdAt: true,
-  updatedAt: true,
-} as const;
-
 type RouteContext = { params: Promise<{ id: string }> };
-
-async function fetchEvent(id: string) {
-  // Try with paymentQrUrl and shareToken first; fall back to base columns if columns don't exist
-  try {
-    return await prisma.event.findUnique({
-      where: { id },
-      select: { ...SAFE_EVENT_SELECT, paymentQrUrl: true, shareToken: true, eventType: true, onlineLink: true, linkShareMode: true }
-    });
-  } catch {
-    try {
-      return await prisma.event.findUnique({
-        where: { id },
-        select: { ...SAFE_EVENT_SELECT, paymentQrUrl: true }
-      });
-    } catch {
-      const event = await prisma.event.findUnique({ where: { id }, select: SAFE_EVENT_SELECT });
-      return event ? { ...event, paymentQrUrl: null, shareToken: null, eventType: null, onlineLink: null, linkShareMode: null } : null;
-    }
-  }
-}
 
 export async function GET(req: Request, { params }: RouteContext) {
   const { id } = await params;
   const token = new URL(req.url).searchParams.get('token');
+  const session = await getServerSession(authOptions);
 
-  let event;
   try {
-    event = await fetchEvent(id);
+    const event = await eventsService.getById(id, {
+      token,
+      userId: session?.user?.id ?? null,
+      role: session?.user?.role ?? null,
+    });
+    return NextResponse.json({ event });
   } catch (err) {
-    console.error('Event fetch failed:', err);
-    const details = getDatabaseErrorDetails(err);
-    return NextResponse.json({ error: details.message }, { status: details.status });
+    return handleError(err);
   }
-  if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
-  if (event.visibility === 'PRIVATE') {
-    const tokenValid = token && (event as any).shareToken && token === (event as any).shareToken;
-    if (!tokenValid) {
-      const session = await getServerSession(authOptions);
-      const userId = session?.user?.id;
-      if (!userId || (event.organizerId !== userId && session?.user?.role !== 'ADMIN')) {
-        return NextResponse.json({ error: 'Not found' }, { status: 404 });
-      }
-    }
-  }
-
-  return NextResponse.json({ event: sanitizeEventMedia(event) });
 }
 
 export async function PUT(req: Request, { params }: RouteContext) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  let event;
-  try {
-    event = await prisma.event.findUnique({ where: { id }, select: { id: true, organizerId: true } });
-  } catch (err) {
-    console.error('Event fetch failed:', err);
-    const details = getDatabaseErrorDetails(err);
-    return NextResponse.json({ error: details.message }, { status: details.status });
-  }
-  if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (event.organizerId !== session.user.id && session.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
 
   let body: unknown;
   try { body = await req.json(); } catch {
@@ -109,18 +43,12 @@ export async function PUT(req: Request, { params }: RouteContext) {
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
 
-  let updated;
   try {
-    updated = await prisma.event.update({ where: { id }, data: parsed.data });
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
-    throw error;
+    const event = await eventsService.update(id, parsed.data, session.user.id, session.user.role ?? 'USER');
+    return NextResponse.json({ event });
+  } catch (err) {
+    return handleError(err);
   }
-
-  clearEventsCache();
-  return NextResponse.json({ event: updated });
 }
 
 export async function DELETE(_: Request, { params }: RouteContext) {
@@ -128,37 +56,10 @@ export async function DELETE(_: Request, { params }: RouteContext) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  let event;
   try {
-    event = await prisma.event.findUnique({ where: { id }, select: { id: true, organizerId: true } });
+    await eventsService.delete(id, session.user.id, session.user.role ?? 'USER');
+    return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('Event fetch failed:', err);
-    const details = getDatabaseErrorDetails(err);
-    return NextResponse.json({ error: details.message }, { status: details.status });
+    return handleError(err);
   }
-  if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (event.organizerId !== session.user.id && session.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
-  try {
-    await prisma.$transaction([
-      prisma.reminderLog.deleteMany({ where: { eventId: id } }),
-      prisma.attendance.deleteMany({ where: { eventId: id } }),
-      prisma.share.deleteMany({ where: { eventId: id } }),
-      prisma.like.deleteMany({ where: { eventId: id } }),
-      prisma.rSVP.deleteMany({ where: { eventId: id } }),
-      prisma.payment.updateMany({ where: { eventId: id }, data: { eventId: null } }),
-      prisma.event.delete({ where: { id } }),
-    ]);
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
-    console.error('Event delete failed:', error);
-    const details = getDatabaseErrorDetails(error);
-    return NextResponse.json({ error: details.message }, { status: details.status });
-  }
-  clearEventsCache();
-  return NextResponse.json({ ok: true });
 }

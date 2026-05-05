@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
+import { usersService } from '@/src/modules/users/users.service';
+import { handleError } from '@/src/core/response';
 
 const schema = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
-  radius: z.number().positive().optional()
+  radius: z.number().positive().optional(),
 });
 
 export async function POST(req: Request) {
@@ -15,27 +16,16 @@ export async function POST(req: Request) {
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
+  try { body = await req.json(); } catch {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
   }
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
 
   try {
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: {
-        latitude: parsed.data.latitude,
-        longitude: parsed.data.longitude,
-        radiusPreference: parsed.data.radius ?? undefined
-      }
-    });
+    await usersService.updateLocation(session.user.id, parsed.data);
+    return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('Location update failed:', err);
-    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    return handleError(err);
   }
-
-  return NextResponse.json({ ok: true });
 }
