@@ -23,16 +23,6 @@ async def update_profile(
         await user_repo.update_fields(db, user_id, **fields)
 
 
-async def update_social_profile(
-    db: AsyncSession,
-    user_id: str,
-    data: dict,
-) -> None:
-    fields = {k: v for k, v in data.items() if v is not None}
-    if fields:
-        await user_repo.update_fields(db, user_id, **fields)
-
-
 async def update_location(
     db: AsyncSession,
     user_id: str,

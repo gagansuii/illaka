@@ -1,9 +1,7 @@
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
-from app.caching.redis_client import cache
-from app.core.exceptions import RateLimitError
 from app.database.session import get_db
 from app.models.user import User
 from app.services.gamification_service import (
@@ -24,13 +22,10 @@ async def my_gamification_profile(
 
 @router.post("/checkin")
 async def daily_checkin(
-    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Record a daily login — updates streak, awards XP."""
-    if not await cache.rate_limit(f"checkin:{current_user.id}", limit=5, window=3600):
-        raise RateLimitError("Already checked in")
     streak = await check_and_update_streak(db, current_user.id)
     from app.services.gamification_service import award_xp
     from app.models.gamification.xp_log import XPAction

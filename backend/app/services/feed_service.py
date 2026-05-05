@@ -14,14 +14,7 @@ Ranking formula (for_you / trending):
 Pagination: keyset cursor = ISO datetime string of the last post's created_at.
 """
 import re
-import bleach
 from datetime import datetime, timedelta, timezone
-
-_ALLOWED_TAGS: list[str] = []  # strip all HTML tags — store plain text only
-
-
-def _sanitize_body(text: str) -> str:
-    return bleach.clean(text, tags=_ALLOWED_TAGS, strip=True).strip()
 
 from sqlalchemy import func, select, text, update, and_, or_
 from sqlalchemy.orm import selectinload
@@ -231,7 +224,7 @@ async def create_post(
         author_id=author_id,
         post_type=data.post_type,
         visibility=data.visibility,
-        body=_sanitize_body(data.body) if data.body else data.body,
+        body=data.body,
         media_urls=data.media_urls,
         poll_data=data.poll_data,
         event_id=data.event_id,
@@ -279,7 +272,7 @@ async def update_post(
         raise ForbiddenError()
 
     if data.body is not None:
-        post.body = _sanitize_body(data.body)
+        post.body = data.body
     if data.visibility is not None:
         post.visibility = data.visibility
 
@@ -364,7 +357,7 @@ async def add_comment(
             raise NotFoundError("Parent comment not found")
         parent.reply_count += 1
 
-    comment = Comment(post_id=post_id, author_id=author_id, body=_sanitize_body(body), parent_id=parent_id)
+    comment = Comment(post_id=post_id, author_id=author_id, body=body, parent_id=parent_id)
     db.add(comment)
     post.comment_count += 1
     await db.flush()

@@ -1,12 +1,10 @@
 """
 Event community endpoints — join/leave, posts within a community, member management.
 """
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user, get_current_user_optional
-from app.caching.redis_client import cache
-from app.core.exceptions import RateLimitError
 from app.database.session import get_db
 from app.models.user import User
 from app.models.community.event_community import CommunityRole
@@ -33,12 +31,9 @@ async def get_community(
 @router.post("/{community_id}/join", response_model=CommunityJoinResponse)
 async def join_community(
     community_id: str,
-    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    if not await cache.rate_limit(f"join_community:{current_user.id}", limit=10, window=60):
-        raise RateLimitError("Too many join requests")
     result = await community_service.join(db, community_id, current_user.id)
     from app.services.gamification_service import award_xp
     from app.models.gamification.xp_log import XPAction
@@ -92,12 +87,9 @@ async def get_community_feed(
 async def create_community_post(
     community_id: str,
     data: PostCreate,
-    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    if not await cache.rate_limit(f"community_post:{current_user.id}", limit=10, window=60):
-        raise RateLimitError("Too many posts — slow down")
     # Verify membership
     from sqlalchemy import select
     from app.models.community.event_community import CommunityMember

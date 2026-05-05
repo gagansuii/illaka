@@ -19,7 +19,6 @@ from app.api.v1.community.router import router as community_router
 from app.api.v1.chat.router import router as chat_router
 from app.api.v1.notifications.router import router as notifications_router
 from app.api.v1.gamification.router import router as gamification_router
-from app.api.v1.moderation.router import router as moderation_router
 
 v1_router = APIRouter(prefix="/api/v1")
 
@@ -43,4 +42,3 @@ v1_router.include_router(community_router)
 v1_router.include_router(chat_router)
 v1_router.include_router(notifications_router)
 v1_router.include_router(gamification_router)
-v1_router.include_router(moderation_router)

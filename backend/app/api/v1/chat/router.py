@@ -2,13 +2,11 @@
 Chat HTTP endpoints (room management, message history).
 Real-time messaging is handled by the /ws WebSocket endpoint in main.py.
 """
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
-from app.caching.redis_client import cache
-from app.core.exceptions import RateLimitError
 from app.database.session import get_db
 from app.models.chat.room import ChatRoom
 from app.models.chat.message import ChatMessage
@@ -24,12 +22,9 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 @router.post("/rooms", response_model=RoomResponse, status_code=201)
 async def create_room(
     data: RoomCreate,
-    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    if not await cache.rate_limit(f"create_room:{current_user.id}", limit=5, window=60):
-        raise RateLimitError("Too many room creation requests")
     room = ChatRoom(
         id=generate_uuid(),
         name=data.name,

@@ -1,12 +1,10 @@
 """
 Social graph endpoints: follow, unfollow, followers, following, user profiles.
 """
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user, get_current_user_optional
-from app.caching.redis_client import cache
-from app.core.exceptions import RateLimitError
 from app.database.session import get_db
 from app.models.user import User
 from app.services import follow_service
@@ -18,12 +16,9 @@ router = APIRouter(prefix="/social", tags=["social"])
 @router.post("/users/{user_id}/follow", response_model=FollowResponse)
 async def follow_user(
     user_id: str,
-    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    if not await cache.rate_limit(f"follow:{current_user.id}", limit=20, window=60):
-        raise RateLimitError("Too many follow actions")
     result = await follow_service.follow(db, follower_id=current_user.id, target_id=user_id)
     # Fire-and-forget: notify the followed user
     from app.services.notification_service import notify_new_follower

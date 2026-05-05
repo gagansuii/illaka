@@ -41,14 +41,14 @@ def send_event_reminders(self):
     from app.models.rsvp import RSVP
     from app.models.reminder_log import ReminderLog, ReminderType
     from app.models.user import User
+    from app.integrations.mailer import send_reminder_email_sync
 
     now = datetime.now(timezone.utc)
     buffer = timedelta(minutes=5)
-    # Use the actual enum values defined in reminder_log.py
     windows = [
-        (ReminderType.SIX_HOURS, timedelta(hours=6), ["PHYSICAL"]),
-        (ReminderType.ONE_HOUR, timedelta(hours=1), ["PHYSICAL", "ONLINE"]),
-        (ReminderType.ONE_DAY, timedelta(days=1), ["ONLINE"]),
+        (ReminderType.h6, timedelta(hours=6), ["PHYSICAL"]),
+        (ReminderType.h1, timedelta(hours=1), ["PHYSICAL", "ONLINE"]),
+        (ReminderType.d1, timedelta(days=1), ["ONLINE"]),
     ]
 
     session = _get_sync_session()
