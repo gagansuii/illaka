@@ -95,6 +95,16 @@ class Settings(BaseSettings):
     # ─── CORS ───────────────────────────────────────────────────────────────
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:3001"]
 
+    # ─── Community / Push ────────────────────────────────────────────────────
+    FCM_SERVER_KEY: str | None = None
+    FLOWER_PASSWORD: str = "ilaka"
+    RETENTION_DAYS: int = 30
+
+    # ─── Feature flags ───────────────────────────────────────────────────────
+    REQUIRE_EMAIL_VERIFICATION: bool = False
+    ENABLE_GAMIFICATION: bool = True
+    ENABLE_COMMUNITY_FEED: bool = True
+
     # ─── Derived helpers ────────────────────────────────────────────────────
     @property
     def is_production(self) -> bool:

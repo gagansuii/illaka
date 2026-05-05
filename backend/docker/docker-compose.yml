@@ -1,32 +1,53 @@
 version: "3.9"
 
+# ─── Shared environment ────────────────────────────────────────────────────────
+x-api-env: &api-env
+  DATABASE_URL: postgresql+asyncpg://ilaka:ilaka@db:5432/ilaka_db
+  REDIS_URL: redis://redis:6379/0
+  ENVIRONMENT: production
+
+x-depends: &core-depends
+  db:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
+
 services:
+
+  # ── PostgreSQL + PostGIS ─────────────────────────────────────────────────────
   db:
     image: postgis/postgis:16-3.4
     environment:
-      POSTGRES_USER: illaka
-      POSTGRES_PASSWORD: illaka
-      POSTGRES_DB: illaka_db
+      POSTGRES_USER: ilaka
+      POSTGRES_PASSWORD: ilaka
+      POSTGRES_DB: ilaka_db
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U illaka -d illaka_db"]
+      test: ["CMD-SHELL", "pg_isready -U ilaka -d ilaka_db"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
+  # ── Redis (cache + pub/sub + Celery broker) ──────────────────────────────────
   redis:
     image: redis:7-alpine
+    command: redis-server --save 60 1 --loglevel warning
     ports:
       - "6379:6379"
+    volumes:
+      - redisdata:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
+    restart: unless-stopped
 
+  # ── FastAPI (Gunicorn + Uvicorn workers) ──────────────────────────────────────
   api:
     build:
       context: ..
@@ -36,14 +57,90 @@ services:
     env_file:
       - ../.env
     environment:
-      DATABASE_URL: postgresql+asyncpg://illaka:illaka@db:5432/illaka_db
-      REDIS_URL: redis://redis:6379/0
+      <<: *api-env
+    depends_on:
+      <<: *core-depends
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Celery Worker (default + notifications queues) ────────────────────────────
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: >
+      celery -A app.workers.celery_app worker
+      --loglevel=info
+      --concurrency=4
+      --queues=default,notifications,feed
+      --hostname=worker@%h
+    env_file:
+      - ../.env
+    environment:
+      <<: *api-env
+    depends_on:
+      <<: *core-depends
+    restart: unless-stopped
+
+  # ── Celery Beat (periodic task scheduler) ────────────────────────────────────
+  beat:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: >
+      celery -A app.workers.celery_app beat
+      --loglevel=info
+      --scheduler celery.beat:PersistentScheduler
+    env_file:
+      - ../.env
+    environment:
+      <<: *api-env
+    depends_on:
+      <<: *core-depends
+    restart: unless-stopped
+
+  # ── Flower (Celery monitoring UI) ─────────────────────────────────────────────
+  flower:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: >
+      celery -A app.workers.celery_app flower
+      --port=5555
+      --basic_auth=admin:${FLOWER_PASSWORD:-ilaka}
+    ports:
+      - "5555:5555"
+    env_file:
+      - ../.env
+    environment:
+      <<: *api-env
+    depends_on:
+      - redis
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # ── Alembic migrations (one-shot, exits after run) ────────────────────────────
+  migrate:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: alembic upgrade head
+    env_file:
+      - ../.env
+    environment:
+      <<: *api-env
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
+    restart: "no"
+    profiles:
+      - migrate
 
 volumes:
   pgdata:
+  redisdata:
