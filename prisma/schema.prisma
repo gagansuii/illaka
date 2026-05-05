@@ -37,6 +37,7 @@ model User {
   email            String   @unique
   password         String
   role             Role     @default(USER)
+  emailVerified    Boolean  @default(false)
   latitude         Float?
   longitude        Float?
   radiusPreference Int      @default(5000)
@@ -44,15 +45,29 @@ model User {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  events           Event[]  @relation("OrganizerEvents")
-  rsvps            RSVP[]
-  likes            Like[]
-  shares           Share[]
-  attendance       Attendance[]
-  subscriptions    Subscription[]
-  payments         Payment[]
-  passwordResets   PasswordResetToken[]
-  reminderLogs     ReminderLog[]
+  events                  Event[]  @relation("OrganizerEvents")
+  rsvps                   RSVP[]
+  likes                   Like[]
+  shares                  Share[]
+  attendance              Attendance[]
+  subscriptions           Subscription[]
+  payments                Payment[]
+  passwordResets          PasswordResetToken[]
+  reminderLogs            ReminderLog[]
+  emailVerificationTokens EmailVerificationToken[]
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Event {

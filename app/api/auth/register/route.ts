@@ -30,6 +30,8 @@ export async function POST(req: Request) {
 
   try {
     const { id } = await authService.register(parsed.data.name, parsed.data.email, parsed.data.password, ip);
+    // Non-blocking: send verification email; failure doesn't break registration
+    authService.sendVerificationEmail(id, parsed.data.email).catch(() => undefined);
     return NextResponse.json({ id });
   } catch (err) {
     // DB-specific errors get a friendlier message

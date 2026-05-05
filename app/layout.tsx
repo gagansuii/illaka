@@ -4,6 +4,7 @@ import { Newsreader, Manrope, Space_Grotesk, Fraunces, Caveat, Instrument_Serif,
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { AuthProvider } from '@/components/AuthProvider';
 import { RouteTransitionProvider } from '@/components/RouteTransitionProvider';
+import { PostHogProvider } from '@/components/PostHogProvider';
 
 const newsreader = Newsreader({ subsets: ['latin'], variable: '--font-newsreader', weight: ['200', '300', '400', '500', '600', '700', '800'], style: ['normal', 'italic'], display: 'swap' });
 const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope', weight: ['200', '300', '400', '500', '600', '700', '800'], display: 'swap' });
@@ -40,7 +41,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${newsreader.variable} ${manrope.variable} ${space.variable} ${fraunces.variable} ${caveat.variable} ${instrumentSerif.variable} ${spaceMono.variable} font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
-            <RouteTransitionProvider>{children}</RouteTransitionProvider>
+            <PostHogProvider>
+              <RouteTransitionProvider>{children}</RouteTransitionProvider>
+            </PostHogProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

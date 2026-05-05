@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 import { getEnv, getEnvOptional } from '@/lib/config';
 import { getRazorpayClient, isRazorpayConfigured } from '@/lib/razorpay';
+import { authService } from '@/src/modules/auth/auth.service';
+import { analytics } from '@/lib/posthog';
 import { ServiceError } from '@/src/core/errors';
 import { logger } from '@/src/core/logger';
 import { paymentsRepository } from './payments.repository';
@@ -26,6 +28,9 @@ export const paymentsService = {
     upiVpa: string | null;
   }> {
     if (!isRazorpayConfigured()) throw ServiceError.serviceUnavailable('Payments are not configured');
+
+    // Block unverified users from paying (gated by env var)
+    await authService.requireEmailVerified(input.userId);
 
     const isEventPayment = input.reason === 'hosting_fee' || input.reason === 'promotion';
     if (isEventPayment && !input.eventId) {
@@ -66,6 +71,8 @@ export const paymentsService = {
       logger.error('Failed to persist payment', { orderId: order.id, error: String(err) });
       throw ServiceError.badRequest('Internal error');
     }
+
+    analytics.paymentInitiated(input.userId, { reason: input.reason, amount, currency: input.currency });
 
     return {
       orderId: order.id,

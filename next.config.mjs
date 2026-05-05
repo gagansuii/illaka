@@ -36,8 +36,8 @@ const securityHeaders = [
       "font-src 'self'",
       // Frames: Razorpay payment iframe only
       "frame-src https://api.razorpay.com https://checkout.razorpay.com",
-      // Connections: self + required external services
-      "connect-src 'self' https://api.razorpay.com https://ipinfo.io https://ip-api.com https://api.openai.com https://*.pinecone.io",
+      // Connections: self + required external services + PostHog analytics
+      "connect-src 'self' https://api.razorpay.com https://ipinfo.io https://ip-api.com https://api.openai.com https://*.pinecone.io https://app.posthog.com https://eu.posthog.com https://*.posthog.com",
       // Workers: blob: required for Leaflet tile workers
       "worker-src 'self' blob:",
       // Prevent embedding in iframes from other origins

@@ -17,6 +17,8 @@ import { getOpenAIClient, getPineconeIndex, isOpenAIConfigured, isPineconeConfig
 import { prisma } from '@/lib/prisma';
 import { ServiceError } from '@/src/core/errors';
 import { logger } from '@/src/core/logger';
+import { authService } from '@/src/modules/auth/auth.service';
+import { analytics } from '@/lib/posthog';
 import { eventsRepository } from './events.repository';
 import type {
   CreateEventInput,
@@ -108,7 +110,11 @@ export const eventsService = {
       throw ServiceError.rateLimited();
     }
 
+    // Block unverified users from creating events (gated by env var)
+    await authService.requireEmailVerified(organizerId);
+
     const event = await eventsRepository.create({ ...input, organizerId });
+    analytics.eventCreated(organizerId, { eventId: event.id, visibility: input.visibility });
 
     // Best-effort Pinecone indexing — does not affect the response
     eventsService._indexInPinecone(event).catch((err) =>
@@ -169,6 +175,7 @@ export const eventsService = {
 
     recalcEngagementScore(eventId).catch(() => undefined);
     clearEventsCache();
+    analytics.rsvpCreated(userId, { eventId });
 
     eventsService._sendTicketEmail(rsvp, event, userId).catch((err) =>
       logger.error('Ticket email failed', { rsvpId: rsvp.id, error: String(err) }),
