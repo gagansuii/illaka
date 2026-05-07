@@ -210,7 +210,7 @@ const Onboard1 = () => (
         <div className="circle" style={{ width: 26, height: 26, background: 'var(--terra)' }}>
           <span style={{ color: 'var(--paper)', fontSize: 11 }}>✦</span>
         </div>
-        <span className="serif" style={{ fontSize: 20 }}>illaka</span>
+        <span className="serif" style={{ fontSize: 20 }}>ilaaka</span>
       </div>
 
       <div style={{ marginTop: 30 }}>

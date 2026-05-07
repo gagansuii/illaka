@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
@@ -38,7 +38,7 @@ const Stamp = ({ children, kind = 'terra' }: { children: React.ReactNode; kind?:
 );
 
 const Sep = ({ label }: { label: string }) => (
-  <div className="illaka-sep" style={{ margin: '18px 0 12px' }}>
+  <div className="ilaaka-sep" style={{ margin: '18px 0 12px' }}>
     <span>{label}</span>
   </div>
 );

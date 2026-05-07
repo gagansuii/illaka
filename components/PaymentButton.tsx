@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -60,7 +60,7 @@ export function PaymentButton({
       amount: data.amount,
       currency: 'INR',
       order_id: data.orderId,
-      name: 'ILLAKA',
+      name: 'ILAAKA',
       description: label,
       handler: () => {
         window.location.reload();

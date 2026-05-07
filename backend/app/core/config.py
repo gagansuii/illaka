@@ -1,4 +1,4 @@
-from functools import lru_cache
+﻿from functools import lru_cache
 from typing import Literal
 
 from pydantic import field_validator, model_validator
@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     )
 
     # ─── App ────────────────────────────────────────────────────────────────
-    APP_NAME: str = "Illaka API"
+    APP_NAME: str = "Ilaaka API"
     APP_VERSION: str = "2.0.0"
     ENVIRONMENT: Literal["development", "production", "test"] = "development"
     DEBUG: bool = False
@@ -81,7 +81,7 @@ class Settings(BaseSettings):
     # ─── Email ──────────────────────────────────────────────────────────────
     EMAIL_USER: str | None = None
     EMAIL_APP_PASSWORD: str | None = None
-    EMAIL_FROM_NAME: str = "Illaka"
+    EMAIL_FROM_NAME: str = "Ilaaka"
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
 

@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-illaka 2.0 -- end-to-end UI test via Playwright (headless Chromium)
+ilaaka 2.0 -- end-to-end UI test via Playwright (headless Chromium)
 Tests: login, register, home wall, discover/map, host flow, profile, event detail
 """
 
@@ -13,7 +13,7 @@ if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 
 BASE = "http://localhost:3000"
-SHOTS = r"C:\Users\acer\AppData\Local\Temp\illaka-screenshots"
+SHOTS = r"C:\Users\acer\AppData\Local\Temp\ilaaka-screenshots"
 os.makedirs(SHOTS, exist_ok=True)
 
 RESULTS = []
@@ -39,7 +39,7 @@ def test_login(page):
     time.sleep(0.8)
     shot(page, "01-login")
 
-    check("Logo wordmark visible", page.locator("text=illaka").count() > 0)
+    check("Logo wordmark visible", page.locator("text=ilaaka").count() > 0)
     check("Fraunces h1 headline present", page.locator("h1").first.is_visible())
     check("Email input present", page.locator('input[type="email"]').count() > 0)
     check("Password input present", page.locator('input[type="password"]').count() > 0)
@@ -174,7 +174,7 @@ def test_profile(page):
 
     check("LOCAL ID card present",
           page.locator("text=LOCAL ID").count() > 0
-          or page.locator("text=ILLAKA").count() > 0)
+          or page.locator("text=ILAAKA").count() > 0)
     check("Badges section present", page.locator("text=badges").count() > 0)
     check("My events section present", page.locator("text=my events").count() > 0)
     check("Edit button present", page.locator("text=EDIT").count() > 0)
@@ -220,7 +220,7 @@ def test_navigation(page):
     page.goto(f"{BASE}/", wait_until="networkidle")
     time.sleep(0.8)
 
-    check("Logo visible in nav", page.locator("text=illaka").count() > 0)
+    check("Logo visible in nav", page.locator("text=ilaaka").count() > 0)
     check("Bottom nav component rendered", page.locator(".bottom-nav").count() > 0)
     check("Host CTA reachable",
           page.locator("a[href='/events/new']").count() > 0

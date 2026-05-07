@@ -1,4 +1,4 @@
-"""
+﻿"""
 Stripe payment integration.
 Handles Checkout Sessions, Payment Intents, Subscriptions, Refunds, and Webhooks.
 """
@@ -70,7 +70,7 @@ async def create_checkout_session(
                 {
                     "price_data": {
                         "currency": currency.lower(),
-                        "product_data": {"name": f"Illaka — {reason.replace('_', ' ').title()}"},
+                        "product_data": {"name": f"Ilaaka — {reason.replace('_', ' ').title()}"},
                         "unit_amount": amount_cents,
                     },
                     "quantity": 1,

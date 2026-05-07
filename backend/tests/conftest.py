@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 from typing import AsyncGenerator
 
 import pytest
@@ -10,7 +10,7 @@ from app.database.session import get_db
 from app.main import app
 from app.models.base import Base
 
-TEST_DB_URL = "postgresql+asyncpg://illaka:illaka@localhost:5432/illaka_test"
+TEST_DB_URL = "postgresql+asyncpg://ilaaka:ilaaka@localhost:5432/ilaaka_test"
 
 test_engine = create_async_engine(TEST_DB_URL, echo=False)
 TestSessionLocal = async_sessionmaker(test_engine, expire_on_commit=False)

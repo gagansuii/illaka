@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+﻿import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -48,7 +48,7 @@ export async function sendTicketEmail(data: TicketEmailData) {
   const html = `
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"/><title>Your ILLAKA Ticket</title></head>
+<head><meta charset="UTF-8"/><title>Your ILAAKA Ticket</title></head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:system-ui,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 16px;">
     <tr><td align="center">
@@ -57,7 +57,7 @@ export async function sendTicketEmail(data: TicketEmailData) {
         <!-- Header -->
         <tr>
           <td style="background:linear-gradient(135deg,#0f766e 0%,#c8663f 100%);padding:32px 36px;">
-            <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.7);">ILLAKA · Event Ticket</p>
+            <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.7);">ILAAKA · Event Ticket</p>
             <h1 style="margin:12px 0 6px;font-size:26px;font-weight:700;color:#fff;line-height:1.2;">${data.eventTitle}</h1>
             <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.8);">Hosted by ${data.organizerName}</p>
           </td>
@@ -120,7 +120,7 @@ export async function sendTicketEmail(data: TicketEmailData) {
         <!-- Footer -->
         <tr>
           <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 36px;text-align:center;">
-            <p style="margin:0;font-size:11px;color:#9ca3af;">ILLAKA · Community Events Platform · © ${new Date().getFullYear()}</p>
+            <p style="margin:0;font-size:11px;color:#9ca3af;">ILAAKA · Community Events Platform · © ${new Date().getFullYear()}</p>
           </td>
         </tr>
 
@@ -131,7 +131,7 @@ export async function sendTicketEmail(data: TicketEmailData) {
 </html>`;
 
   await transporter.sendMail({
-    from: `"ILLAKA Events" <${process.env.EMAIL_USER}>`,
+    from: `"ILAAKA Events" <${process.env.EMAIL_USER}>`,
     to: data.to,
     subject: `Your ticket for "${data.eventTitle}" — #${shortId}`,
     html,

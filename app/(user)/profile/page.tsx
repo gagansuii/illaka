@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useState } from 'react';
@@ -261,7 +261,7 @@ export default function ProfilePage() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <span style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.22em', color: 'var(--ink-soft)' }}>
-            ILLAKA · LOCAL ID
+            ILAAKA · LOCAL ID
           </span>
           <span className="stamp stamp-terra">
             {data?.user?.role === 'ORGANIZER' || data?.user?.role === 'ADMIN' ? 'HOST' : 'MEMBER'}
@@ -314,7 +314,7 @@ export default function ProfilePage() {
       {/* ── Edit panel (collapsible) ── */}
       {editOpen && (
         <>
-          <div className="illaka-sep" style={{ margin: '18px 0 12px' }}>
+          <div className="ilaaka-sep" style={{ margin: '18px 0 12px' }}>
             <span>edit profile</span>
           </div>
           <div className="flyer-card-sm" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -362,7 +362,7 @@ export default function ProfilePage() {
       )}
 
       {/* ── Badges ── */}
-      <div className="illaka-sep" style={{ margin: '18px 0 12px' }}>
+      <div className="ilaaka-sep" style={{ margin: '18px 0 12px' }}>
         <span>badges</span>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between' }}>
@@ -372,7 +372,7 @@ export default function ProfilePage() {
       </div>
 
       {/* ── Vibes ── */}
-      <div className="illaka-sep" style={{ margin: '18px 0 12px' }}>
+      <div className="ilaaka-sep" style={{ margin: '18px 0 12px' }}>
         <span>vibes i&apos;m drawn to</span>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -395,7 +395,7 @@ export default function ProfilePage() {
       </div>
 
       {/* ── My Events ── */}
-      <div className="illaka-sep" style={{ margin: '18px 0 12px' }}>
+      <div className="ilaaka-sep" style={{ margin: '18px 0 12px' }}>
         <span>my events</span>
       </div>
 
@@ -434,7 +434,7 @@ export default function ProfilePage() {
       )}
 
       {/* ── Subscription / upgrade ── */}
-      <div className="illaka-sep" style={{ margin: '18px 0 12px' }}>
+      <div className="ilaaka-sep" style={{ margin: '18px 0 12px' }}>
         <span>upgrade</span>
       </div>
       <PaymentButton
@@ -446,7 +446,7 @@ export default function ProfilePage() {
       {/* ── Organizer dashboard ── */}
       {canViewOrganizerDashboard && (
         <>
-          <div className="illaka-sep" style={{ margin: '18px 0 12px' }}>
+          <div className="ilaaka-sep" style={{ margin: '18px 0 12px' }}>
             <span>organizer dashboard</span>
           </div>
           <div className="flyer-card-sm" style={{ padding: 14 }}>

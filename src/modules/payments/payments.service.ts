@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+﻿import crypto from 'crypto';
 import { getEnv, getEnvOptional } from '@/lib/config';
 import { getRazorpayClient, isRazorpayConfigured } from '@/lib/razorpay';
 import { authService } from '@/src/modules/auth/auth.service';
@@ -50,7 +50,7 @@ export const paymentsService = {
       order = await razorpay.orders.create({
         amount,
         currency: input.currency.toUpperCase(),
-        receipt: `illaka_${Date.now()}`,
+        receipt: `ilaaka_${Date.now()}`,
       });
     } catch (err) {
       logger.error('Razorpay order creation failed', { error: String(err) });

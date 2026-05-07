@@ -114,7 +114,7 @@ const HomeDesktop = () => (
         <div className="circle" style={{ width: 28, height: 28, background: 'var(--terra)' }}>
           <span style={{ fontSize: 12, color: 'var(--paper)' }}>✦</span>
         </div>
-        <span className="serif" style={{ fontSize: 26 }}>illaka</span>
+        <span className="serif" style={{ fontSize: 26 }}>ilaaka</span>
         <span className="label" style={{ marginLeft: 10 }}>/ your hood, alive</span>
       </div>
       <div className="row gap-8">

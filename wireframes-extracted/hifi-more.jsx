@@ -17,7 +17,7 @@ const HiProfile = () => (
         <span className="tape" style={{ top: -10, left: '38%', transform: 'rotate(3deg)', width: 66 }} />
 
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <span className="tab">ILLAKA · LOCAL ID · №0142</span>
+          <span className="tab">ILAAKA · LOCAL ID · №0142</span>
           <span className="stamp stamp-terra">HOST</span>
         </div>
 
@@ -330,7 +330,7 @@ const HiOnboard = () => (
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'var(--cream)', fontFamily: 'Fraunces', fontSize: 17, fontWeight: 700,
           }}>i</div>
-          <span className="display" style={{ fontSize: 24 }}>illaka</span>
+          <span className="display" style={{ fontSize: 24 }}>ilaaka</span>
         </div>
         <span className="tab">SKIP</span>
       </div>

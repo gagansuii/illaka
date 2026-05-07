@@ -67,7 +67,7 @@ export function TicketClient({ ticket }: { ticket: TicketData }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `ILLAKA-Ticket-${ticket.ticketId.slice(0, 8).toUpperCase()}.pdf`;
+      a.download = `ILAAKA-Ticket-${ticket.ticketId.slice(0, 8).toUpperCase()}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -97,7 +97,7 @@ export function TicketClient({ ticket }: { ticket: TicketData }) {
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>ILLAKA Ticket · #${shortId}</title>
+  <title>ILAAKA Ticket · #${shortId}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     body { margin: 0; padding: 32px; font-family: system-ui, sans-serif;
@@ -164,7 +164,7 @@ export function TicketClient({ ticket }: { ticket: TicketData }) {
 <div class="wrap">
   <div class="header">
     <div>
-      <div class="eyebrow">ILLAKA · Event Ticket</div>
+      <div class="eyebrow">ILAAKA · Event Ticket</div>
       <h1>${ticket.event.title}</h1>
       <p>Hosted by ${ticket.event.organizer.name ?? 'Organizer'}</p>
     </div>
@@ -237,7 +237,7 @@ export function TicketClient({ ticket }: { ticket: TicketData }) {
   </div>
 
   <div class="footer">
-    Non-transferable · Present QR at entry · ILLAKA © ${new Date().getFullYear()}
+    Non-transferable · Present QR at entry · ILAAKA © ${new Date().getFullYear()}
   </div>
 </div>
 <script>window.onload = function() { setTimeout(function() { window.print(); }, 350); };</script>
@@ -290,7 +290,7 @@ export function TicketClient({ ticket }: { ticket: TicketData }) {
           <div className="bg-[linear-gradient(135deg,#0f766e_0%,#c8663f_100%)] px-8 py-6 text-white">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white/72">ILLAKA · Event Ticket</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white/72">ILAAKA · Event Ticket</p>
                 <h1 className="mt-3 text-3xl font-bold leading-tight">{ticket.event.title}</h1>
                 <p className="mt-1 text-sm text-white/80">Hosted by {ticket.event.organizer.name ?? 'Organizer'}</p>
               </div>
@@ -409,7 +409,7 @@ export function TicketClient({ ticket }: { ticket: TicketData }) {
           {/* Footer */}
           <div className="border-t border-dashed border-[var(--line)] px-8 py-4">
             <p className="text-center text-xs text-muted">
-              Non-transferable · Present QR at entry · ILLAKA © {new Date().getFullYear()}
+              Non-transferable · Present QR at entry · ILAAKA © {new Date().getFullYear()}
             </p>
           </div>
         </div>

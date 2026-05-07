@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -89,7 +89,7 @@ export default function LoginPage() {
           i
         </div>
         <span style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 26, letterSpacing: '-0.02em' }}>
-          illaka
+          ilaaka
         </span>
       </div>
 

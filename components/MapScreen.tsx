@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -414,7 +414,7 @@ export function MapScreen() {
         {/* Horizontal event strip */}
         {featuredEvents.length > 0 && (
           <>
-            <div className="illaka-sep" style={{ margin: '0 0 12px' }}>
+            <div className="ilaaka-sep" style={{ margin: '0 0 12px' }}>
               <span>near you now</span>
             </div>
             <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
@@ -462,7 +462,7 @@ export function MapScreen() {
         {/* Swipe deck section */}
         {featuredEvents.length > 0 && (
           <>
-            <div className="illaka-sep" style={{ margin: '20px 0 12px' }}>
+            <div className="ilaaka-sep" style={{ margin: '20px 0 12px' }}>
               <span>swipe through</span>
             </div>
             <div style={{ background: 'var(--paper-card)', border: '1.5px solid var(--ink)', boxShadow: '2px 2px 0 var(--ink)', padding: 16 }}>
@@ -472,7 +472,7 @@ export function MapScreen() {
         )}
 
         {/* Host CTA */}
-        <div className="illaka-sep" style={{ margin: '20px 0 12px' }}>
+        <div className="ilaaka-sep" style={{ margin: '20px 0 12px' }}>
           <span>host something</span>
         </div>
         <div style={{ border: '1.5px solid var(--ink)', boxShadow: '2px 2px 0 var(--ink)', background: 'var(--paper-card)', padding: 18, position: 'relative', overflow: 'hidden' }}>

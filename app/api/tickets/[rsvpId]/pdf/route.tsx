@@ -266,13 +266,13 @@ export async function GET(_: Request, { params }: RouteContext) {
     : 'Free entry';
 
   const doc = (
-    <Document title={`ILLAKA Ticket · #${shortId}`} author="ILLAKA">
+    <Document title={`ILAAKA Ticket · #${shortId}`} author="ILAAKA">
       <Page size="A4" style={styles.page}>
 
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.headerLabel}>ILLAKA · Event Ticket</Text>
+            <Text style={styles.headerLabel}>ILAAKA · Event Ticket</Text>
             <Text style={styles.headerTitle}>{rsvp.event.title}</Text>
             <Text style={styles.headerSub}>Hosted by {rsvp.event.organizer?.name ?? 'Organizer'}</Text>
           </View>
@@ -362,7 +362,7 @@ export async function GET(_: Request, { params }: RouteContext) {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            This ticket is non-transferable · Present QR code at entry · ILLAKA © {new Date().getFullYear()}
+            This ticket is non-transferable · Present QR code at entry · ILAAKA © {new Date().getFullYear()}
           </Text>
         </View>
 
@@ -376,7 +376,7 @@ export async function GET(_: Request, { params }: RouteContext) {
   return new Response(uint8, {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="ILLAKA-Ticket-${shortId}.pdf"`,
+      'Content-Disposition': `attachment; filename="ILAAKA-Ticket-${shortId}.pdf"`,
       'Cache-Control': 'private, no-store',
     },
   });

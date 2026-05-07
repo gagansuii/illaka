@@ -21,7 +21,7 @@ const HFTopbar = ({ right, center }) => (
   <div className="hf-topbar">
     <div className="logo">
       <div className="mark">i</div>
-      <span className="wordmark">illaka</span>
+      <span className="wordmark">ilaaka</span>
     </div>
     {center}
     {right || (

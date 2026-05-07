@@ -1,4 +1,4 @@
-// Reusable wireframe primitives for illaka
+// Reusable wireframe primitives for ilaaka
 
 const Phone = ({ children, bg = 'var(--paper)' }) => (
   <div className="wf-phone" style={{ background: bg }}>
@@ -13,7 +13,7 @@ const Phone = ({ children, bg = 'var(--paper)' }) => (
   </div>
 );
 
-const TopNav = ({ right = 'Host', title = 'illaka' }) => (
+const TopNav = ({ right = 'Host', title = 'ilaaka' }) => (
   <div className="row" style={{ alignItems: 'center', justifyContent: 'space-between', padding: '6px 16px 10px' }}>
     <div className="row gap-6" style={{ alignItems: 'center' }}>
       <div className="circle" style={{ width: 22, height: 22, background: 'var(--terra)', borderColor: 'var(--ink)' }}>

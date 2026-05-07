@@ -1,4 +1,4 @@
-"""
+﻿"""
 Async email system via Gmail SMTP.
 Silently skips if EMAIL_USER / EMAIL_APP_PASSWORD are not configured.
 """
@@ -79,7 +79,7 @@ async def send_ticket_email(data: TicketEmailData) -> bool:
         View &amp; Download Ticket
       </a>
       <p style="color:#888;font-size:12px;margin-top:24px">
-        This is an automated message from Illaka. Please do not reply.
+        This is an automated message from Ilaaka. Please do not reply.
       </p>
     </div>
     """
@@ -105,7 +105,7 @@ async def send_reminder_email(
       <p>Your event starts on <strong>{event_start}</strong></p>
       {location_block}
       <p style="color:#888;font-size:12px;margin-top:24px">
-        You received this because you RSVPed on Illaka.
+        You received this because you RSVPed on Ilaaka.
       </p>
     </div>
     """
@@ -127,4 +127,4 @@ async def send_password_reset_email(to: str, reset_url: str) -> bool:
       </p>
     </div>
     """
-    return await _send(to, "Reset your Illaka password", html)
+    return await _send(to, "Reset your Ilaaka password", html)
