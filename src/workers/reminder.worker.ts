@@ -59,7 +59,7 @@ function buildPhysicalHtml(params: { userName: string; eventTitle: string; start
       </table>
       <p>See you there!</p>
       <hr/>
-      <small style="color:#888;">You received this because you RSVPed to this event on Ilaka.</small>
+      <small style="color:#888;">You received this because you RSVPed to this event on Ilaaka.</small>
     </div>
   `;
 }
@@ -76,7 +76,7 @@ function buildOnlineHtml(params: { userName: string; eventTitle: string; startTi
       </table>
       <p>See you online!</p>
       <hr/>
-      <small style="color:#888;">You received this because you RSVPed to this event on Ilaka.</small>
+      <small style="color:#888;">You received this because you RSVPed to this event on Ilaaka.</small>
     </div>
   `;
 }

@@ -18,18 +18,18 @@ const BASE_URL = process.env.NEXTAUTH_URL ?? 'https://ilaka.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
-  title: { default: 'ILAKA — Rediscover your neighbourhood', template: '%s | ILAKA' },
+  title: { default: 'ILAAKA — Rediscover your neighbourhood', template: '%s | ILAAKA' },
   description: 'Cinematic, map-first community discovery for activities, meetups, workshops, and local energy around you.',
   openGraph: {
     type: 'website',
-    siteName: 'ILAKA',
-    title: 'ILAKA — Rediscover your neighbourhood',
+    siteName: 'ILAAKA',
+    title: 'ILAAKA — Rediscover your neighbourhood',
     description: 'Find events happening near you. Discover what makes your neighbourhood feel alive.',
     url: BASE_URL
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ILAKA — Rediscover your neighbourhood',
+    title: 'ILAAKA — Rediscover your neighbourhood',
     description: 'Find events happening near you. Discover what makes your neighbourhood feel alive.'
   },
   robots: { index: true, follow: true }

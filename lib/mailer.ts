@@ -13,7 +13,7 @@ export async function sendReminderEmail(to: string, subject: string, html: strin
     console.warn(`[mailer] Email not configured — skipping reminder to ${to}`);
     return;
   }
-  await transporter.sendMail({ from: `"ILAKA" <${process.env.EMAIL_USER}>`, to, subject, html });
+  await transporter.sendMail({ from: `"ILAAKA" <${process.env.EMAIL_USER}>`, to, subject, html });
 }
 
 export interface TicketEmailData {
@@ -147,20 +147,20 @@ export async function sendVerificationEmail(to: string, verifyUrl: string): Prom
   const html = `
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"/><title>Verify your ILAKA email</title></head>
+<head><meta charset="UTF-8"/><title>Verify your ILAAKA email</title></head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:system-ui,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 16px;">
     <tr><td align="center">
       <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
         <tr>
           <td style="background:linear-gradient(135deg,#0f766e 0%,#c8663f 100%);padding:32px 36px;">
-            <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.7);">ILAKA · Email Verification</p>
+            <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.7);">ILAAKA · Email Verification</p>
             <h1 style="margin:12px 0 0;font-size:24px;font-weight:700;color:#fff;">Verify your email</h1>
           </td>
         </tr>
         <tr>
           <td style="padding:32px 36px;">
-            <p style="margin:0 0 20px;font-size:15px;color:#374151;">Welcome to ILAKA! Click the button below to verify your email — the link expires in <strong>24 hours</strong>.</p>
+            <p style="margin:0 0 20px;font-size:15px;color:#374151;">Welcome to ILAAKA! Click the button below to verify your email — the link expires in <strong>24 hours</strong>.</p>
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
               <tr>
                 <td align="center">
@@ -173,7 +173,7 @@ export async function sendVerificationEmail(to: string, verifyUrl: string): Prom
         </tr>
         <tr>
           <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 36px;text-align:center;">
-            <p style="margin:0;font-size:11px;color:#9ca3af;">ILAKA · Community Events Platform · © ${new Date().getFullYear()}</p>
+            <p style="margin:0;font-size:11px;color:#9ca3af;">ILAAKA · Community Events Platform · © ${new Date().getFullYear()}</p>
           </td>
         </tr>
       </table>
@@ -183,9 +183,9 @@ export async function sendVerificationEmail(to: string, verifyUrl: string): Prom
 </html>`;
 
   await transporter.sendMail({
-    from: `"ILAKA" <${process.env.EMAIL_USER}>`,
+    from: `"ILAAKA" <${process.env.EMAIL_USER}>`,
     to,
-    subject: 'Verify your ILAKA email address',
+    subject: 'Verify your ILAAKA email address',
     html,
   });
 }
@@ -199,20 +199,20 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   const html = `
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"/><title>Reset your ILAKA password</title></head>
+<head><meta charset="UTF-8"/><title>Reset your ILAAKA password</title></head>
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:system-ui,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 16px;">
     <tr><td align="center">
       <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
         <tr>
           <td style="background:linear-gradient(135deg,#0f766e 0%,#c8663f 100%);padding:32px 36px;">
-            <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.7);">ILAKA · Account Recovery</p>
+            <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.7);">ILAAKA · Account Recovery</p>
             <h1 style="margin:12px 0 0;font-size:24px;font-weight:700;color:#fff;">Reset your password</h1>
           </td>
         </tr>
         <tr>
           <td style="padding:32px 36px;">
-            <p style="margin:0 0 20px;font-size:15px;color:#374151;">We received a request to reset your ILAKA password. Click the button below — the link expires in <strong>1 hour</strong>.</p>
+            <p style="margin:0 0 20px;font-size:15px;color:#374151;">We received a request to reset your ILAAKA password. Click the button below — the link expires in <strong>1 hour</strong>.</p>
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
               <tr>
                 <td align="center">
@@ -225,7 +225,7 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
         </tr>
         <tr>
           <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 36px;text-align:center;">
-            <p style="margin:0;font-size:11px;color:#9ca3af;">ILAKA · Community Events Platform · © ${new Date().getFullYear()}</p>
+            <p style="margin:0;font-size:11px;color:#9ca3af;">ILAAKA · Community Events Platform · © ${new Date().getFullYear()}</p>
           </td>
         </tr>
       </table>
@@ -235,9 +235,9 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
 </html>`;
 
   await transporter.sendMail({
-    from: `"ILAKA" <${process.env.EMAIL_USER}>`,
+    from: `"ILAAKA" <${process.env.EMAIL_USER}>`,
     to,
-    subject: 'Reset your ILAKA password',
+    subject: 'Reset your ILAAKA password',
     html,
   });
 }

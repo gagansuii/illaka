@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'How ILAKA collects, uses, and protects your personal information.',
+  description: 'How ILAAKA collects, uses, and protects your personal information.',
 };
 
 export default function PrivacyPage() {
@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       <p className="text-muted-foreground text-sm">Effective date: 1 May 2025 &nbsp;·&nbsp; Last updated: 5 May 2026</p>
 
       <p>
-        ILAKA (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) is committed to protecting your personal
+        ILAAKA (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) is committed to protecting your personal
         information. This Privacy Policy explains what data we collect, how we use it, and your rights as a Data
         Principal under the <strong>Digital Personal Data Protection Act, 2023 (DPDP Act)</strong> and applicable
         provisions of the <strong>General Data Protection Regulation (GDPR)</strong>.
@@ -147,7 +147,7 @@ export default function PrivacyPage() {
 
       <h2>8. Children&apos;s Privacy</h2>
       <p>
-        ILAKA is not directed at children under 18. We do not knowingly collect personal data from minors. If you
+        ILAAKA is not directed at children under 18. We do not knowingly collect personal data from minors. If you
         believe a minor has registered, contact us and we will delete the account.
       </p>
 
@@ -178,7 +178,7 @@ export default function PrivacyPage() {
         Officer are:
       </p>
       <p>
-        <strong>Name:</strong> ILAKA Support Team<br />
+        <strong>Name:</strong> ILAAKA Support Team<br />
         <strong>Email:</strong> <a href="mailto:privacy@ilaka.app">privacy@ilaka.app</a><br />
         <strong>Response time:</strong> Within 30 days of receiving a complaint.
       </p>
