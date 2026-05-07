@@ -1,4 +1,4 @@
-﻿"""
+"""
 Stripe payment integration.
 Handles Checkout Sessions, Payment Intents, Subscriptions, Refunds, and Webhooks.
 """

@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 ilaaka 2.0 -- end-to-end UI test via Playwright (headless Chromium)
 Tests: login, register, home wall, discover/map, host flow, profile, event detail

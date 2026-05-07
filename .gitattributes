@@ -1,0 +1,27 @@
+# Normalize line endings and enforce no BOM for all text files
+* text=auto eol=lf
+
+# Explicitly UTF-8 no-BOM for source files
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.js    text eol=lf
+*.mjs   text eol=lf
+*.jsx   text eol=lf
+*.json  text eol=lf
+*.css   text eol=lf
+*.md    text eol=lf
+*.py    text eol=lf
+*.ps1   text eol=lf
+*.prisma text eol=lf
+*.html  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.env*  text eol=lf
+
+# Binary — never diff or mangle
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.ico   binary
+*.zip   binary
+*.pdf   binary

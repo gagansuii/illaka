@@ -1,4 +1,4 @@
-﻿"""
+"""
 Async email system via Gmail SMTP.
 Silently skips if EMAIL_USER / EMAIL_APP_PASSWORD are not configured.
 """

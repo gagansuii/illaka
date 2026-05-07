@@ -1,4 +1,4 @@
-﻿import { HeroSection } from '@/sections/HeroSection';
+import { HeroSection } from '@/sections/HeroSection';
 import { FeaturedEventSection } from '@/sections/FeaturedEventSection';
 import { InteractiveMapSection } from '@/sections/InteractiveMapSection';
 
