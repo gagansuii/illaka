@@ -51,6 +51,9 @@
     "three": "^0.169.0",
     "zod": "^3.23.8"
   },
+  "engines": {
+    "node": "20.x"
+  },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/ioredis": "^4.28.10",
