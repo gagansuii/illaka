@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**ILAKA** is a location-based community events platform built with Next.js 16+, TypeScript, Prisma (PostgreSQL + PostGIS), and NextAuth. Key features: event discovery by geolocation, AI-powered semantic search, Razorpay payments, Cloudinary media uploads, and engagement scoring.
+**Ilaaka** is a location-based community events platform built with Next.js 16+, TypeScript, Prisma (PostgreSQL + PostGIS), and NextAuth. Key features: event discovery by geolocation, AI-powered semantic search, Razorpay payments, Cloudinary media uploads, and engagement scoring.
 
 ## Commands
 
@@ -30,7 +30,7 @@ npm run audit:media      # audit orphaned Cloudinary media
 ```
 ## Product Philosophy
 
-ILAKA is a **relevance-first event discovery platform** with an optional map view.
+Ilaaka is a **relevance-first event discovery platform** with an optional map view.
 
 Core principles:
 - The default experience is a **scrollable feed of the most relevant nearby events**

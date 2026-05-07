@@ -1,8 +1,8 @@
-# ILAKA — Architecture
+# Ilaaka — Architecture
 
 ## Overview
 
-ILAKA is a hyperlocal event discovery platform. Users find events near them, RSVP, receive digital tickets, and pay organisers. Organisers create events (physical or online), manage attendance, and get paid. A single Next.js 16 App Router application serves the entire product — frontend, backend API, and background jobs all live in one repo.
+Ilaaka is a hyperlocal event discovery platform. Users find events near them, RSVP, receive digital tickets, and pay organisers. Organisers create events (physical or online), manage attendance, and get paid. A single Next.js 16 App Router application serves the entire product — frontend, backend API, and background jobs all live in one repo.
 
 ---
 

@@ -1,4 +1,4 @@
-# ILAKA — Production Readiness TODO
+# Ilaaka — Production Readiness TODO
 
 Items are roughly ordered by impact. Strike through when done.
 

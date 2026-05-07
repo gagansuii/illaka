@@ -1,7 +1,7 @@
-# Database Setup Script for ILAKA
+# Database Setup Script for Ilaaka
 # This script helps set up and migrate the PostgreSQL database
 
-Write-Host "=== ILAKA Database Migration Setup ===" -ForegroundColor Cyan
+Write-Host "=== Ilaaka Database Migration Setup ===" -ForegroundColor Cyan
 Write-Host ""
 
 # Check if .env.local exists

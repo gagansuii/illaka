@@ -36,7 +36,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="ILAKA Community Platform API — FastAPI + PostgreSQL/PostGIS",
+    description="Ilaaka Community Platform API — FastAPI + PostgreSQL/PostGIS",
     docs_url="/docs" if not settings.is_production else None,
     redoc_url="/redoc" if not settings.is_production else None,
     openapi_url="/openapi.json" if not settings.is_production else None,

@@ -1,4 +1,4 @@
-# ILAKA Deployment Guide
+# Ilaaka Deployment Guide
 
 ## Local Setup
 

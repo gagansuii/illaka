@@ -18,7 +18,7 @@ _broker = settings.REDIS_URL or "redis://localhost:6379/0"
 _backend = _broker.replace("/0", "/1") if _broker.endswith("/0") else _broker + "/1"
 
 celery_app = Celery(
-    "ilaka",
+    "ilaaka",
     broker=_broker,
     backend=_backend,
     include=[

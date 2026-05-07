@@ -1,8 +1,8 @@
-# Interactive PostgreSQL Setup Script for ILAKA
+# Interactive PostgreSQL Setup Script for Ilaaka
 # This script guides you through PostgreSQL setup step by step
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  ILAKA PostgreSQL Setup Wizard" -ForegroundColor Cyan
+Write-Host "  Ilaaka PostgreSQL Setup Wizard" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -206,7 +206,7 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "Next steps:" -ForegroundColor Cyan
     Write-Host "1. Start your dev server: npm run dev" -ForegroundColor White
     Write-Host "2. Visit http://localhost:3000" -ForegroundColor White
-    Write-Host "3. Create an account to start using ILAKA!" -ForegroundColor White
+    Write-Host "3. Create an account to start using Ilaaka!" -ForegroundColor White
     Write-Host ""
 } else {
     Write-Host ""
