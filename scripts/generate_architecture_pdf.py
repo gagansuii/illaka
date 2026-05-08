@@ -21,7 +21,7 @@ class PDF(FPDF):
         self.set_font("Helvetica", "B", 9)
         self.set_text_color(*ACCENT)
         self.set_y(4)
-        self.cell(0, 7, "ILAAKA — Architecture Overview", align="C")
+        self.cell(0, 7, "ILAAKA -- Architecture Overview", align="C")
 
     def footer(self):
         self.set_fill_color(*DARK_BG)
