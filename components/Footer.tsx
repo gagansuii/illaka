@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { IlaakaLogoH } from '@/components/IlaakaLogo';
 
 export function Footer() {
   return (
@@ -9,7 +10,10 @@ export function Footer() {
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] uppercase tracking-[0.14em]"
         style={{ fontFamily: 'var(--font-mono), monospace', color: 'var(--ink-muted)' }}
       >
-        <span style={{ color: 'var(--ink)' }}>© {new Date().getFullYear()} ILAAKA</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <IlaakaLogoH markSize={24} />
+          <span style={{ color: 'var(--ink-muted)' }}>© {new Date().getFullYear()}</span>
+        </div>
         <div className="flex items-center gap-6">
           <Link href="/terms" className="hover:underline underline-offset-2" style={{ color: 'var(--ink-muted)' }}>
             Terms

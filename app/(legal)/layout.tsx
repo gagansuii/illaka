@@ -1,11 +1,12 @@
 import Link from 'next/link';
+import { IlaakaLogoH } from '@/components/IlaakaLogo';
 
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border/40 py-4 px-6">
-        <Link href="/" className="font-semibold tracking-widest text-sm uppercase">
-          ILAAKA
+        <Link href="/" aria-label="Home">
+          <IlaakaLogoH markSize={32} />
         </Link>
       </header>
       <main className="max-w-3xl mx-auto px-6 py-12">{children}</main>
