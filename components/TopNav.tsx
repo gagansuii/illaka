@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { IlaakaLogoH } from '@/components/IlaakaLogo';
 
 function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -60,38 +61,9 @@ export function TopNav() {
           boxShadow: '3px 3px 0 var(--ink)',
         }}
       >
-        {/* Logo mark */}
-        <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="Home">
-          <div
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: '50%',
-              background: 'var(--terra)',
-              border: '1.5px solid var(--ink)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--cream)',
-              fontFamily: 'var(--font-fraunces), serif',
-              fontWeight: 700,
-              fontSize: 16,
-              position: 'relative',
-            }}
-          >
-            i
-          </div>
-          <span
-            style={{
-              fontFamily: 'var(--font-fraunces), serif',
-              fontWeight: 600,
-              fontSize: 20,
-              letterSpacing: '-0.02em',
-              color: 'var(--ink)',
-            }}
-          >
-            ilaaka
-          </span>
+        {/* Logo — horizontal lockup */}
+        <Link href="/" className="shrink-0" aria-label="Home">
+          <IlaakaLogoH markSize={36} />
         </Link>
 
         {/* Desktop nav links */}

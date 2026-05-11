@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
+import { IlaakaLogoStacked } from '@/components/IlaakaLogo';
 
 const TILT_CLASSES = ['tilt-ll', 'tilt-rr', 'tilt-l'];
 
@@ -77,20 +78,9 @@ export default function LoginPage() {
       fontFamily: 'var(--font-mono), monospace',
       color: 'var(--ink)',
     }}>
-      {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32 }}>
-        <div style={{
-          width: 38, height: 38, borderRadius: '50%',
-          background: 'var(--terra)', border: '1.5px solid var(--ink)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: 'var(--font-fraunces), serif', fontWeight: 700,
-          fontSize: 18, color: 'var(--cream)',
-        }}>
-          i
-        </div>
-        <span style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 26, letterSpacing: '-0.02em' }}>
-          ilaaka
-        </span>
+      {/* Logo — stacked lockup */}
+      <div style={{ marginBottom: 32 }}>
+        <IlaakaLogoStacked markSize={72} />
       </div>
 
       {/* Main card */}
