@@ -68,7 +68,7 @@ function FlyerCard({
 
   const organizer = event.organizer?.name || 'Local host';
   const initial = organizer[0]?.toUpperCase() || 'L';
-  const rsvpCount = event.rsvps?.length ?? 0;
+  const rsvpCount = typeof event.rsvps === 'number' ? event.rsvps : (event.rsvps?.length ?? 0);
   const [isTonight, setIsTonight] = useState(false);
   const tonightChecked = useRef(false);
   useEffect(() => {

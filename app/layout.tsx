@@ -6,11 +6,11 @@ import { AuthProvider } from '@/components/AuthProvider';
 import { RouteTransitionProvider } from '@/components/RouteTransitionProvider';
 import { PostHogProvider } from '@/components/PostHogProvider';
 
-const newsreader = Newsreader({ subsets: ['latin'], variable: '--font-newsreader', weight: ['200', '300', '400', '500', '600', '700', '800'], style: ['normal', 'italic'], display: 'swap' });
-const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope', weight: ['200', '300', '400', '500', '600', '700', '800'], display: 'swap' });
-const space = Space_Grotesk({ subsets: ['latin'], variable: '--font-space', display: 'swap' });
-const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-fraunces', display: 'swap' });
-const caveat = Caveat({ subsets: ['latin'], variable: '--font-caveat', display: 'swap' });
+const newsreader = Newsreader({ subsets: ['latin'], variable: '--font-newsreader', weight: ['400', '600', '700'], style: ['normal', 'italic'], display: 'swap' });
+const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope', weight: ['400', '500', '600', '700'], display: 'swap' });
+const space = Space_Grotesk({ subsets: ['latin'], variable: '--font-space', weight: ['400', '500', '600', '700'], display: 'swap' });
+const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-fraunces', weight: ['400', '700'], display: 'swap' });
+const caveat = Caveat({ subsets: ['latin'], variable: '--font-caveat', weight: ['400', '700'], display: 'swap' });
 const instrumentSerif = Instrument_Serif({ subsets: ['latin'], style: ['normal', 'italic'], weight: '400', variable: '--font-serif', display: 'swap' });
 const spaceMono = Space_Mono({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-mono', display: 'swap' });
 

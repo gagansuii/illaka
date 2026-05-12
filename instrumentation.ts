@@ -46,8 +46,13 @@ export async function register() {
     // ── Event soft-delete column ───────────────────────────────────────────
     await run(`ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3)`);
 
-    // ── Composite index for feed queries (visibility + startTime) ──────────
-    await run(`CREATE INDEX IF NOT EXISTS "Event_visibility_startTime_idx" ON "Event"("visibility", "startTime")`);
+    // ── Composite indexes for feed and dashboard queries ───────────────────
+    await run(`CREATE INDEX IF NOT EXISTS "Event_visibility_startTime_idx"   ON "Event"("visibility", "startTime")`);
+    await run(`CREATE INDEX IF NOT EXISTS "Event_visibility_endTime_idx"     ON "Event"("visibility", "endTime")`);
+    await run(`CREATE INDEX IF NOT EXISTS "Event_organizerId_startTime_idx"  ON "Event"("organizerId", "startTime")`);
+    await run(`CREATE INDEX IF NOT EXISTS "Payment_userId_status_idx"        ON "Payment"("userId", "status")`);
+    await run(`CREATE INDEX IF NOT EXISTS "ReminderLog_eventId_idx"          ON "ReminderLog"("eventId")`);
+    await run(`CREATE INDEX IF NOT EXISTS "ReminderLog_userId_idx"           ON "ReminderLog"("userId")`);
 
     // ── Unique indexes ─────────────────────────────────────────────────────
     await run(`CREATE UNIQUE INDEX IF NOT EXISTS "Event_shareToken_key" ON "Event"("shareToken")`);

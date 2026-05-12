@@ -125,6 +125,8 @@ model Event {
   @@index([startTime])
   @@index([engagementScore])
   @@index([visibility, startTime])
+  @@index([visibility, endTime])
+  @@index([organizerId, startTime])
   @@index([deletedAt])
 }
 
@@ -230,6 +232,7 @@ model Payment {
   @@index([eventId])
   @@index([providerRef])
   @@index([status])
+  @@index([userId, status])
 }
 
 model ReminderLog {
@@ -243,4 +246,6 @@ model ReminderLog {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId, type])
+  @@index([eventId])
+  @@index([userId])
 }
