@@ -84,9 +84,9 @@ export const authOptions: NextAuthOptions = {
     jwt: async ({ token, user }) => {
       if (user) {
         const u = user as unknown as Record<string, unknown>;
-        token.id = u.id;
-        token.role = u.role;
-        token.rememberMe = u.rememberMe ?? true;
+        token.id = u.id as string | undefined;
+        token.role = u.role as import('@/types/next-auth').UserRole | undefined;
+        token.rememberMe = (u.rememberMe as boolean | undefined) ?? true;
         token.createdAt = Math.floor(Date.now() / 1000);
 
         if (!token.rememberMe) {

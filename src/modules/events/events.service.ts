@@ -14,6 +14,7 @@ import { sendTicketEmail } from '@/lib/mailer';
 import { sanitizeEventMediaList } from '@/lib/media';
 import { rateLimit } from '@/lib/rate-limit';
 import { getOpenAIClient, getPineconeIndex, isOpenAIConfigured, isPineconeConfigured } from '@/lib/ai';
+import { withRetry } from '@/lib/retry';
 import { prisma } from '@/lib/prisma';
 import { ServiceError } from '@/src/core/errors';
 import { logger } from '@/src/core/logger';
@@ -116,9 +117,11 @@ export const eventsService = {
     const event = await eventsRepository.create({ ...input, organizerId });
     analytics.eventCreated(organizerId, { eventId: event.id, visibility: input.visibility });
 
-    // Best-effort Pinecone indexing — does not affect the response
-    eventsService._indexInPinecone(event).catch((err) =>
-      logger.error('Pinecone indexing failed', { eventId: event.id, error: String(err) }),
+    // Pinecone indexing — retried up to 3 times in the background
+    void withRetry(
+      `pinecone:index:${event.id}`,
+      () => eventsService._indexInPinecone(event),
+      { attempts: 3, baseDelayMs: 1_000 },
     );
 
     clearEventsCache();
@@ -177,8 +180,10 @@ export const eventsService = {
     clearEventsCache();
     analytics.rsvpCreated(userId, { eventId });
 
-    eventsService._sendTicketEmail(rsvp, event, userId).catch((err) =>
-      logger.error('Ticket email failed', { rsvpId: rsvp.id, error: String(err) }),
+    void withRetry(
+      `ticket-email:${rsvp.id}`,
+      () => eventsService._sendTicketEmail(rsvp, event, userId),
+      { attempts: 3, baseDelayMs: 1_000 },
     );
 
     return { rsvpId: rsvp.id };

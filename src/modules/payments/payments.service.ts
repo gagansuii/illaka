@@ -6,9 +6,9 @@ import { analytics } from '@/lib/posthog';
 import { ServiceError } from '@/src/core/errors';
 import { logger } from '@/src/core/logger';
 import { paymentsRepository } from './payments.repository';
-import type { InitiatePaymentInput, PaymentReason } from './payments.types';
+import type { InitiatePaymentInput, PaymentReason, PaymentStatus } from './payments.types';
 
-const ALLOWED_STATUSES = new Set(['created', 'authorized', 'captured', 'refunded', 'failed']);
+const ALLOWED_STATUSES = new Set<PaymentStatus>(['created', 'authorized', 'captured', 'refunded', 'failed']);
 
 // Amounts match the NEXT_PUBLIC_ env vars so UI price and charged price are always in sync
 function getAmount(reason: PaymentReason): number {
@@ -87,7 +87,7 @@ export const paymentsService = {
     try {
       secret = getEnv('RAZORPAY_WEBHOOK_SECRET');
     } catch {
-      throw ServiceError.serviceUnavailable('Webhook secret is not configured');
+      throw ServiceError.badRequest('Invalid signature');
     }
 
     const expected = crypto.createHmac('sha256', secret).update(body).digest('hex');
@@ -105,7 +105,7 @@ export const paymentsService = {
     const entity = (p.payload as Record<string, unknown>)?.payment as Record<string, unknown> | undefined;
     const entity_ = entity?.entity as Record<string, unknown> | undefined;
     const orderId = entity_?.order_id as string | undefined;
-    const status = entity_?.status as string | undefined;
+    const status = entity_?.status as PaymentStatus | undefined;
     const webhookAmount = entity_?.amount;
 
     if (
@@ -118,12 +118,22 @@ export const paymentsService = {
       const stored = await paymentsRepository.findByProviderRef(orderId);
       if (!stored) return; // unknown order — acknowledge and ignore
 
+      // Idempotency: skip if status is already at the incoming value
+      if (stored.status === status) return;
+
       if (typeof webhookAmount === 'number' && webhookAmount !== stored.amount) {
         logger.error('Webhook amount mismatch', { orderId, expected: stored.amount, received: webhookAmount });
         throw ServiceError.badRequest('Amount mismatch');
       }
 
-      await paymentsRepository.updateStatusByProviderRef(orderId, status);
+      try {
+        await paymentsRepository.updateStatusByProviderRef(orderId, status);
+        logger.info('Webhook: payment status updated', { orderId, status });
+      } catch (err) {
+        logger.error('Webhook: failed to persist payment status', { orderId, status, error: String(err) });
+        // Re-throw so the webhook is retried by Razorpay (it will re-deliver on 5xx)
+        throw ServiceError.badRequest('Failed to persist payment status');
+      }
     }
   },
 };

@@ -12,7 +12,8 @@ const roleSchema = z.object({ role: z.enum(['USER', 'ORGANIZER', 'ADMIN']) });
 export async function PATCH(req: Request, { params }: RouteContext) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (session.user.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   let body: unknown;
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
@@ -33,7 +34,8 @@ export async function PATCH(req: Request, { params }: RouteContext) {
 export async function DELETE(_: Request, { params }: RouteContext) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (session.user.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   try {
     await prisma.user.delete({ where: { id } });

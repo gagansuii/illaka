@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-const SUCCESS_PAYMENT_STATUSES = ['captured', 'success'];
+import type { PaymentStatus } from '@/src/modules/payments/payments.types';
+const SUCCESS_PAYMENT_STATUSES: PaymentStatus[] = ['captured'];
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -40,7 +41,7 @@ export async function GET() {
     return NextResponse.json({
       total_events: totalEvents,
       total_registrations: totalRegistrations,
-      total_revenue: revenue._sum.amount ?? 0,
+      total_revenue: revenue._sum?.amount ?? 0,
       upcoming_events: upcomingEvents
     });
   } catch (err) {

@@ -83,7 +83,7 @@ export async function POST(req: Request) {
 
   // Only ORGANIZER and ADMIN may upload payment QR codes.
   if (ORGANIZER_ONLY_FOLDERS.has(folder)) {
-    const role = (session.user as any).role;
+    const role = (session.user as { id: string; role?: string }).role ?? '';
     if (role !== 'ORGANIZER' && role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

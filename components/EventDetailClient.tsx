@@ -438,7 +438,7 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
               )}
 
               {rsvpCount >= hostingThreshold ? (
-                <PaymentButton label="PAY HOSTING FEE" reason="hosting_fee" amount={hostingFee} eventId={event.id} eventTitle={event.title} />
+                <PaymentButton label="PAY HOSTING FEE" reason="hosting_fee" amount={hostingFee} eventId={event.id}  />
               ) : (
                 <div style={{
                   padding: '10px 14px', border: '1.5px solid var(--ink)',
@@ -449,7 +449,7 @@ export function EventDetailClient({ event }: { event: EventDetail }) {
                 </div>
               )}
 
-              <PaymentButton label="BOOST EVENT PROMOTION" reason="promotion" amount={promotionPrice} eventId={event.id} eventTitle={event.title} />
+              <PaymentButton label="BOOST EVENT PROMOTION" reason="promotion" amount={promotionPrice} eventId={event.id}  />
 
               {/* Delete event */}
               <div style={{ borderTop: '1px dashed var(--ink-faint)', paddingTop: 10, marginTop: 2 }}>

@@ -1,20 +1,37 @@
 version: '3.9'
+
+# All secrets are loaded from .env (never commit real values).
+# Copy .env.example → .env and fill in the values before running.
+
 services:
   db:
-    image: postgres:15-alpine
+    image: postgis/postgis:15-3.4-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: example
-      POSTGRES_DB: ilaka_events
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-ilaka_events}
     volumes:
       - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - appnet
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required}"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - appnet
 
@@ -22,19 +39,23 @@ services:
     build: .
     ports:
       - '3000:3000'
+    env_file: .env
     environment:
-      DATABASE_URL: postgresql://postgres:example@db:5432/ilaka_events
-      SHADOW_DATABASE_URL: postgresql://postgres:example@db:5432/ilaka_shadow
-      NEXTAUTH_URL: http://localhost:3000
-      # add other env vars as needed or mount .env
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ilaka_events}
+      DIRECT_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ilaka_events}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - appnet
+    restart: unless-stopped
 
 volumes:
   db-data:
+  redis-data:
 
 networks:
   appnet:

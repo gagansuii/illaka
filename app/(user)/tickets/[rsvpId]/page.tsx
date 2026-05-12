@@ -78,7 +78,7 @@ export default async function TicketPage({ params }: { params: Promise<{ rsvpId:
   let payment: { amount: number; currency: string; status: string } | null = null;
   try {
     const p = await prisma.payment.findFirst({
-      where: { userId: rsvp.userId, eventId: rsvp.eventId, status: 'PAID' },
+      where: { userId: rsvp.userId, eventId: rsvp.eventId, status: 'captured' },
       select: { amount: true, currency: true, status: true }
     });
     payment = p;

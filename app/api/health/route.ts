@@ -28,13 +28,24 @@ function isAuthorized(req: NextRequest): boolean {
 }
 
 export async function GET(req: NextRequest) {
+  const { searchParams } = req.nextUrl;
+
+  // Unauthenticated liveness probe — only confirms the process is alive, not DB status.
+  // Used by Docker HEALTHCHECK and load-balancer pings.
+  if (searchParams.get('type') === 'liveness') {
+    return NextResponse.json({ ok: true, type: 'liveness' });
+  }
+
+  // Readiness probe (with DB check) requires authentication
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
+    const start = Date.now();
     await prisma.$queryRaw`SELECT 1`;
-    return NextResponse.json({ ok: true, db: 'connected' });
+    const dbMs = Date.now() - start;
+    return NextResponse.json({ ok: true, db: 'connected', dbMs });
   } catch {
     return NextResponse.json({ ok: false, db: 'unreachable' }, { status: 503 });
   }

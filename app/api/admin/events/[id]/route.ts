@@ -10,7 +10,8 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function DELETE(_: Request, { params }: RouteContext) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (session.user.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   try {
     await prisma.$transaction([

@@ -1,80 +1,144 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+
+type RazorpayOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  order_id: string;
+  name: string;
+  description: string;
+  handler: (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => void;
+  modal: { ondismiss: () => void };
+};
 
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay: new (opts: RazorpayOptions) => { open(): void };
   }
 }
+
+type ScriptState = 'loading' | 'ready' | 'error';
 
 export function PaymentButton({
   label,
   reason,
   amount,
   eventId,
-  eventTitle
+  onSuccess,
 }: {
   label: string;
   reason: 'subscription' | 'hosting_fee' | 'promotion';
   amount: number;
   eventId?: string;
-  eventTitle?: string;
+  onSuccess?: () => void;
 }) {
-  const [ready, setReady] = useState(false);
+  const [scriptState, setScriptState] = useState<ScriptState>('loading');
+  const [paying, setPaying] = useState(false);
   const [error, setError] = useState('');
+  const scriptRef = useRef<HTMLScriptElement | null>(null);
 
   useEffect(() => {
-    if (window.Razorpay) {
-      setReady(true);
+    if (typeof window.Razorpay === 'function') {
+      setScriptState('ready');
+      return;
+    }
+    const existing = document.querySelector<HTMLScriptElement>(
+      'script[src="https://checkout.razorpay.com/v1/checkout.js"]',
+    );
+    if (existing) {
+      existing.addEventListener('load', () => setScriptState('ready'));
+      existing.addEventListener('error', () => setScriptState('error'));
       return;
     }
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => setReady(true);
+    script.async = true;
+    script.onload = () => setScriptState('ready');
+    script.onerror = () => setScriptState('error');
     document.body.appendChild(script);
+    scriptRef.current = script;
+    return () => { scriptRef.current = null; };
   }, []);
 
-  async function handlePay() {
-    setError('');
-
-    const res = await fetch('/api/payments/initiate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason, eventId })
-    });
-    let data: any = null;
-    try {
-      data = await res.json();
-    } catch {
-      data = null;
-    }
-    if (!res.ok || !data?.orderId || !data?.keyId) {
-      setError(data?.error ?? 'Unable to start payment');
+  const handlePay = useCallback(async () => {
+    if (scriptState !== 'ready') return;
+    if (typeof window.Razorpay !== 'function') {
+      setError('Payment system unavailable. Please disable ad-blockers and retry.');
       return;
     }
 
-    const rzp = new window.Razorpay({
-      key: data.keyId,
-      amount: data.amount,
-      currency: 'INR',
-      order_id: data.orderId,
-      name: 'ILAAKA',
-      description: label,
-      handler: () => {
-        window.location.reload();
+    setError('');
+    setPaying(true);
+
+    try {
+      const res = await fetch('/api/payments/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason, eventId }),
+      });
+
+      let data: Record<string, unknown> | null = null;
+      try { data = await res.json(); } catch { /* json parse failed */ }
+
+      if (!res.ok || !data?.orderId || !data?.keyId) {
+        setError((data?.error as string) ?? 'Unable to start payment. Please try again.');
+        return;
       }
-    });
-    rzp.open();
+
+      await new Promise<void>((resolve, reject) => {
+        const rzp = new window.Razorpay({
+          key: data!.keyId as string,
+          amount: data!.amount as number,
+          currency: 'INR',
+          order_id: data!.orderId as string,
+          name: 'ILAAKA',
+          description: label,
+          handler: () => {
+            resolve();
+          },
+          modal: {
+            ondismiss: () => reject(new Error('dismissed')),
+          },
+        });
+        rzp.open();
+      });
+
+      onSuccess?.();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg !== 'dismissed') {
+        setError('Payment could not be completed. Please try again.');
+      }
+    } finally {
+      setPaying(false);
+    }
+  }, [scriptState, reason, eventId, label, onSuccess]);
+
+  if (scriptState === 'error') {
+    return (
+      <p className="text-sm text-red-500">
+        Payment system failed to load. Disable ad-blockers or try a different browser.
+      </p>
+    );
   }
 
   return (
     <div className="space-y-2">
-      <Button onClick={handlePay} disabled={!ready}>
-        {label}
+      <Button
+        onClick={handlePay}
+        disabled={scriptState !== 'ready' || paying}
+        aria-busy={paying}
+      >
+        {paying ? 'Processing…' : label}
       </Button>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-500" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

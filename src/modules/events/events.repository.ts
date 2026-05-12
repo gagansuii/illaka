@@ -30,6 +30,7 @@ export const eventsRepository = {
       FROM "Event"
       WHERE "visibility" = 'PUBLIC'
         AND "endTime" >= NOW()
+        AND ("deletedAt" IS NULL)
         AND ST_DWithin(
           location,
           ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
@@ -181,15 +182,8 @@ export const eventsRepository = {
   },
 
   async delete(id: string): Promise<void> {
-    await prisma.$transaction([
-      prisma.reminderLog.deleteMany({ where: { eventId: id } }),
-      prisma.attendance.deleteMany({ where: { eventId: id } }),
-      prisma.share.deleteMany({ where: { eventId: id } }),
-      prisma.like.deleteMany({ where: { eventId: id } }),
-      prisma.rSVP.deleteMany({ where: { eventId: id } }),
-      prisma.payment.updateMany({ where: { eventId: id }, data: { eventId: null } }),
-      prisma.event.delete({ where: { id } }),
-    ]);
+    // Soft delete: preserve the record for audit trail and payment FK integrity
+    await prisma.event.update({ where: { id }, data: { deletedAt: new Date() } });
   },
 
   async findByOrganizer(organizerId: string): Promise<OrganizerEventSummary[]> {
@@ -285,6 +279,7 @@ export const eventsRepository = {
   },
 
   async adminDelete(id: string): Promise<void> {
+    // Admin hard delete: purge all related data permanently
     await prisma.$transaction([
       prisma.reminderLog.deleteMany({ where: { eventId: id } }),
       prisma.attendance.deleteMany({ where: { eventId: id } }),

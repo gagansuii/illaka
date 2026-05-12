@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authService } from '@/src/modules/auth/auth.service';
+import { handleError } from '@/src/core/response';
 
 const schema = z.object({ email: z.string().email() });
 
@@ -15,7 +16,11 @@ export async function POST(req: Request) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
 
-  // Service handles rate limiting and user enumeration protection internally
-  await authService.forgotPassword(parsed.data.email, ip);
-  return NextResponse.json({ ok: true });
+  try {
+    // Service handles rate limiting and user enumeration protection internally
+    await authService.forgotPassword(parsed.data.email, ip);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    return handleError(err);
+  }
 }

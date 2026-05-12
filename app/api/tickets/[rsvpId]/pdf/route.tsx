@@ -232,7 +232,7 @@ export async function GET(_: Request, { params }: RouteContext) {
   let payment: { amount: number; currency: string } | null = null;
   try {
     payment = await prisma.payment.findFirst({
-      where: { userId: rsvp.userId, eventId: rsvp.eventId, status: 'PAID' },
+      where: { userId: rsvp.userId, eventId: rsvp.eventId, status: 'captured' },
       select: { amount: true, currency: true },
     });
   } catch { /* non-critical */ }

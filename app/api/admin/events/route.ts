@@ -7,7 +7,8 @@ const PAGE_SIZE = 50;
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (session.user.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { searchParams } = new URL(req.url);
   const page = Math.max(0, parseInt(searchParams.get('page') ?? '0', 10));

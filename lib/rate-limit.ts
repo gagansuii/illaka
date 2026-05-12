@@ -10,6 +10,15 @@ let redis: Redis | null = null;
 let redisEnabled = Boolean(process.env.REDIS_URL);
 let redisWarningShown = false;
 
+// Warn loudly in production if Redis is absent — in-memory rate limiting is per-process
+// and will be ineffective across multiple serverless instances.
+if (process.env.NODE_ENV === 'production' && !process.env.REDIS_URL) {
+  console.warn(
+    '[rate-limit] REDIS_URL is not set. Rate limiting is per-process only and WILL be ' +
+    'ineffective across multiple serverless instances. Set REDIS_URL to fix this.',
+  );
+}
+
 function disableRedis(err?: unknown) {
   if (!redisWarningShown) {
     redisWarningShown = true;

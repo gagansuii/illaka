@@ -31,6 +31,20 @@ enum LinkShareMode {
   BEFORE_EVENT
 }
 
+enum PaymentStatus {
+  created
+  authorized
+  captured
+  refunded
+  failed
+}
+
+enum PaymentReason {
+  subscription
+  hosting_fee
+  promotion
+}
+
 model User {
   id               String   @id @default(uuid())
   name             String
@@ -93,6 +107,7 @@ model Event {
   eventType     EventType?    @default(PHYSICAL)
   onlineLink    String?
   linkShareMode LinkShareMode?
+  deletedAt     DateTime?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -109,6 +124,8 @@ model Event {
   @@index([visibility])
   @@index([startTime])
   @@index([engagementScore])
+  @@index([visibility, startTime])
+  @@index([deletedAt])
 }
 
 model RSVP {
@@ -195,16 +212,16 @@ model PasswordResetToken {
 }
 
 model Payment {
-  id            String   @id @default(uuid())
+  id            String        @id @default(uuid())
   userId        String
   eventId       String?
   provider      String
   providerRef   String
   amount        Int
   currency      String
-  status        String
-  reason        String
-  createdAt     DateTime @default(now())
+  status        PaymentStatus @default(created)
+  reason        PaymentReason
+  createdAt     DateTime      @default(now())
 
   user  User   @relation(fields: [userId], references: [id])
   event Event? @relation(fields: [eventId], references: [id])

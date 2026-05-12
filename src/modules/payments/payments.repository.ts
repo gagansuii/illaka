@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import type { PaymentReason } from './payments.types';
+import type { PaymentReason, PaymentStatus } from './payments.types';
 
 export const paymentsRepository = {
   async findEventForPayment(eventId: string, organizerId: string) {
@@ -24,7 +24,7 @@ export const paymentsRepository = {
     return prisma.payment.findFirst({ where: { providerRef } });
   },
 
-  async updateStatusByProviderRef(providerRef: string, status: string): Promise<void> {
+  async updateStatusByProviderRef(providerRef: string, status: PaymentStatus): Promise<void> {
     await prisma.payment.updateMany({ where: { providerRef }, data: { status } });
   },
 };

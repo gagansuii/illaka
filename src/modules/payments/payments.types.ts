@@ -1,4 +1,5 @@
 export type PaymentReason = 'subscription' | 'hosting_fee' | 'promotion';
+export type PaymentStatus = 'created' | 'authorized' | 'captured' | 'refunded' | 'failed';
 
 export type InitiatePaymentInput = {
   reason: PaymentReason;
@@ -15,8 +16,8 @@ export type PaymentRecord = {
   providerRef: string;
   amount: number;
   currency: string;
-  status: string;
-  reason: string;
+  status: PaymentStatus;
+  reason: PaymentReason;
 };
 
 export type WebhookPayload = {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDatabaseErrorDetails } from '@/lib/database-errors';
+import { rateLimit } from '@/lib/rate-limit';
 import { z } from 'zod';
 import { eventsService } from '@/src/modules/events/events.service';
 import { ServiceError } from '@/src/core/errors';
@@ -33,16 +34,35 @@ const createSchema = z.object({
 const normalizeDateTime = (dt: string) =>
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(dt) ? dt + ':00' : dt;
 
+const MAX_RADIUS_METERS = 100_000; // 100 km hard cap — beyond this PostGIS index degrades
+const MIN_RADIUS_METERS = 10_000;  // 10 km minimum
+
 export async function GET(req: Request) {
+  // Secondary per-IP rate limit for anonymous callers (primary is per-coordinate in service)
+  const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
+  if (!(await rateLimit(`events:ip:${ip}`, 120))) {
+    return NextResponse.json({ error: 'Rate limit exceeded', events: [] }, { status: 429 });
+  }
+
   const { searchParams } = new URL(req.url);
   const lat = Number(searchParams.get('lat'));
   const lng = Number(searchParams.get('lng'));
   const rawRadius = Number(searchParams.get('radius') ?? 5000);
-  const radius = Number.isFinite(rawRadius) && rawRadius > 0 ? Math.max(rawRadius, 10_000) : 10_000;
+  const radius = Number.isFinite(rawRadius) && rawRadius > 0
+    ? Math.min(Math.max(rawRadius, MIN_RADIUS_METERS), MAX_RADIUS_METERS)
+    : MIN_RADIUS_METERS;
 
   try {
-    const { events } = await eventsService.listNearby({ lat, lng, radius });
-    return NextResponse.json({ events });
+    const { events, stale } = await eventsService.listNearby({ lat, lng, radius });
+    const response = NextResponse.json({ events });
+    // CDN can serve cached results for 30s; stale-while-revalidate for another 60s
+    response.headers.set(
+      'Cache-Control',
+      stale
+        ? 'public, s-maxage=5, stale-while-revalidate=30'
+        : 'public, s-maxage=30, stale-while-revalidate=60',
+    );
+    return response;
   } catch (err) {
     if (err instanceof ServiceError && err.code === 'RATE_LIMIT') {
       return NextResponse.json({ error: err.message }, { status: 429 });

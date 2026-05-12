@@ -28,7 +28,7 @@ export function isPineconeConfigured() {
 export function getOpenAIClient() {
   const apiKey = getEnv('OPENAI_API_KEY');
   if (!openaiClient) {
-    openaiClient = new OpenAI({ apiKey });
+    openaiClient = new OpenAI({ apiKey, timeout: 8_000, maxRetries: 2 });
   }
   return openaiClient;
 }
