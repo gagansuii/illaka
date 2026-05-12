@@ -69,6 +69,7 @@ model User {
   passwordResets          PasswordResetToken[]
   reminderLogs            ReminderLog[]
   emailVerificationTokens EmailVerificationToken[]
+  apiKeys                 ApiKey[]
 }
 
 model EmailVerificationToken {
@@ -233,6 +234,20 @@ model Payment {
   @@index([providerRef])
   @@index([status])
   @@index([userId, status])
+}
+
+model ApiKey {
+  id         String    @id @default(uuid())
+  userId     String
+  name       String
+  keyHash    String    @unique
+  prefix     String
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model ReminderLog {

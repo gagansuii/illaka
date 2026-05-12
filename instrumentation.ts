@@ -125,6 +125,28 @@ export async function register() {
         ON DELETE CASCADE ON UPDATE CASCADE
     `);
 
+    // ── ApiKey ─────────────────────────────────────────────────────────────
+    await run(`
+      CREATE TABLE IF NOT EXISTS "ApiKey" (
+        "id"         TEXT         NOT NULL,
+        "userId"     TEXT         NOT NULL,
+        "name"       TEXT         NOT NULL,
+        "keyHash"    TEXT         NOT NULL,
+        "prefix"     TEXT         NOT NULL,
+        "lastUsedAt" TIMESTAMP(3),
+        "createdAt"  TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "ApiKey_pkey" PRIMARY KEY ("id")
+      )
+    `);
+    await run(`CREATE UNIQUE INDEX IF NOT EXISTS "ApiKey_keyHash_key" ON "ApiKey"("keyHash")`);
+    await run(`CREATE INDEX IF NOT EXISTS "ApiKey_userId_idx" ON "ApiKey"("userId")`);
+    await run(`
+      ALTER TABLE "ApiKey"
+        ADD CONSTRAINT "ApiKey_userId_fkey"
+        FOREIGN KEY ("userId") REFERENCES "User"("id")
+        ON DELETE CASCADE ON UPDATE CASCADE
+    `);
+
     console.log('[schema-sync] done');
   } catch (e) {
     console.error('[schema-sync] unexpected error:', e);
