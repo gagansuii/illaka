@@ -1,4 +1,5 @@
 from app.models.attendance import Attendance
+from app.models.company import ApiKey, Company
 from app.models.event import Event
 from app.models.like import Like
 from app.models.password_reset import PasswordResetToken
@@ -11,6 +12,8 @@ from app.models.user import User
 
 __all__ = [
     "User",
+    "Company",
+    "ApiKey",
     "Event",
     "RSVP",
     "Like",

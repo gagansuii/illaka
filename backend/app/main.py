@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 from jose import JWTError
 from pydantic import ValidationError
@@ -36,12 +37,41 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="Ilaaka Community Platform API — FastAPI + PostgreSQL/PostGIS",
-    docs_url="/docs" if not settings.is_production else None,
-    redoc_url="/redoc" if not settings.is_production else None,
-    openapi_url="/openapi.json" if not settings.is_production else None,
+    description=(
+        "**ILAAKA Community Platform API**\n\n"
+        "Authenticate with **Bearer JWT** (for user sessions) or an **`x-api-key` header** "
+        "(for B2B integrations). API keys are issued per company — contact the ILAAKA team to "
+        "get onboarded.\n\n"
+        "All endpoints are versioned under `/api/v1/`."
+    ),
+    # Docs enabled in all environments — secured via API key scheme in production
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
     lifespan=lifespan,
 )
+
+
+def _custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    schema.setdefault("components", {}).setdefault("securitySchemes", {}).update({
+        "BearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"},
+        "ApiKeyAuth": {"type": "apiKey", "in": "header", "name": "x-api-key"},
+    })
+    # Apply both schemes globally so Swagger UI shows auth inputs for all routes
+    schema["security"] = [{"BearerAuth": []}, {"ApiKeyAuth": []}]
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = _custom_openapi  # type: ignore[method-assign]
 
 # ─── Middleware ───────────────────────────────────────────────────────────────
 app.add_middleware(RequestLoggingMiddleware)
