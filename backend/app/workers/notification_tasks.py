@@ -36,7 +36,7 @@ def send_event_reminders(self):
       - 1d before  → ONLINE events
     Idempotent via reminder_logs unique constraint.
     """
-    from sqlalchemy import select, and_, text
+    from sqlalchemy import select
     from app.models.event import Event
     from app.models.rsvp import RSVP
     from app.models.reminder_log import ReminderLog, ReminderType

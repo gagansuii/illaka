@@ -3,14 +3,13 @@ Gamification service — XP, levels, streaks, achievements.
 All XP mutations are atomic: we update users.xp in the same transaction as the XPLog insert.
 """
 import logging
-import math
-from datetime import date, datetime, timezone
+from datetime import date
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.gamification.xp_log import XPLog, XPAction, XP_VALUES, level_from_xp
-from app.models.gamification.achievement import Achievement, UserAchievement, ACHIEVEMENT_CATALOGUE
+from app.models.gamification.achievement import Achievement, UserAchievement
 from app.models.gamification.streak import Streak
 from app.models.user import User
 from app.schemas.gamification import GamificationProfile, StreakResponse, AchievementResponse, XPLogResponse
@@ -226,9 +225,8 @@ async def get_profile(db: AsyncSession, user_id: str) -> GamificationProfile:
         select(XPLog).where(XPLog.user_id == user_id)
         .order_by(XPLog.created_at.desc()).limit(10)
     )).scalars().all()
-    xp_logs = [XPLogResponse(id=l.id, action=l.action, points=l.points, ref_id=l.ref_id, created_at=l.created_at) for l in recent_logs]
+    xp_logs = [XPLogResponse(id=log.id, action=log.action, points=log.points, ref_id=log.ref_id, created_at=log.created_at) for log in recent_logs]
 
-    current_level_xp = (user.level - 1) ** 2 * 100
     next_level_xp = user.level ** 2 * 100
     xp_to_next = max(0, next_level_xp - user.xp)
 

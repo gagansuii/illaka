@@ -58,9 +58,7 @@ async def get_community_feed(
     viewer: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
-    from sqlalchemy import select
     from app.models.community.post import Post
-    from sqlalchemy.orm import selectinload
     from app.services.feed_service import _base_post_query, _enrich_post, _cursor_to_dt, _dt_to_cursor
 
     limit = 20

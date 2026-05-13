@@ -2,7 +2,7 @@
 Follow/unfollow service with social graph queries.
 All counter queries use single atomic UPDATEs to avoid race conditions.
 """
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.community.follow import Follow

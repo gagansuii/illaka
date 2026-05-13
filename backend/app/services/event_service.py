@@ -1,9 +1,7 @@
 import asyncio
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
-from geoalchemy2.functions import ST_MakePoint, ST_SetSRID
-from sqlalchemy import cast, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.caching.events_cache import events_cache

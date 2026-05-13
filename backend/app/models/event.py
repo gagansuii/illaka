@@ -2,7 +2,6 @@ import enum
 
 from geoalchemy2 import Geography
 from sqlalchemy import (
-    BigInteger,
     Boolean,
     DateTime,
     Enum,

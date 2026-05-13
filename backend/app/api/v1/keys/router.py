@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import get_current_user, require_admin
+from app.auth.dependencies import get_current_user
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.database.session import get_db
 from app.models.company import ApiKey, Company

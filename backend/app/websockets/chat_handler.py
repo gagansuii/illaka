@@ -15,7 +15,6 @@ Supported actions:
   react         → add emoji reaction to a message
   ping          → keepalive, server replies pong
 """
-import json
 import logging
 from datetime import datetime, timezone
 
@@ -106,8 +105,7 @@ async def _handle_send_message(
     ws: WebSocket, user_id: str, room_id: str, content: str,
     reply_to_id: str | None, db: AsyncSession
 ) -> None:
-    from sqlalchemy import select, update
-    from app.models.chat.room import ChatRoom
+    from sqlalchemy import select
     from app.models.chat.message import ChatMessage
     from app.models.chat.room_member import RoomMember
 
@@ -155,7 +153,7 @@ async def _handle_send_message(
 
 
 async def _handle_read(user_id: str, room_id: str, db: AsyncSession) -> None:
-    from sqlalchemy import select, update
+    from sqlalchemy import update
     from app.models.chat.room_member import RoomMember
     from datetime import timezone
 

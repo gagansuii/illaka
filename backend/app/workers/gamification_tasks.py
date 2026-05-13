@@ -17,7 +17,6 @@ def batch_check_achievements():
     from sqlalchemy import create_engine, select
     from sqlalchemy.orm import sessionmaker
     from app.core.config import settings
-    from app.models.user import User
     from app.models.gamification.xp_log import XPLog
     from datetime import datetime, timedelta, timezone
 
@@ -49,7 +48,6 @@ def _check_achievements_sync(session, user_id: str):
     """Sync version of gamification_service.check_achievements."""
     from sqlalchemy import select, func
     from app.models.gamification.achievement import Achievement, UserAchievement, ACHIEVEMENT_CATALOGUE
-    from app.models.gamification.xp_log import XPLog, XPAction, XP_VALUES
 
     # Ensure catalogue is seeded
     for entry in ACHIEVEMENT_CATALOGUE:

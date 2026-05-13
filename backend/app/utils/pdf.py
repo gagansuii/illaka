@@ -6,7 +6,6 @@ import io
 from dataclasses import dataclass
 
 import qrcode
-from PIL import Image
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet

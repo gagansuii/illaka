@@ -6,7 +6,6 @@ import asyncio
 import time
 from collections import OrderedDict
 from dataclasses import dataclass, field
-from typing import Any
 
 
 @dataclass

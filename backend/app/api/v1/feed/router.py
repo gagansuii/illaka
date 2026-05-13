@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_user, get_current_user_optional
 from app.database.session import get_db
 from app.models.user import User
-from app.models.community.reaction import ReactionType
 from app.services import feed_service
 from app.services.gamification_service import award_xp, check_achievements
 from app.models.gamification.xp_log import XPAction

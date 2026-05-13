@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from app.caching.redis_client import cache
-from app.core.exceptions import NotFoundError, RateLimitError, ServiceUnavailableError
+from app.core.exceptions import NotFoundError, RateLimitError
 from app.integrations.ipinfo import locate_ip
 
 router = APIRouter(prefix="/geo", tags=["geo"])

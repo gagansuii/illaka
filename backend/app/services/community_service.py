@@ -1,11 +1,10 @@
 """
 EventCommunity service — one community per event, auto-created at event creation.
 """
-from sqlalchemy import func, select, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.community.event_community import EventCommunity, CommunityMember, CommunityRole
-from app.models.user import User
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.schemas.community import EventCommunityResponse, CommunityJoinResponse
 

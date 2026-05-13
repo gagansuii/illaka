@@ -12,7 +12,7 @@ from app.models.chat.room import ChatRoom
 from app.models.chat.message import ChatMessage
 from app.models.chat.room_member import RoomMember
 from app.models.user import User
-from app.core.exceptions import ForbiddenError, NotFoundError
+from app.core.exceptions import ForbiddenError
 from app.schemas.chat import RoomCreate, RoomResponse, MessagePage, MessageResponse
 from app.models.base import generate_uuid
 

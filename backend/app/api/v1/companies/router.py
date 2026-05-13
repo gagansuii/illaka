@@ -1,7 +1,7 @@
 import hashlib
 import re
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, EmailStr

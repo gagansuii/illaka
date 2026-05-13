@@ -16,7 +16,7 @@ Pagination: keyset cursor = ISO datetime string of the last post's created_at.
 import re
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import func, select, text, update, and_, or_
+from sqlalchemy import select, text, update, and_, or_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -235,7 +235,6 @@ async def create_post(
 
     # Hashtags — upsert then link
     if data.hashtags:
-        from sqlalchemy.dialects.postgresql import insert as pg_insert
         for tag in set(data.hashtags):
             # Upsert hashtag
             ht_result = await db.execute(select(Hashtag).where(Hashtag.tag == tag))

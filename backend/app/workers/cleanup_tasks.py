@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task(name="app.workers.cleanup_tasks.cleanup_expired_events")
 def cleanup_expired_events():
-    from sqlalchemy import create_engine, select, delete
+    from sqlalchemy import create_engine, delete
     from sqlalchemy.orm import sessionmaker
     from app.core.config import settings
     from app.models.event import Event

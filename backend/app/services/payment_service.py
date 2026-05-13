@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.exceptions import ForbiddenError, NotFoundError, PaymentError
-from app.models.payment import Payment, PaymentProvider, PaymentReason, PaymentStatus
+from app.models.payment import PaymentProvider, PaymentReason, PaymentStatus
 from app.repositories import event_repo, payment_repo, user_repo
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ async def initiate_razorpay(
     amount = get_amount_for_reason(reason)
     order = await create_order(amount, currency)
 
-    payment = await payment_repo.create(
+    await payment_repo.create(
         db,
         user_id=user_id,
         event_id=event_id,
@@ -170,7 +170,7 @@ async def initiate_stripe_checkout(
             metadata={"user_id": user_id},
         )
 
-    payment = await payment_repo.create(
+    await payment_repo.create(
         db,
         user_id=user_id,
         event_id=event_id,
@@ -238,7 +238,7 @@ async def _handle_invoice_succeeded(db: AsyncSession, obj: dict) -> None:
     sub_id = obj.get("subscription")
     if not sub_id:
         return
-    from sqlalchemy import select, update
+    from sqlalchemy import update
     from app.models.subscription import Subscription, SubscriptionStatus
     await db.execute(
         update(Subscription)
