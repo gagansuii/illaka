@@ -36,7 +36,6 @@ jobs:
 
       - name: Build
         env:
-          # Stub required env vars for build-time validation
           DATABASE_URL: postgresql://postgres:stub@localhost:5432/stub
           DIRECT_URL: postgresql://postgres:stub@localhost:5432/stub
           NEXTAUTH_SECRET: ci-stub-secret-32-chars-minimum!!
@@ -76,7 +75,7 @@ jobs:
   fastapi:
     name: FastAPI — Lint
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     defaults:
       run:
         working-directory: backend
@@ -87,16 +86,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: 'pip'
-          cache-dependency-path: backend/requirements/*.txt
 
-      - name: Install dev dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements/dev.txt 2>/dev/null || pip install ruff mypy 2>/dev/null || true
+      - name: Install ruff
+        run: pip install ruff
 
       - name: Lint with ruff
-        run: ruff check app/ --exit-non-zero-on-fix 2>/dev/null || echo "ruff not installed, skipping"
+        run: ruff check app/
 
   # ── Security audit ──────────────────────────────────────────────────────────
   audit:
@@ -116,7 +111,7 @@ jobs:
         run: npm ci
 
       - name: Audit for critical vulnerabilities
-        # audit-level=high blocked on unpublished patches: axios ≥1.15.2,
-        # lodash ≥4.17.24, next ≥16.3.0. Restore to --audit-level=high once
+        # audit-level=high blocked on unpublished patches: axios >=1.15.2,
+        # lodash >=4.17.24, next >=16.3.0. Restore --audit-level=high once
         # those are released and package-lock.json is updated.
         run: npm audit --audit-level=critical
