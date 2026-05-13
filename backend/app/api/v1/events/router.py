@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Header, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user, get_current_user_optional
@@ -76,11 +76,11 @@ async def my_events(
 @router.get("/{event_id}")
 async def get_event(
     event_id: str,
-    token: str | None = Query(default=None),
     current_user: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
+    x_share_token: str | None = Header(default=None, alias="x-share-token"),
 ):
-    event = await event_service.get_event(db, event_id, current_user, token)
+    event = await event_service.get_event(db, event_id, current_user, x_share_token)
     return {"event": event}
 
 
