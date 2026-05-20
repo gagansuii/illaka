@@ -1,8 +1,8 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'Terms and conditions governing your use of ILAAKA.',
+  description: 'Terms and conditions governing your use of ILAKA.',
 };
 
 export default function TermsPage() {
@@ -12,7 +12,7 @@ export default function TermsPage() {
       <p className="text-muted-foreground text-sm">Effective date: 1 May 2025 &nbsp;·&nbsp; Last updated: 5 May 2026</p>
 
       <p>
-        Welcome to ILAAKA (&ldquo;Platform&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;). By
+        Welcome to ILAKA (&ldquo;Platform&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;). By
         accessing or using our website at <strong>ilaka.app</strong> or any related mobile interface, you agree to be
         bound by these Terms of Service (&ldquo;Terms&rdquo;). If you do not agree, do not use the Platform.
       </p>
@@ -32,7 +32,7 @@ export default function TermsPage() {
 
       <h2>3. User-Generated Content</h2>
       <p>
-        When you post an event, image, or any other content on the Platform, you grant ILAAKA a non-exclusive,
+        When you post an event, image, or any other content on the Platform, you grant ILAKA a non-exclusive,
         worldwide, royalty-free licence to host, display, and distribute that content solely for the purpose of
         operating the Platform. You retain ownership of your content. You must not post content that:
       </p>
@@ -48,7 +48,7 @@ export default function TermsPage() {
 
       <h2>4. Event Listings and RSVPs</h2>
       <p>
-        Event organisers are solely responsible for the accuracy, legality, and fulfilment of their events. ILAAKA is
+        Event organisers are solely responsible for the accuracy, legality, and fulfilment of their events. ILAKA is
         not a party to any agreement between organisers and attendees. RSVPs are subject to event capacity and the
         organiser&apos;s own cancellation policy.
       </p>
@@ -58,7 +58,7 @@ export default function TermsPage() {
         Payments for subscriptions, hosting fees, and promotional placements are processed by{' '}
         <strong>Razorpay Software Private Limited</strong>, a licensed payment aggregator regulated by the Reserve
         Bank of India. By initiating a payment, you agree to Razorpay&apos;s{' '}
-        <a href="https://razorpay.com/terms/" target="_blank" rel="noopener noreferrer">Terms of Service</a>. ILAAKA
+        <a href="https://razorpay.com/terms/" target="_blank" rel="noopener noreferrer">Terms of Service</a>. ILAKA
         does not store your card or bank details. All amounts are in Indian Rupees (INR) unless otherwise stated.
         Refunds, if applicable, are governed by our Refund Policy communicated at the time of purchase.
       </p>
@@ -74,7 +74,7 @@ export default function TermsPage() {
 
       <h2>7. Intellectual Property</h2>
       <p>
-        The ILAAKA name, logo, design, and all proprietary software are owned by us and protected by applicable
+        The ILAKA name, logo, design, and all proprietary software are owned by us and protected by applicable
         intellectual property laws. Nothing in these Terms grants you a licence to use our trademarks or branding.
       </p>
 
@@ -102,7 +102,7 @@ export default function TermsPage() {
 
       <h2>10. Limitation of Liability</h2>
       <p>
-        To the maximum extent permitted by applicable law, ILAAKA shall not be liable for any indirect, incidental,
+        To the maximum extent permitted by applicable law, ILAKA shall not be liable for any indirect, incidental,
         special, consequential, or punitive damages arising from your use of or inability to use the Platform,
         including losses arising from events listed on the Platform. Our total liability for any claim shall not
         exceed the amount you paid us in the three months preceding the claim.

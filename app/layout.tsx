@@ -1,4 +1,4 @@
-import './globals.css';
+﻿import './globals.css';
 import type { Metadata } from 'next';
 import { Newsreader, Manrope, Space_Grotesk, Fraunces, Caveat, Instrument_Serif, Space_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/ThemeProvider';
@@ -18,18 +18,18 @@ const BASE_URL = process.env.NEXTAUTH_URL ?? 'https://ilaka.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
-  title: { default: 'ILAAKA — Rediscover your neighbourhood', template: '%s | ILAAKA' },
+  title: { default: 'ILAKA — Rediscover your neighbourhood', template: '%s | ILAKA' },
   description: 'Cinematic, map-first community discovery for activities, meetups, workshops, and local energy around you.',
   openGraph: {
     type: 'website',
-    siteName: 'ILAAKA',
-    title: 'ILAAKA — Rediscover your neighbourhood',
+    siteName: 'ILAKA',
+    title: 'ILAKA — Rediscover your neighbourhood',
     description: 'Find events happening near you. Discover what makes your neighbourhood feel alive.',
     url: BASE_URL
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ILAAKA — Rediscover your neighbourhood',
+    title: 'ILAKA — Rediscover your neighbourhood',
     description: 'Find events happening near you. Discover what makes your neighbourhood feel alive.'
   },
   robots: { index: true, follow: true }

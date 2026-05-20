@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -94,7 +94,7 @@ export function PaymentButton({
           amount: data!.amount as number,
           currency: 'INR',
           order_id: data!.orderId as string,
-          name: 'ILAAKA',
+          name: 'ILAKA',
           description: label,
           handler: () => {
             resolve();

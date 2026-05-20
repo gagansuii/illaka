@@ -1,6 +1,6 @@
-# Ilaaka Events Application
+﻿# Ilaka Events Application
 
-Ilaaka is a location-based community events platform built with Next.js 16+, TypeScript, Prisma (PostgreSQL + PostGIS), and NextAuth. Key features: event discovery by geolocation, AI-powered semantic search, Razorpay payments, Cloudinary media uploads, engagement scoring, and digital event tickets.
+Ilaka is a location-based community events platform built with Next.js 16+, TypeScript, Prisma (PostgreSQL + PostGIS), and NextAuth. Key features: event discovery by geolocation, AI-powered semantic search, Razorpay payments, Cloudinary media uploads, engagement scoring, and digital event tickets.
 
 ## Getting Started
 

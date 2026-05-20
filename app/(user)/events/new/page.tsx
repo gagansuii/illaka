@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
@@ -26,7 +26,7 @@ const TEXTAREA: React.CSSProperties = {
 
 function Sep({ label }: { label: string }) {
   return (
-    <div className="ilaaka-sep" style={{ margin: '20px 0 14px' }}>
+    <div className="ilaka-sep" style={{ margin: '20px 0 14px' }}>
       <span>{label}</span>
     </div>
   );
@@ -294,7 +294,7 @@ export default function CreateEventPage() {
     }}>
       {/* Masthead */}
       <div style={{ padding: '18px 0 0', borderBottom: '1.5px solid var(--ink)', marginBottom: 0, paddingBottom: 14 }}>
-        <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.24em', color: 'var(--ink-soft)' }}>HOST STUDIO · ILAAKA</div>
+        <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.24em', color: 'var(--ink-soft)' }}>HOST STUDIO · ILAKA</div>
         <h1 style={{
           fontFamily: 'var(--font-fraunces), serif', fontWeight: 600,
           fontSize: 'clamp(32px, 8vw, 48px)', lineHeight: 0.95, letterSpacing: '-0.025em', marginTop: 6,
@@ -591,7 +591,7 @@ export default function CreateEventPage() {
             {visibility === 'PUBLIC' ? 'PUBLIC' : 'PRIVATE'}
           </span>
           <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.18em', color: 'var(--ink-soft)', marginBottom: 6 }}>
-            {selectedTheme.label.toUpperCase()} · ILAAKA
+            {selectedTheme.label.toUpperCase()} · ILAKA
           </div>
           <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 600, fontSize: 24, lineHeight: 1.05, letterSpacing: '-0.02em' }}>
             {previewTitle}

@@ -1,4 +1,4 @@
-# Ilaaka Backend API Documentation
+﻿# Ilaka Backend API Documentation
 
 ## Table of Contents
 1. [Base URL & Overview](#base-url--overview)
@@ -1236,9 +1236,9 @@ Upload a file to Cloudinary.
 | Field | Type | Description |
 |-------|------|-------------|
 | `file` | file | The file to upload |
-| `folder` | string | Destination folder (e.g. `ilaaka/banners`) |
+| `folder` | string | Destination folder (e.g. `ilaka/banners`) |
 
-> **Note:** Folder `ilaaka/payment-qr` requires ORGANIZER or ADMIN role.
+> **Note:** Folder `ilaka/payment-qr` requires ORGANIZER or ADMIN role.
 
 **Response `200`:**
 ```json

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -292,7 +292,7 @@ export function MapScreen() {
         {/* Masthead */}
         <div style={{ padding: '18px 0 14px', borderBottom: '1.5px solid var(--ink)', marginBottom: 0 }}>
           <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.24em', color: 'var(--ink-soft)' }}>
-            DISCOVER · YOUR ILAAKA
+            DISCOVER · YOUR ILAKA
           </div>
           <h1 style={{
             fontFamily: 'var(--font-fraunces), serif', fontWeight: 600,
@@ -368,7 +368,7 @@ export function MapScreen() {
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'var(--paper-2)' }}>
               <LocateFixed size={28} color={geoStatus === 'pending' ? 'var(--mustard)' : 'var(--ink-faint)'} style={{ animation: geoStatus === 'pending' ? 'pulse 1.5s ease-in-out infinite' : 'none' }} />
               <p style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 10, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
-                {geoStatus === 'pending' ? 'FINDING YOUR ILAAKA…' : 'ENABLE LOCATION ACCESS'}
+                {geoStatus === 'pending' ? 'FINDING YOUR ILAKA…' : 'ENABLE LOCATION ACCESS'}
               </p>
             </div>
           )}
@@ -414,7 +414,7 @@ export function MapScreen() {
         {/* Horizontal event strip */}
         {featuredEvents.length > 0 && (
           <>
-            <div className="ilaaka-sep" style={{ margin: '0 0 12px' }}>
+            <div className="ilaka-sep" style={{ margin: '0 0 12px' }}>
               <span>near you now</span>
             </div>
             <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
@@ -462,7 +462,7 @@ export function MapScreen() {
         {/* Swipe deck section */}
         {featuredEvents.length > 0 && (
           <>
-            <div className="ilaaka-sep" style={{ margin: '20px 0 12px' }}>
+            <div className="ilaka-sep" style={{ margin: '20px 0 12px' }}>
               <span>swipe through</span>
             </div>
             <div style={{ background: 'var(--paper-card)', border: '1.5px solid var(--ink)', boxShadow: '2px 2px 0 var(--ink)', padding: 16 }}>
@@ -472,7 +472,7 @@ export function MapScreen() {
         )}
 
         {/* Host CTA */}
-        <div className="ilaaka-sep" style={{ margin: '20px 0 12px' }}>
+        <div className="ilaka-sep" style={{ margin: '20px 0 12px' }}>
           <span>host something</span>
         </div>
         <div style={{ border: '1.5px solid var(--ink)', boxShadow: '2px 2px 0 var(--ink)', background: 'var(--paper-card)', padding: 18, position: 'relative', overflow: 'hidden' }}>

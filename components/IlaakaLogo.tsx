@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 /** The noticeboard mark — golden corkboard with pinned slips and "i" card */
 export function IlaakaMark({ size = 36 }: { size?: number }) {
@@ -65,7 +65,7 @@ export function IlaakaLogoH({ markSize = 36 }: { markSize?: number }) {
           color: 'var(--ink)',
         }}
       >
-        ilaaka
+        ilaka
       </span>
     </span>
   );
@@ -90,7 +90,7 @@ export function IlaakaLogoStacked({ markSize = 80 }: { markSize?: number }) {
             color: 'var(--ink)',
           }}
         >
-          ilaaka<span style={{ color: '#C85536' }}>.</span>
+          ilaka<span style={{ color: '#C85536' }}>.</span>
         </span>
         <span
           style={{

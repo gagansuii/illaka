@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { motion } from 'framer-motion';
 import { fadeUp, stagger } from '@/animations/motion';
@@ -13,7 +13,7 @@ export function CommunitySection() {
           <SectionHeading
             eyebrow="Section 03 - Community energy"
             title="Talent lives next door."
-            description="You do not need big institutions to learn something new. Ilaaka surfaces the teachers, makers, and community energy already living nearby."
+            description="You do not need big institutions to learn something new. Ilaka surfaces the teachers, makers, and community energy already living nearby."
           />
         </motion.div>
 

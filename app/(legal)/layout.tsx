@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { IlaakaLogoH } from '@/components/IlaakaLogo';
 
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
@@ -16,7 +16,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
           <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
           <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
         </div>
-        <p className="mt-3">© {new Date().getFullYear()} ILAAKA. All rights reserved.</p>
+        <p className="mt-3">© {new Date().getFullYear()} ILAKA. All rights reserved.</p>
       </footer>
     </div>
   );

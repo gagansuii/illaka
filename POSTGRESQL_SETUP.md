@@ -1,4 +1,4 @@
-# PostgreSQL Setup Guide for Ilaaka
+﻿# PostgreSQL Setup Guide for Ilaka
 
 ## Step 1: Install PostgreSQL
 
@@ -25,7 +25,7 @@
 
 ## Step 2: Install PostGIS Extension
 
-PostGIS is required for geospatial features in Ilaaka.
+PostGIS is required for geospatial features in Ilaka.
 
 ### Option A: If PostGIS wasn't installed
 1. Download PostGIS from: https://postgis.net/windows_downloads/
@@ -142,4 +142,4 @@ This opens a database browser. If it works, your setup is complete!
 After successful setup:
 1. Restart your dev server: `npm run dev`
 2. Visit http://localhost:3000
-3. Create an account to start using Ilaaka!
+3. Create an account to start using Ilaka!

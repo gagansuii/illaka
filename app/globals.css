@@ -1,4 +1,4 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -6,7 +6,7 @@
 :root {
   color-scheme: light;
 
-  /* ── Ilaaka earthy design system ── */
+  /* ── Ilaka earthy design system ── */
   --paper:      #f2ece0;
   --paper-2:    #ebe3d1;
   --paper-3:    #e2d7bf;
@@ -60,11 +60,11 @@
   --secondary-soft:  rgba(15, 118, 110, 0.12);
 }
 
-/* Dark mode — full ilaaka design system override */
+/* Dark mode — full ilaka design system override */
 .dark {
   color-scheme: dark;
 
-  /* Ilaaka earthy vars — dark palette */
+  /* Ilaka earthy vars — dark palette */
   --paper:      #1c1510;
   --paper-2:    #231a12;
   --paper-3:    #2b2018;
@@ -1038,7 +1038,7 @@ input {
   }
 }
 
-/* ── Ilaaka flyer-wall design primitives ── */
+/* ── Ilaka flyer-wall design primitives ── */
 
 /* Stamp label */
 .stamp {
@@ -1095,15 +1095,15 @@ input {
 .tilt-rr { transform: rotate(2.8deg); }
 
 /* Ornate section separator */
-.ilaaka-sep {
+.ilaka-sep {
   display: flex;
   align-items: center;
   gap: 10px;
   margin: 20px 0 14px;
 }
-.ilaaka-sep::before,
-.ilaaka-sep::after { content: ''; flex: 1; height: 1.5px; background: var(--ink); opacity: 0.18; }
-.ilaaka-sep span {
+.ilaka-sep::before,
+.ilaka-sep::after { content: ''; flex: 1; height: 1.5px; background: var(--ink); opacity: 0.18; }
+.ilaka-sep span {
   font-family: var(--font-mono), monospace;
   font-size: 9px;
   text-transform: uppercase;

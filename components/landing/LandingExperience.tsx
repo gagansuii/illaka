@@ -1,4 +1,4 @@
-import { HeroSection } from '@/sections/HeroSection';
+﻿import { HeroSection } from '@/sections/HeroSection';
 import { FeaturedEventSection } from '@/sections/FeaturedEventSection';
 import { InteractiveMapSection } from '@/sections/InteractiveMapSection';
 import { IlaakaLogoStacked } from '@/components/IlaakaLogo';
@@ -26,7 +26,7 @@ export function LandingExperience() {
             ))}
           </div>
           <p className="font-label font-light text-[11px] uppercase tracking-[0.22em] text-tertiary/80 mt-2">
-            © 2024 ILAAKA. A Digital Heirloom of Local Connection.
+            © 2024 ILAKA. A Digital Heirloom of Local Connection.
           </p>
         </div>
       </footer>
