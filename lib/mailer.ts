@@ -1,19 +1,23 @@
-﻿import nodemailer from 'nodemailer';
+import nodemailer from 'nodemailer';
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_APP_PASSWORD,
-  },
-});
+function createTransporter() {
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_APP_PASSWORD,
+    },
+  });
+}
 
 export async function sendReminderEmail(to: string, subject: string, html: string): Promise<void> {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
     console.warn(`[mailer] Email not configured — skipping reminder to ${to}`);
     return;
   }
-  await transporter.sendMail({ from: `"ILAKA" <${process.env.EMAIL_USER}>`, to, subject, html });
+  await createTransporter().sendMail({ from: `"ILAKA" <${process.env.EMAIL_USER}>`, to, subject, html });
 }
 
 export interface TicketEmailData {
@@ -120,7 +124,7 @@ export async function sendTicketEmail(data: TicketEmailData) {
         <!-- Footer -->
         <tr>
           <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 36px;text-align:center;">
-            <p style="margin:0;font-size:11px;color:#9ca3af;">ILAKA · Community Events Platform · © ${new Date().getFullYear()}</p>
+            <p style="margin:0;font-size:11px;color:#9ca3af;">ILAKA · Community Events Platform · &copy; ${new Date().getFullYear()}</p>
           </td>
         </tr>
 
@@ -130,7 +134,7 @@ export async function sendTicketEmail(data: TicketEmailData) {
 </body>
 </html>`;
 
-  await transporter.sendMail({
+  await createTransporter().sendMail({
     from: `"ILAKA Events" <${process.env.EMAIL_USER}>`,
     to: data.to,
     subject: `Your ticket for "${data.eventTitle}" — #${shortId}`,
@@ -173,7 +177,7 @@ export async function sendVerificationEmail(to: string, verifyUrl: string): Prom
         </tr>
         <tr>
           <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 36px;text-align:center;">
-            <p style="margin:0;font-size:11px;color:#9ca3af;">ILAKA · Community Events Platform · © ${new Date().getFullYear()}</p>
+            <p style="margin:0;font-size:11px;color:#9ca3af;">ILAKA · Community Events Platform · &copy; ${new Date().getFullYear()}</p>
           </td>
         </tr>
       </table>
@@ -182,7 +186,7 @@ export async function sendVerificationEmail(to: string, verifyUrl: string): Prom
 </body>
 </html>`;
 
-  await transporter.sendMail({
+  await createTransporter().sendMail({
     from: `"ILAKA" <${process.env.EMAIL_USER}>`,
     to,
     subject: 'Verify your ILAKA email address',
@@ -219,7 +223,7 @@ export async function sendApiKeyEmail(to: string, keyPrefix: string): Promise<vo
         </tr>
         <tr>
           <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 36px;text-align:center;">
-            <p style="margin:0;font-size:11px;color:#9ca3af;">ILAKA · Community Events Platform · © ${new Date().getFullYear()}</p>
+            <p style="margin:0;font-size:11px;color:#9ca3af;">ILAKA · Community Events Platform · &copy; ${new Date().getFullYear()}</p>
           </td>
         </tr>
       </table>
@@ -228,7 +232,7 @@ export async function sendApiKeyEmail(to: string, keyPrefix: string): Promise<vo
 </body>
 </html>`;
 
-  await transporter.sendMail({
+  await createTransporter().sendMail({
     from: `"ILAKA" <${process.env.EMAIL_USER}>`,
     to,
     subject: `New API key created — ${keyPrefix}…`,
@@ -271,7 +275,7 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
         </tr>
         <tr>
           <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 36px;text-align:center;">
-            <p style="margin:0;font-size:11px;color:#9ca3af;">ILAKA · Community Events Platform · © ${new Date().getFullYear()}</p>
+            <p style="margin:0;font-size:11px;color:#9ca3af;">ILAKA · Community Events Platform · &copy; ${new Date().getFullYear()}</p>
           </td>
         </tr>
       </table>
@@ -280,7 +284,7 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
 </body>
 </html>`;
 
-  await transporter.sendMail({
+  await createTransporter().sendMail({
     from: `"ILAKA" <${process.env.EMAIL_USER}>`,
     to,
     subject: 'Reset your ILAKA password',
