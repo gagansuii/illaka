@@ -33,7 +33,9 @@ export const authService = {
     if (!user) return; // user enumeration protection
 
     const token = await authRepository.createResetToken(user.id);
-    const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+    const rawBase = process.env.NEXTAUTH_URL
+      ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+    const baseUrl = rawBase.replace(/\/$/, '');
     const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
     try {

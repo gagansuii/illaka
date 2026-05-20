@@ -28,6 +28,18 @@ function ResetPasswordForm() {
       setError('Password must be at least 8 characters.');
       return;
     }
+    if (!/[A-Z]/.test(password)) {
+      setError('Password must contain at least one uppercase letter.');
+      return;
+    }
+    if (!/[0-9]/.test(password)) {
+      setError('Password must contain at least one number.');
+      return;
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      setError('Password must contain at least one special character.');
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/reset-password', {
@@ -74,6 +86,7 @@ function ResetPasswordForm() {
         required
         minLength={8}
       />
+      <p className="text-xs text-muted">Min 8 characters, with uppercase, number, and special character.</p>
       <Input
         type="password"
         placeholder="Confirm new password"
